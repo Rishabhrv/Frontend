@@ -1,0 +1,9 @@
+Backend
+npm install multer
+
+
+frontend
+npm install @dnd-kit/core @dnd-kit/sortable @dnd-kit/utilities
+npm install firebase
+npm install razorpay crypto
+npm install epubjs
