@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Heart, ShoppingCart, Star } from "lucide-react";
 import ReviewSection from "@/components/reviews/ReviewSection";
 import CategoryBookSection from "@/components/books/CategoryBookSection";
+import { useParams } from "next/navigation";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
@@ -50,13 +51,15 @@ type Category = {
 };
 
 
-export default function ProductPage({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
-  const { slug } = use(params);
 
+export default function ProductPage() {
+const params = useParams<{ slug: string }>();
+
+if (!params?.slug) {
+  return null; // or a loader / skeleton
+}
+
+const slug = params.slug;
   const [product, setProduct] = useState<Product | null>(null);
   const [liked, setLiked] = useState(false);
   const [activeImage, setActiveImage] = useState("");
