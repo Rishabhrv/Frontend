@@ -72,7 +72,8 @@ const slug = params.slug;
 
 
   useEffect(() => {
-  if (!product || product.gallery.length === 0) return;
+  if (!product || !product.gallery || product.gallery.length === 0) return;
+
 
   const images = [{ image_path: product.main_image }, ...product.gallery];
   const visibleCount = 5;

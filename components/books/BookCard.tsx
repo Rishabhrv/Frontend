@@ -80,6 +80,42 @@ const BookCard = ({ book, visibleCount }: BookCardProps) => {
 };
 
 
+const addToCart = async () => {
+  const token = localStorage.getItem("token");
+
+  // 🔐 NOT LOGGED IN → REDIRECT
+  if (!token) {
+    window.location.href = "/login";
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_URL}/api/cart/add`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        product_id: book.id,
+        format: "paperback",   // ✅ category page → ebook
+        quantity: 1,       // ✅ always 1
+      }),
+    });
+
+    if (!res.ok) {
+      throw new Error("Add to cart failed");
+    }
+
+    window.dispatchEvent(new Event("cart-change"));
+  } catch (err) {
+    console.error(err);
+    alert("Something went wrong");
+  }
+};
+
+
+
   const discount =
     book.price > book.sell_price
       ? Math.round(
@@ -145,7 +181,9 @@ const BookCard = ({ book, visibleCount }: BookCardProps) => {
           </div>
         </Link>
 
-        <button className=" flex justify-center gap-2 mt-2 w-full bg-black text-white py-2 text-xs rounded">
+        <button 
+        onClick={addToCart}
+        className=" flex justify-center gap-2 mt-2 w-full bg-black text-white py-2 text-xs rounded">
           <ShoppingCart size={14} />
           Add to Cart
         </button>
