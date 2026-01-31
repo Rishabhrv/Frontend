@@ -84,7 +84,7 @@ const AccountSlider = ({ open, onClose, user, onLogout }: Props) => {
               <MenuItem label="Wish List" href="/wishlist" />
               <MenuItem label="My Rewards" href="/rewards" />
               <MenuItem label="Gift Card Balance" href="/gift-cards" />
-              <MenuItem label="Order History" href="/orders" />
+              <MenuItem label="Order History" href="/account/orders" />
             </div>
 
             {/* SIGN OUT */}

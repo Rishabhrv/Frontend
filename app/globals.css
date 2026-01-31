@@ -112,3 +112,49 @@ textarea:focus {
   max-width: 100% !important;
   overflow: hidden !important;
 }
+
+
+
+
+/* Filter Price Bar */
+
+/* ===============================
+   BLACK PRICE RANGE SLIDER
+=============================== */
+
+.price-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 7px;
+  background: black;
+  border-radius: 999px;
+  outline: none;
+  cursor: pointer;
+}
+
+/* WebKit (Chrome, Edge, Safari) */
+.price-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: black;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+/* Firefox */
+.price-range::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: black;
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+}
+
+.price-range::-moz-range-track {
+  height: 4px;
+  background: black;
+  border-radius: 999px;
+}
