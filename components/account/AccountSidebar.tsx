@@ -9,6 +9,7 @@ const menu = [
   { name: "My Rewards", href: "/account/rewards" },
   { name: "Gift Cards", href: "/account/gift-cards" },
   { name: "Subscriptions", href: "/account/subscriptions" },
+  { name: "Payment History", href: "/account/payment-history" },
 ];
 
 const AccountSidebar = () => {

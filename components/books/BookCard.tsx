@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Heart, ShoppingCart } from "lucide-react";
+import { Heart, ShoppingCart, CircleCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 
 type Book = {
@@ -24,6 +24,8 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
 const BookCard = ({ book, visibleCount }: BookCardProps) => {
   const [liked, setLiked] = useState(false);
+  const [addedToCart, setAddedToCart] = useState(false);
+
 
   /* CHECK WISHLIST */
  useEffect(() => {
@@ -83,7 +85,6 @@ const BookCard = ({ book, visibleCount }: BookCardProps) => {
 const addToCart = async () => {
   const token = localStorage.getItem("token");
 
-  // 🔐 NOT LOGGED IN → REDIRECT
   if (!token) {
     window.location.href = "/login";
     return;
@@ -98,21 +99,29 @@ const addToCart = async () => {
       },
       body: JSON.stringify({
         product_id: book.id,
-        format: "paperback",   // ✅ category page → ebook
-        quantity: 1,       // ✅ always 1
+        format: "paperback",
+        quantity: 1,
       }),
     });
 
-    if (!res.ok) {
-      throw new Error("Add to cart failed");
-    }
+    if (!res.ok) throw new Error("Add to cart failed");
 
     window.dispatchEvent(new Event("cart-change"));
+
+    // ✅ SUCCESS UI
+    setAddedToCart(true);
+
+    // ⏳ Optional: reset after 2 seconds
+    setTimeout(() => {
+      setAddedToCart(false);
+    }, 2000);
+
   } catch (err) {
     console.error(err);
     alert("Something went wrong");
   }
 };
+
 
 
 
@@ -133,14 +142,14 @@ const addToCart = async () => {
         {/* ❤️ Wishlist */}
         <button
           onClick={toggleWishlist}
-          className="absolute right-2 top-2 z-10 rounded-full bg-white p-1 shadow"
+          className="absolute right-2 top-2 z-10 rounded-full bg-white p-1 shadow cursor-pointer"
         >
           <Heart
             size={16}
             className={
               liked
                 ? "fill-red-500 text-red-500"
-                : "text-gray-600 hover:text-red-500"
+                : "text-gray-600 hover:text-red-500 "
             }
           />
         </button>
@@ -158,7 +167,7 @@ const addToCart = async () => {
               alt={book.title}
               width={180}
               height={260}
-              className="h-70 w-full object-cover group-hover:scale-105 transition"
+              className="h-70 w-full object-cover group-hover:scale-105 transition cursor-pointer"
               unoptimized
             />
           </div>
@@ -181,12 +190,28 @@ const addToCart = async () => {
           </div>
         </Link>
 
-        <button 
-        onClick={addToCart}
-        className=" flex justify-center gap-2 mt-2 w-full bg-black text-white py-2 text-xs rounded">
-          <ShoppingCart size={14} />
-          Add to Cart
+        <button
+          onClick={addToCart}
+          disabled={addedToCart}
+          className={`flex justify-center gap-2 mt-2 w-full py-2 text-xs rounded
+            ${addedToCart
+              ? "bg-green-600 text-white cursor-default"
+              : "bg-black text-white hover:bg-gray-800"}
+          `}
+        >
+          {addedToCart ? (
+            <>
+              <CircleCheck size={14} />
+              Added
+            </>
+          ) : (
+            <>
+              <ShoppingCart size={14} />
+              Add to Cart
+            </>
+          )}
         </button>
+
       </div>
     </div>
   );

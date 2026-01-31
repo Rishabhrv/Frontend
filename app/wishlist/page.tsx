@@ -29,7 +29,7 @@ export default function WishlistPage() {
     fetch(`${API_URL}/api/wishlist/my`, {
       headers: { Authorization: `Bearer ${token}` },
     })
-      .then((r) => r.json())
+      .then(r => r.json())
       .then(setItems);
   };
 
@@ -43,15 +43,49 @@ export default function WishlistPage() {
   const removeItem = async (productId: number) => {
     const token = localStorage.getItem("token");
 
-    await fetch(
-      `${API_URL}/api/wishlist/remove/${productId}`,
-      {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
+    await fetch(`${API_URL}/api/wishlist/remove/${productId}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
 
     loadWishlist();
+  };
+
+  /* ================= ADD TO CART ================= */
+  const addToCart = async (productId: number) => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      window.location.href = "/login";
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_URL}/api/cart/add`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          product_id: productId,
+          format: "paperback",
+          quantity: 1,
+        }),
+      });
+
+      if (!res.ok) throw new Error("Add to cart failed");
+
+      // 🔔 update cart UI
+      window.dispatchEvent(new Event("cart-change"));
+
+      // 🧹 OPTIONAL: remove from wishlist after adding
+      removeItem(productId);
+
+    } catch (err) {
+      console.error(err);
+      alert("Something went wrong");
+    }
   };
 
   const today = new Date().toLocaleDateString("en-US", {
@@ -63,12 +97,8 @@ export default function WishlistPage() {
   if (!items.length)
     return (
       <div className="max-w-5xl mx-auto py-20 text-center">
-        <h1 className="text-2xl font-semibold mb-2">
-          My List
-        </h1>
-        <p className="text-gray-500">
-          Your wishlist is empty ❤️
-        </p>
+        <h1 className="text-2xl font-semibold mb-2">My List</h1>
+        <p className="text-gray-500">Your wishlist is empty ❤️</p>
       </div>
     );
 
@@ -80,20 +110,13 @@ export default function WishlistPage() {
         <p className="text-xs tracking-widest text-gray-500 uppercase">
           Updated: {today}
         </p>
-
-        <h1 className="text-3xl font-serif mt-2">
-          My WishList
-        </h1>
+        <h1 className="text-3xl font-serif mt-2">My Wishlist</h1>
       </div>
 
-      {/* COUNT */}
-      <p className="text-sm mb-4">
-        {items.length} Item(s)
-      </p>
+      <p className="text-sm mb-4">{items.length} Item(s)</p>
 
       <div className="border-t border-gray-300">
-
-        {items.map((book) => (
+        {items.map(book => (
           <div
             key={book.id}
             className="flex items-center justify-between gap-6 py-6 border-b border-gray-300"
@@ -120,14 +143,10 @@ export default function WishlistPage() {
               </Link>
 
               {book.author && (
-                <p className="text-sm text-gray-600">
-                  {book.author}
-                </p>
+                <p className="text-sm text-gray-600">{book.author}</p>
               )}
 
-              <p className="text-sm text-gray-500">
-                Paperback
-              </p>
+              <p className="text-sm text-gray-500">Paperback</p>
             </div>
 
             {/* PRICE */}
@@ -136,7 +155,10 @@ export default function WishlistPage() {
             </div>
 
             {/* ADD TO BAG */}
-            <button className="bg-black text-white px-5 py-2 rounded hover:bg-gray-800 text-sm">
+            <button
+              onClick={() => addToCart(book.id)}
+              className="bg-black text-white px-5 py-2 rounded hover:bg-gray-800 text-sm"
+            >
               Add to Bag
             </button>
 

@@ -72,7 +72,7 @@ const slug = params.slug;
 
 
   useEffect(() => {
-  if (!product || !product.gallery || product.gallery.length === 0) return;
+  if (!product || !product.gallery || product.gallery?.length === 0) return;
 
 
   const images = [{ image_path: product.main_image }, ...product.gallery];
@@ -145,7 +145,7 @@ const slug = params.slug;
       : 0;
 
   const authorLine =
-    product.authors.length > 0
+    product.authors?.length > 0
       ? product.authors.map((a) => a.name).join(", ")
       : "";
 
@@ -236,7 +236,7 @@ window.dispatchEvent(new Event("cart-change"));
           </div>
 
           {/* GALLERY SLIDER */}
-          {product.gallery.length > 0 && (() => {
+          {product.gallery?.length > 0 && (() => {
           
             const images = [{ image_path: product.main_image }, ...product.gallery];
             const visibleCount = 5;
@@ -310,7 +310,7 @@ window.dispatchEvent(new Event("cart-change"));
         <div>
           <h1 className="text-2xl font-serif mb-2">{product.title}</h1>
 
-          {product.authors.length > 0 && (
+          {product.authors?.length > 0 && (
             <p className="text-sm text-gray-600 mb-2">
               by{" "}
               <span className="font-medium text-gray-800">
@@ -510,7 +510,7 @@ window.dispatchEvent(new Event("cart-change"));
       </div>
 
       {/* ================= ATTRIBUTES ================= */}
-      {product.attributes.length > 0 && (
+      {product.attributes?.length > 0 && (
         <div className="mt-10">
           <h2 className="text-xl font-semibold mb-2">Product Details</h2>
           <div className="">
@@ -538,7 +538,7 @@ window.dispatchEvent(new Event("cart-change"));
       )}
 
       {/* ================= AUTHORS ================= */}
-      {product.authors.length > 0 && (
+      {product.authors?.length > 0 && (
         <div className="mt-10">
           <h2 className="text-xl font-semibold mb-4">About the author</h2>
           <div className="">
