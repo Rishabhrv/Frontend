@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense  } from "react";
 import { Check } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 
@@ -160,6 +160,7 @@ const startPayment = async () => {
 
   /* ================= UI ================= */
   return (
+    
     <div className=" bg-gray-50 flex items-center justify-center p-15">
       <div className="w-full max-w-6xl grid grid-cols-1 md:grid-cols-3 gap-8">
 

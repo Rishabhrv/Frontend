@@ -3,8 +3,20 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useParams } from "next/navigation";
+import BookCard from "@/components/books/BookCard";
+
 
 const API = process.env.NEXT_PUBLIC_API_URL;
+
+type Book = {
+  id: number;
+  title: string;
+  price: number;
+  sell_price: number;
+  image: string;
+  slug: string;
+};
+
 
 export default function CategoryPage() {
   const params = useParams<{ slug: string }>();
@@ -140,51 +152,24 @@ export default function CategoryPage() {
           </div>
 
           {/* Product Grid */}
-          <div className="grid grid-cols-3 gap-x-8 gap-y-14">
-            {products.map(product => (
-              <div key={product.id} className="relative ">
-
-                {/* Image */}
-                <div className="relative">
-                  <Image
-                    src={`${API}${product.main_image}`}
-                    alt={product.title}
-                    width={300}
-                    height={420}
-                    className="h-80 mx-auto object-cover"
-                    unoptimized
-                  />
-
-                  {product.stock === 0 && (
-                    <span className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-gray-200 text-xs px-3 py-1">
-                      OUT OF STOCK
-                    </span>
-                  )}
-                </div>
-
-                {/* Title */}
-                <h3 className="mt-4 text-sm leading-snug">
-                  {product.title}
-                </h3>
-
-                {/* Price */}
-                <div className="mt-1">
-                  <span className="text-xs line-through text-gray-400 mr-2">
-                    ₹{product.price}
-                  </span>
-                  <span className="font-semibold">
-                    ₹{product.sell_price}
-                  </span>
-                </div>
-
-                {/* Rating */}
-                <div className="text-xs text-gray-400 mt-1">
-                  ★★★★★
-                </div>
-
-              </div>
+          <div className="flex flex-wrap -mx-2 gap-y-15 mb-20">
+            {products.map((product) => (
+              <BookCard
+                key={product.id}
+                visibleCount={3} // 👈 controls width (3 per row)
+                book={{
+                  id: product.id,
+                  title: product.title,
+                  price: product.price,
+                  sell_price: product.sell_price,
+                  slug: product.slug,
+                  image: `${API}${product.main_image}`, // 🔥 important
+                }}
+              />
             ))}
           </div>
+
+
 
         </section>
       </div>

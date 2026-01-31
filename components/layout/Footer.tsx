@@ -30,6 +30,7 @@ const Footer = () => {
             <li><Link href="/categories" className="hover:underline">Categories</Link></li>
             <li><Link href="/bestsellers" className="hover:underline">Bestsellers</Link></li>
             <li><Link href="/new-releases" className="hover:underline">New Releases</Link></li>
+            <li><Link href="/subscriptions" className="hover:underline">Subscriptions</Link></li>
           </ul>
         </div>
 

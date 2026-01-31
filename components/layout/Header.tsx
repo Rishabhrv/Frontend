@@ -183,9 +183,7 @@ const fetchCartCount = () => {
           <Link href="/library/MyLibrary" className="hover:underline">
             My Library
           </Link>
-          <Link href="/events" className="hover:underline">
-            AGPH
-          </Link>
+
         </div>
       </div>
 
