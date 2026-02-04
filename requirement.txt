@@ -7,3 +7,4 @@ npm install @dnd-kit/core @dnd-kit/sortable @dnd-kit/utilities
 npm install firebase
 npm install razorpay crypto
 npm install epubjs
+npm install @mui/material @mui/material-nextjs @emotion/cache @emotion/react @emotion/styled

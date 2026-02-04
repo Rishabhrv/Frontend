@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { CalendarFold } from "lucide-react";
 
 type Order = {
@@ -90,9 +91,10 @@ export default function OrdersPage() {
 
               <div className="space-y-6">
                 {ordersForDate.map(order => (
-                  <div
+                  <Link
                     key={order.order_id}
-                    className=" rounded bg-white"
+                    href={`/account/orders/${order.order_id}`}
+                    className="block rounded bg-white hover:shadow-md transition"
                   >
                     {/* ORDER HEADER */}
                     <div className="p-4 flex justify-between">
@@ -146,7 +148,7 @@ export default function OrdersPage() {
                         ))
                       )}
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
 

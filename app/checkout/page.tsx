@@ -62,6 +62,19 @@ export default function CheckoutPage() {
   last_name: "",
   phone: "",
 });
+const [shipping, setShipping] = useState(0);
+const [form, setForm] = useState({
+  first_name: "",
+  last_name: "",
+  address1: "",
+  address2: "",
+  city: "",
+  state: "",
+  pincode: "",
+  phone: "",
+  email: "",
+});
+const hasPaperback = cart.some(i => i.format === "paperback");
 
   const validateForm = () => {
   const newErrors: Record<string, string> = {};
@@ -88,6 +101,29 @@ export default function CheckoutPage() {
   setErrors(newErrors);
   return Object.keys(newErrors).length === 0;
 };
+
+useEffect(() => {
+  if (!hasPaperback || !form.state) {
+    setShipping(0);
+    return;
+  }
+
+  const token = localStorage.getItem("token");
+
+  fetch(`${API_URL}/api/checkout/shipping-cost`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ state: form.state }),
+  })
+    .then(res => res.json())
+    .then(data => {
+      setShipping(data.shipping || 0);
+    });
+}, [form.state, hasPaperback]);
+
 useEffect(() => {
   const token = localStorage.getItem("token");
   if (!token) return;
@@ -134,17 +170,6 @@ const loadRazorpay = () =>
 
 
 
-  const [form, setForm] = useState({
-    first_name: "",
-    last_name: "",
-    address1: "",
-    address2: "",
-    city: "",
-    state: "",
-    pincode: "",
-    phone: "",
-    email: "",
-  });
 
   /* 🔐 FETCH CART */
   useEffect(() => {
@@ -169,9 +194,13 @@ const loadRazorpay = () =>
 
   /* 🔹 CREATE ORDER IN DB */
   const orderRes = await fetch(`${API_URL}/api/checkout/create`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json", // ✅ REQUIRED
+    Authorization: `Bearer ${token}`,
+  },
+  body: JSON.stringify({ shipping }),
+});
  const orderData = await orderRes.json();
 
 const rpRes = await fetch(`${API_URL}/api/payment/create-order`, {
@@ -228,14 +257,13 @@ const rpRes = await fetch(`${API_URL}/api/payment/create-order`, {
 
   if (loading) return <p className="p-10">Loading checkout…</p>;
 
-  const hasPaperback = cart.some(i => i.format === "paperback");
 
   const subtotal = cart.reduce(
     (s, i) => s + i.price * i.quantity,
     0
   );
 
-  const shipping = hasPaperback ? 129 : 0;
+  
   const total = subtotal + shipping;
 
   return (
