@@ -10,7 +10,7 @@ export default function SubscriptionPage() {
           <div className="flex-1 flex-col">
             <Header />
             <div className="p-6">
-                <SubscriptionTable />
+                <SubscriptionTable /> 
             </div>
           </div>
         </div>
