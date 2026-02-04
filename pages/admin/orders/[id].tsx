@@ -17,6 +17,10 @@ const formatDate = (d: string) =>
 export default function OrderDetailPage() {
   const { query, back } = useRouter();
   const [data, setData] = useState<any>(null);
+  const [courier, setCourier] = useState("");
+const [tracking, setTracking] = useState("");
+const [shippingStatus, setShippingStatus] = useState("confirmed");
+
 
   
 
@@ -28,7 +32,14 @@ export default function OrderDetailPage() {
       },
     })
       .then((r) => r.json())
-      .then(setData);
+      .then(data => {
+  setData(data);
+  if (data.shipping) {
+    setCourier(data.shipping.courier || "");
+    setTracking(data.shipping.tracking_number || "");
+    setShippingStatus(data.shipping.status || "confirmed");
+  }
+});
   }, [query.id]);
 
   if (!data) return <div className="p-6">Loading…</div>;
@@ -236,44 +247,80 @@ export default function OrderDetailPage() {
           {/* RIGHT SIDEBAR */}
           <div className="space-y-4">
             <div className="bg-white border border-gray-300 rounded p-4 space-y-3">
-              <h3 className="font-semibold">Shipping</h3>
-            
-              {/* COURIER */}
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">
-                  Courier
-                </label>
-                <select
-                  className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
-                >
-                  <option value="">Select courier</option>
-                  <option value="Delhivery">Delhivery</option>
-                  <option value="Bluedart">Bluedart</option>
-                  <option value="DTDC">DTDC</option>
-                  <option value="India Post">India Post</option>
-                  <option value="Ekart">Ekart</option>
-                  <option value="Shadowfax">Shadowfax</option>
-                </select>
-              </div>
-            
-              {/* TRACKING ID */}
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">
-                  Tracking ID
-                </label>
-                <input
-                  type="text"
-                  placeholder="Enter tracking number"
-                  className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
-                />
-              </div>
+  <h3 className="font-semibold">Shipping</h3>
 
-            </div>
+  {/* STATUS */}
+  <div>
+    <label className="block text-xs text-gray-500 mb-1">
+      Shipping status
+    </label>
+    <select
+      value={shippingStatus}
+      onChange={e => setShippingStatus(e.target.value)}
+      className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
+    >
+      <option value="confirmed">Order Confirmed</option>
+      <option value="shipped">Shipped</option>
+      <option value="out_for_delivery">Out for delivery</option>
+      <option value="delivered">Delivered</option>
+    </select>
+  </div>
+
+  {/* COURIER */}
+  <div>
+    <label className="block text-xs text-gray-500 mb-1">
+      Courier
+    </label>
+    <select
+      value={courier}
+      onChange={e => setCourier(e.target.value)}
+      className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
+    >
+      <option value="">Select courier</option>
+      <option value="DTDC">DTDC</option>
+      <option value="Delhivery">Delhivery</option>
+      <option value="Bluedart">Bluedart</option>
+      <option value="India Post">India Post</option>
+      <option value="Ekart">Ekart</option>
+    </select>
+  </div>
+
+  {/* TRACKING */}
+  <div>
+    <label className="block text-xs text-gray-500 mb-1">
+      Tracking ID
+    </label>
+    <input
+      value={tracking}
+      onChange={e => setTracking(e.target.value)}
+      placeholder="Enter tracking number"
+      className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
+    />
+  </div>
+</div>
+
              <div className="bg-white border border-gray-300 rounded p-4">
               <h3 className="font-semibold mb-2">Order actions</h3>
-              <button className="mt-3 w-full bg-blue-600 text-white py-2 rounded">
-                Update
-              </button>
+              <button
+  onClick={() => {
+    fetch(`${API_URL}/api/admin/orders/${order.id}/shipping`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("admin_token")}`,
+      },
+      body: JSON.stringify({
+        courier,
+        tracking_number: tracking,
+        status: shippingStatus,
+      }),
+    }).then(() => alert("Shipping updated"));
+  }}
+  className="mt-3 w-full bg-blue-600 text-white py-2 rounded"
+>
+  Update Shipping
+</button>
+
             </div>
 
 

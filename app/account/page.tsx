@@ -34,6 +34,8 @@ export default function AccountHome() {
   const [changePassword, setChangePassword] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -122,27 +124,52 @@ export default function AccountHome() {
 
         {/* ================= PASSWORD FORM ================= */}
         {changePassword && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Input
-              label="New Password"
-              value={newPassword}
-              onChange={setNewPassword}
-            />
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-            <Input
-              label="Confirm Password"
-              value={confirmPassword}
-              onChange={setConfirmPassword}
-            />
+    <Input
+      label="New Password"
+      value={newPassword}
+      onChange={(v) => {
+        setNewPassword(v);
+        setPasswordError("");
+      }}
+    />
 
-            <SaveButton
-              label="Update Password"
-              onClick={() =>
-                updatePassword(newPassword, confirmPassword)
-              }
-            />
-          </div>
-        )}
+    <Input
+      label="Confirm Password"
+      value={confirmPassword}
+      onChange={(v) => {
+        setConfirmPassword(v);
+        setPasswordError("");
+      }}
+    />
+
+    {/* ❌ ERROR MESSAGE */}
+    {passwordError && (
+      <div className="md:col-span-2 text-sm text-red-600">
+        {passwordError}
+      </div>
+    )}
+
+    <SaveButton
+      label="Update Password"
+      onClick={() => {
+        if (newPassword.length < 6) {
+          setPasswordError("Password must be at least 6 characters");
+          return;
+        }
+
+        if (newPassword !== confirmPassword) {
+          setPasswordError("Passwords do not match");
+          return;
+        }
+
+        updatePassword(newPassword, confirmPassword);
+      }}
+    />
+  </div>
+)}
+
 
         {/* ================= ADDRESS ================= */}
         <div>
