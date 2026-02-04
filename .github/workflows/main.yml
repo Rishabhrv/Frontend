@@ -20,22 +20,30 @@ jobs:
           username: rishabhvyas
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            # set -e makes the script exit immediately if any command returns a non-zero status
+            set -e
+
             # Navigate to the Frontend folder
             cd /home/rishabhvyas/EbookApp/Frontend
             
-            # Update code
+            # 1. Clear any local file modifications (fixes the package-lock.json error)
+            git reset --hard
+            
+            # 2. Pull the latest code
             git pull origin main
             
-            # Initialize NVM for Node 24
+            # 3. Initialize NVM for Node 24
             export NVM_DIR="$HOME/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
             nvm use 24.2.0
 
-            # Install and Build
+            # 4. Install dependencies and Build
+            # 'npm ci' is often better for servers as it is faster and more reliable than 'install'
             npm install
             npm run build
             
-            # Restart only the frontend process
-            pm2 restart next-frontend-ebook || pm2 start npm --name "next-frontend-ebook" -- start
+            # 5. Restart the PM2 process
+            # We use --update-env in case you changed any .env variables
+            pm2 restart next-frontend-ebook --update-env || pm2 start npm --name "next-frontend-ebook" -- start
             
             echo "✅ Frontend Deployment Successful!"
