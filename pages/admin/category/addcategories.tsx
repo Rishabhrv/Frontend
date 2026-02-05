@@ -6,7 +6,7 @@ import CategoriesList from '@/components/categories/CategoriesList';
 import "../../../app/globals.css";
 
 const addcategories = () => {
-  const [editCategory, setEditCategory] = React.useState<any>(null);
+  const [editCategory, setEditCategory] = React.useState<any>(null); 
 
   return (
     <div className="p-6">
