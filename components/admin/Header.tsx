@@ -18,20 +18,20 @@ export default function Header() {
 
   // 🔐 Protect admin pages
   useEffect(() => {
-    const token = localStorage.getItem("admin_token");
-    const adminData = localStorage.getItem("admin");
+  const token = localStorage.getItem("admin_token");
+  const adminData = localStorage.getItem("admin");
 
-    if (!token || !adminData) {
-      router.push("/admin/login");
-      return;
-    }
+  if (!token || !adminData) {
+    router.replace("/admin/login");
+    return;
+  }
+  try {
+    setAdmin(JSON.parse(adminData));
+  } catch {
+    router.replace("/admin/login");
+  }
+}, [router]);
 
-    try {
-      setAdmin(JSON.parse(adminData));
-    } catch {
-      router.push("/admin/login");
-    }
-  }, []);
 
   // 🚪 Logout
   const logout = () => {
