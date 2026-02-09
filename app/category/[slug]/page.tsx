@@ -380,17 +380,27 @@ const groupedCategories = categories.reduce((acc: any, cat: any) => {
           <div className="flex flex-wrap -mx-2 gap-y-15 mb-15">
             {products.map((product) => (
               <BookCard
-                key={product.id}
-                visibleCount={3} // 👈 controls width (3 per row)
-                book={{
-                  id: product.id,
-                  title: product.title,
-                  price: product.price,
-                  sell_price: product.sell_price,
-                  slug: product.slug,
-                  image: `${API}${product.main_image}`, // 🔥 important
-                }}
-              />
+  key={product.id}
+  visibleCount={3}
+  book={{
+    id: product.id,
+    title: product.title,
+    slug: product.slug,
+    image: `${API}${product.main_image}`,
+
+    // ✅ REQUIRED FIELDS
+    product_type: product.product_type,
+    stock: product.stock,
+
+    price: product.price,
+    sell_price: product.sell_price,
+
+    // ✅ OPTIONAL (safe)
+    ebook_price: product.ebook_price,
+    ebook_sell_price: product.ebook_sell_price,
+  }}
+/>
+
             ))}
           </div>
 
