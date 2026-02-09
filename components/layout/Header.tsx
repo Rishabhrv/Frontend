@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Search, Heart, User, ShoppingBag, LogOut, X } from "lucide-react";
+import { Search, Heart, User, ShoppingBag, LogOut, X, Facebook, Instagram, Twitter, Linkedin } from "lucide-react";
 import AccountSlider from "./AccountSlider";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
@@ -155,11 +155,42 @@ const fetchCartCount = () => {
       <div className="bg-gray-100 text-xs">
         <div className="mx-auto max-w-7xl px-4 py-3 flex justify-end gap-4 text-gray-700">
 
+          {/* SOCIAL ICONS */}
+          <a
+            href="https://facebook.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-black"
+          >
+            <Facebook className="h-4 w-4" />
+          </a>
+      
+          <a
+            href="https://instagram.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-black"
+          >
+            <Instagram className="h-4 w-4" />
+          </a>
+      
+          <a
+            href="https://linkedin.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-black"
+          >
+            <Linkedin  className="h-4 w-4" />
+          </a>
+
+          <div>|</div>
+
           {!user ? (
             <Link href="/login" className="hover:underline">
               Sign In
             </Link>
           ) : (
+            <>
             <div className="flex items-center gap-3">
               <span className="font-medium">
                 Hi, {user.name.split(" ")[0]}
@@ -172,17 +203,20 @@ const fetchCartCount = () => {
                 Logout
               </button>
             </div>
-          )}
-
-          <Link href="/orders" className="hover:underline">
+            
+          <Link href="/account/orders" className="hover:underline">
             Order Status
           </Link>
           <Link href="/my-books" className="hover:underline">
             My Books
           </Link>
-          <Link href="/library/MyLibrary" className="hover:underline">
-            My Library
-          </Link>
+            
+            
+            </>
+            
+          )}
+
+
 
         </div>
       </div>

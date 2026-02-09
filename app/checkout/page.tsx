@@ -446,16 +446,18 @@ const rpRes = await fetch(`${API_URL}/api/payment/create-order`, {
                 />
 
               </div>
+              <label className="flex items-center gap-2 text-sm mt-4">
+                <input
+                  type="checkbox"
+                  checked={saveAddress}
+                  onChange={e => setSaveAddress(e.target.checked)}
+                />
+                Save this address for future orders
+              </label>
             </div>
+            
           )}
-          <label className="flex items-center gap-2 text-sm mt-4">
-  <input
-    type="checkbox"
-    checked={saveAddress}
-    onChange={e => setSaveAddress(e.target.checked)}
-  />
-  Save this address for future orders
-</label>
+
 
         </div>
 

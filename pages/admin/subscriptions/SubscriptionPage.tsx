@@ -3,6 +3,7 @@ import Header from "@/components/admin/Header";
 import SubscriptionTable from "@/components/subscriptions/SubscriptionTable";
 
 export default function SubscriptionPage() {
+  
   return (
     <div className="p-6">
         <div className="flex">

@@ -14,23 +14,36 @@ type Admin = {
 export default function Header() {
   const router = useRouter();
   const [admin, setAdmin] = useState<Admin | null>(null);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
 
 
-  // 🔐 Protect admin pages
-  useEffect(() => {
+useEffect(() => {
   const token = localStorage.getItem("admin_token");
-  const adminData = localStorage.getItem("admin");
 
-  if (!token || !adminData) {
+  if (!token) {
     router.replace("/admin/login");
     return;
   }
-  try {
-    setAdmin(JSON.parse(adminData));
-  } catch {
-    router.replace("/admin/login");
-  }
+
+  fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/me`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+    .then((res) => {
+      if (!res.ok) throw new Error();
+      return res.json();
+    })
+    .then((admin) => {
+      setAdmin(admin); // ✅ verified admin
+    })
+    .catch(() => {
+      localStorage.removeItem("admin_token");
+      localStorage.removeItem("admin");
+      router.replace("/admin/login");
+    });
 }, [router]);
+
 
 
   // 🚪 Logout
@@ -49,28 +62,11 @@ export default function Header() {
           <Menu size={18} />
         </button>
 
-        {/* Search */}
-        <div className="relative hidden md:block">
-          <Search
-            size={16}
-            className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-          />
-          <input
-            type="text"
-            placeholder="Search or type command..."
-            className="h-11 w-[320px] rounded-xl border border-gray-200 bg-gray-50 pl-11 pr-16 text-sm text-gray-700 placeholder:text-gray-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md border border-gray-200 bg-white px-2 py-1 text-xs text-gray-500">
-            ⌘ K
-          </span>
-        </div>
       </div>
 
       {/* RIGHT */}
       <div className="flex items-center gap-4">
-        <button className="rounded-full border border-gray-200 p-2 hover:bg-gray-100">
-          <Moon size={18} />
-        </button>
+
 
         <button className="relative rounded-full border border-gray-200 p-2 hover:bg-gray-100">
           <Bell size={18} />
@@ -78,24 +74,30 @@ export default function Header() {
         </button>
 
         {/* ADMIN USER */}
-        <div className="relative group">
-          <div className="flex items-center gap-3 cursor-pointer">
-            <span className="hidden md:block text-sm font-medium text-gray-700">
-              {admin?.name || "Admin"}
-            </span>
-            <ChevronDown size={16} className="text-gray-500" />
-          </div>
+        {/* ADMIN USER */}
+<div className="relative">
+  <button
+    onClick={() => setUserMenuOpen(v => !v)}
+    className="flex items-center gap-3 cursor-pointer"
+  >
+    <span className="hidden md:block text-sm font-medium text-gray-700">
+      {admin?.name || "Admin"}
+    </span>
+    <ChevronDown size={16} className="text-gray-500" />
+  </button>
 
-          {/* Dropdown */}
-          <div className="absolute right-0 mt-2 w-32 rounded-lg border bg-white shadow-lg hidden group-hover:block">
-            <button
-              onClick={logout}
-              className="w-full px-4 py-2 text-sm text-left hover:bg-gray-100"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
+  {userMenuOpen && (
+    <div className="absolute right-0 mt-2 w-32 rounded-lg border bg-white shadow-lg">
+      <button
+        onClick={logout}
+        className="w-full px-4 py-2 text-sm text-left hover:bg-gray-100"
+      >
+        Logout
+      </button>
+    </div>
+  )}
+</div>
+
       </div>
     </header>
   );

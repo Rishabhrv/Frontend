@@ -12,6 +12,9 @@ type WishlistItem = {
   sell_price: number;
   main_image: string;
   author?: string;
+
+  product_type: "ebook" | "physical" | "both";
+  stock: number;
 };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
@@ -51,42 +54,56 @@ export default function WishlistPage() {
     loadWishlist();
   };
 
+  const getCartFormat = (item: WishlistItem) => {
+  if (item.product_type === "ebook") return "ebook";
+
+  if (item.product_type === "physical") return "paperback";
+
+  // both
+  if (item.stock > 0) return "paperback";
+  return "ebook";
+};
+
+
   /* ================= ADD TO CART ================= */
-  const addToCart = async (productId: number) => {
-    const token = localStorage.getItem("token");
+  const addToCart = async (item: WishlistItem) => {
+  const token = localStorage.getItem("token");
 
-    if (!token) {
-      window.location.href = "/login";
-      return;
+  if (!token) {
+    window.location.href = "/login";
+    return;
+  }
+
+  const format = getCartFormat(item);
+
+  try {
+    const res = await fetch(`${API_URL}/api/cart/add`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        product_id: item.id,
+        format,
+        quantity: format === "ebook" ? 1 : 1,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      if (data.msg === "OUT_OF_STOCK") return;
+      throw new Error();
     }
 
-    try {
-      const res = await fetch(`${API_URL}/api/cart/add`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          product_id: productId,
-          format: "paperback",
-          quantity: 1,
-        }),
-      });
+    window.dispatchEvent(new Event("cart-change"));
+    removeItem(item.id);
+  } catch {
+    console.error("Add to cart failed");
+  }
+};
 
-      if (!res.ok) throw new Error("Add to cart failed");
-
-      // 🔔 update cart UI
-      window.dispatchEvent(new Event("cart-change"));
-
-      // 🧹 OPTIONAL: remove from wishlist after adding
-      removeItem(productId);
-
-    } catch (err) {
-      console.error(err);
-      alert("Something went wrong");
-    }
-  };
 
   const today = new Date().toLocaleDateString("en-US", {
     year: "numeric",
@@ -146,7 +163,6 @@ export default function WishlistPage() {
                 <p className="text-sm text-gray-600">{book.author}</p>
               )}
 
-              <p className="text-sm text-gray-500">Paperback</p>
             </div>
 
             {/* PRICE */}
@@ -156,9 +172,11 @@ export default function WishlistPage() {
 
             {/* ADD TO BAG */}
             <button
-              onClick={() => addToCart(book.id)}
-              className="bg-black text-white px-5 py-2 rounded hover:bg-gray-800 text-sm"
-            >
+  onClick={() => addToCart(book)}
+  disabled={book.product_type === "physical" && book.stock === 0}
+  className="bg-black text-white px-5 py-2 rounded hover:bg-gray-800 text-sm disabled:bg-gray-300 disabled:text-gray-600"
+>
+
               Add to Bag
             </button>
 

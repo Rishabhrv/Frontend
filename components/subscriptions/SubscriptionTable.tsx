@@ -2,6 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import AlertPopup from "@/components/Popups/AlertPopup";
+import ConfirmPopup from "@/components/Popups/ConfirmPopup";
+
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
@@ -51,6 +54,11 @@ export default function SubscriptionTable() {
 
 const [users, setUsers] = useState<UserOption[]>([]);
 const [selectedUser, setSelectedUser] = useState("");
+    const [toastOpen, setToastOpen] = useState(false);
+    const [toastMsg, setToastMsg] = useState("");
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [subscriptionToDelete, setSubscriptionToDelete] = useState<number | null>(null);
+
 
 
   /* ================= FETCH ================= */
@@ -103,6 +111,47 @@ const [selectedUser, setSelectedUser] = useState("");
   useEffect(() => {
     setPage(1); // reset page on filter/search
   }, [search, statusFilter, pageSize]);
+
+const askDeleteSubscription = (id: number) => {
+  setSubscriptionToDelete(id);
+  setConfirmOpen(true);
+};
+
+const confirmDeleteSubscription = async () => {
+  if (!subscriptionToDelete) return;
+
+  const res = await fetch(
+    `${API_URL}/api/admin/subscriptions/${subscriptionToDelete}`,
+    {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("admin_token")}`,
+      },
+    }
+  );
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    setToastMsg(data.msg || "Failed to delete subscription");
+    setToastOpen(true);
+    return;
+  }
+
+  // remove from UI
+  setRows(prev =>
+    prev.filter(
+      s => s.subscription_id !== subscriptionToDelete
+    )
+  );
+
+  setConfirmOpen(false);
+  setSubscriptionToDelete(null);
+
+  setToastMsg("Subscription deleted");
+  setToastOpen(true);
+};
+
 
   return (
     <div className="p-2 space-y-5">
@@ -200,39 +249,12 @@ const [selectedUser, setSelectedUser] = useState("");
                   <div>|</div>
                 
                   <button
-                    onClick={async () => {
-                      if (!confirm("Are you sure you want to delete this subscription?")) {
-                        return;
-                      }
-                
-                      const res = await fetch(
-                        `${API_URL}/api/admin/subscriptions/${row.subscription_id}`,
-                        {
-                          method: "DELETE",
-                          headers: {
-                            Authorization: `Bearer ${localStorage.getItem("admin_token")}`,
-                          },
-                        }
-                      );
-                
-                      const data = await res.json();
-                
-                      if (!res.ok) {
-                        alert(data.msg || "Failed to delete subscription");
-                        return;
-                      }
-                
-                      // remove from UI without reload
-                      setRows(prev =>
-                        prev.filter(
-                          s => s.subscription_id !== row.subscription_id
-                        )
-                      );
-                    }}
+                    onClick={() => askDeleteSubscription(row.subscription_id)}
                     className="text-red-600 hover:underline text-xs cursor-pointer"
                   >
                     Delete
                   </button>
+
                 </td>
 
               </tr>
@@ -393,7 +415,9 @@ const [selectedUser, setSelectedUser] = useState("");
         <button
           onClick={async () => {
             if (!selectedUser) {
-              alert("Please select a user");
+              setToastMsg("Please select a user");
+              setToastOpen(true);
+              
               return;
             }
         
@@ -420,7 +444,8 @@ const [selectedUser, setSelectedUser] = useState("");
             const data = await res.json();
         
             if (!res.ok) {
-              alert(data.msg || "Failed to create subscription");
+              setToastMsg(data.msg || "Failed to create subscription");
+              setToastOpen(true);
               return;
             }
         
@@ -447,7 +472,23 @@ const [selectedUser, setSelectedUser] = useState("");
 )}
 
 
-    
+                          <AlertPopup
+                            open={toastOpen}
+                            message={toastMsg}
+                            onClose={() => setToastOpen(false)}
+                          />
+                          <ConfirmPopup
+                            open={confirmOpen}
+                            title="Delete subscription?"
+                            message="This subscription will be permanently deleted. This action cannot be undone."
+                            confirmText="Delete"
+                            onCancel={() => {
+                              setConfirmOpen(false);
+                              setSubscriptionToDelete(null);
+                            }}
+                            onConfirm={confirmDeleteSubscription}
+                          />
+
     </div>
   );
 }

@@ -16,11 +16,13 @@ type CartItem = {
   slug: string;
   main_image: string;
   price: number;
+  stock: number;
 };
 
 export default function CartPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [stockWarningId, setStockWarningId] = useState<number | null>(null);
 
   /* 🔐 AUTH CHECK + FETCH CART */
   useEffect(() => {
@@ -29,33 +31,54 @@ export default function CartPage() {
       window.location.href = "/login";
       return;
     }
-
+  
     fetch(`${API_URL}/api/cart/my`, {
       headers: { Authorization: `Bearer ${token}` },
     })
-      .then((res) => res.json())
-      .then((data) => setCart(data))
+      .then((res) => {
+        if (res.status === 401) {
+          window.location.href = "/login";
+          throw new Error("Unauthorized");
+        }
+        return res.json();
+      })
+      .then((data) => {
+        setCart(Array.isArray(data) ? data : []);
+      })
+      .catch(() => {
+        setCart([]);
+      })
       .finally(() => setLoading(false));
   }, []);
 
+
   /* ➕➖ UPDATE QUANTITY */
-  const updateQty = async (id: number, qty: number) => {
-    if (qty < 1) return;
+const updateQty = async (id: number, qty: number) => {
+  const item = cart.find((i) => i.id === id);
+  if (!item) return;
 
-    const token = localStorage.getItem("token")!;
-    await fetch(`${API_URL}/api/cart/update/${id}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ quantity: qty }),
-    });
+  if (item.stock && qty > item.stock) {
+    setStockWarningId(id);
+    return;
+  }
 
-    setCart((prev) =>
-      prev.map((i) => (i.id === id ? { ...i, quantity: qty } : i))
-    );
-  };
+  if (qty < 1) return;
+
+  const token = localStorage.getItem("token")!;
+  await fetch(`${API_URL}/api/cart/update/${id}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ quantity: qty }),
+  });
+
+  setCart((prev) =>
+    prev.map((i) => (i.id === id ? { ...i, quantity: qty } : i))
+  );
+};
+
 
   /* ❌ REMOVE ITEM */
   const removeItem = async (id: number) => {
@@ -70,27 +93,16 @@ export default function CartPage() {
   };
 
   /* 💰 TOTAL */
-  const total = cart.reduce(
-    (sum, i) => sum + i.price * i.quantity,
-    0
-  );
+  const total = Array.isArray(cart)
+  ? cart.reduce((sum, i) => sum + i.price * i.quantity, 0)
+  : 0;
+
 
   if (loading) return <p className="p-10">Loading cart…</p>;
 
-  const ebookItems = cart.filter(i => i.format === "ebook");
-const paperbackItems = cart.filter(i => i.format === "paperback");
 
-const ebookTotal = ebookItems.reduce(
-  (sum, i) => sum + i.price,
-  0
-);
 
-const paperbackTotal = paperbackItems.reduce(
-  (sum, i) => sum + i.price * i.quantity,
-  0
-);
 
-const grandTotal = ebookTotal + paperbackTotal;
 
 
  return (
@@ -144,6 +156,12 @@ const grandTotal = ebookTotal + paperbackTotal;
                   <p className="text-sm text-gray-500">
                     Format: {item.format === "ebook" ? "eBook" : "Paperback"}
                   </p>
+                  {item.format === "paperback" &&
+                    stockWarningId === item.id && (
+                      <p className="text-xs text-red-600 mt-1">
+                        Only {item.stock} copies available
+                      </p>
+                  )}
 
                   <p className="font-semibold mt-2">
                     ₹{item.price}
@@ -157,7 +175,7 @@ const grandTotal = ebookTotal + paperbackTotal;
                       onClick={() =>
                         updateQty(item.id, item.quantity - 1)
                       }
-                      className="px-3 py-2"
+                      className="px-3 py-2 cursor-pointer"
                     >
                       <Minus size={14} />
                     </button>
@@ -167,13 +185,28 @@ const grandTotal = ebookTotal + paperbackTotal;
                     </span>
 
                     <button
-                      onClick={() =>
-                        updateQty(item.id, item.quantity + 1)
-                      }
-                      className="px-3 py-2"
+                      onClick={() => {
+                        // 👇 USER TRIED TO INCREASE BEYOND STOCK
+                        if (item.stock > 0 && item.quantity >= item.stock) {
+                          setStockWarningId(item.id);
+                          return;
+                        }
+                    
+                        // 👇 VALID INCREASE
+                        updateQty(item.id, item.quantity + 1);
+                        setStockWarningId(null);
+                      }}
+                      className={`px-3 py-2 ${
+                        item.stock > 0 && item.quantity >= item.stock
+                          ? "opacity-40 cursor-not-allowed"
+                          : "cursor-pointer"
+                      }`}
                     >
                       <Plus size={14} />
                     </button>
+
+
+
                   </div>
                 ) : (
                     ''
@@ -182,7 +215,7 @@ const grandTotal = ebookTotal + paperbackTotal;
                 {/* REMOVE */}
                 <button
                   onClick={() => removeItem(item.id)}
-                  className="text-gray-500 hover:text-red-600"
+                  className="text-gray-500 hover:text-red-600 cursor-pointer"
                 >
                   <Trash2 size={18} />
                 </button>
