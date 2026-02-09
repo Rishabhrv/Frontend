@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Eye, Truck, CheckSquare } from "lucide-react";
+import AlertPopup from "@/components/Popups/AlertPopup";
+
 
 type Order = {
   id: number;
@@ -11,7 +13,13 @@ type Order = {
   status: "pending" | "paid" | "shipped" | "completed" | "cancelled" | "failed";
   payment_status: "pending" | "success" | "failed";
   created_at: string;
+
+  // 🚚 shipping
+  courier?: string;
+  tracking_number?: string;
+  shipping_status?: "confirmed" | "shipped" | "out_for_delivery" | "delivered";
 };
+
 
 const STATUS_TABS = [
   "all",
@@ -46,6 +54,8 @@ export default function OrdersTable() {
 
   // Selection state
   const [selected, setSelected] = useState<number[]>([]);
+    const [toastOpen, setToastOpen] = useState(false);
+    const [toastMsg, setToastMsg] = useState("");
 
   useEffect(() => {
     fetchOrders();
@@ -111,8 +121,13 @@ export default function OrdersTable() {
 
       </div>
 
-      {/* STATUS TABS */}
-      <div className="mb-4 flex flex-wrap gap-4 text-sm">
+     
+
+      {/* FILTER BAR */}
+      <div className="mb-4 flex items-center justify-between">
+
+         {/* STATUS TABS */}
+      <div className=" flex flex-wrap gap-4 text-sm">
         {STATUS_TABS.map((s) => (
           <button
             key={s}
@@ -135,28 +150,6 @@ export default function OrdersTable() {
         ))}
       </div>
 
-      {/* FILTER BAR */}
-      <div className="mb-4 flex items-center justify-between">
-        <div className="flex gap-2">
-          <select className="rounded border px-2 py-1 text-sm">
-            <option>Bulk actions</option>
-            <option>Mark completed</option>
-            <option>Delete</option>
-          </select>
-          <button
-            className="rounded border border-gray-300 px-3 py-1 text-sm"
-            onClick={() => {
-              if (selected.length === 0) {
-                alert("Select orders first");
-                return;
-              }
-              console.log("Selected order IDs:", selected);
-            }}
-          >
-            Apply
-          </button>
-        </div>
-
         <div className="flex gap-2">
           <input
             placeholder="Search orders"
@@ -175,19 +168,6 @@ export default function OrdersTable() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-gray-600">
             <tr>
-              <th className="px-3 py-2 text-left">
-                <input
-                  type="checkbox"
-                  checked={allSelected}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setSelected(visible.map((o) => o.id));
-                    } else {
-                      setSelected([]);
-                    }
-                  }}
-                />
-              </th>
               <th className="px-3 py-2 text-left">Order</th>
               <th className="px-3 py-2 text-left">Date</th>
               <th className="px-3 py-2 text-left">Status</th>
@@ -213,21 +193,6 @@ export default function OrdersTable() {
             ) : (
               visible.map((o) => (
                 <tr key={o.id} className="border-t border-gray-300 hover:bg-gray-50 text-xs">
-                  <td className="px-3 py-2">
-                    <input
-                      type="checkbox"
-                      checked={selected.includes(o.id)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelected([...selected, o.id]);
-                        } else {
-                          setSelected(
-                            selected.filter((id) => id !== o.id)
-                          );
-                        }
-                      }}
-                    />
-                  </td>
 
                   <td className="px-3 py-2">
                     <p className="font-medium text-blue-600">
@@ -255,12 +220,38 @@ export default function OrdersTable() {
                     </span>
                   </td>
 
-                  <td className="px-3 py-2 text-xs text-gray-500">
-                    NA <br />
-                    <span className="cursor-pointer text-blue-600">
-                      Sync now
-                    </span>
+                  <td className="px-3 py-2 text-xs">
+                    {o.shipping_status ? (
+                      <>
+                        <p className="font-medium text-gray-700">
+                          {o.courier || "Courier"}
+                        </p>
+                        <p className="text-gray-500">
+                          <span
+                            className={`inline-block rounded px-2 py-0 rounded-ms my-1 text-xs ${
+                              o.shipping_status === "delivered"
+                                ? "bg-green-100 text-green-700"
+                                : o.shipping_status === "out_for_delivery"
+                                ? "bg-yellow-100 text-yellow-700"
+                                : o.shipping_status === "shipped"
+                                ? "bg-blue-100 text-blue-700"
+                                : "bg-gray-100 text-gray-600"
+                            }`}
+                          >
+                            {o.shipping_status.replace(/_/g, " ")}
+                          </span>
+                        </p>
+                        {o.tracking_number && (
+                          <p className="text-blue-600">
+                            {o.tracking_number}
+                          </p>
+                        )}
+                      </>
+                    ) : (
+                      <span className="text-gray-400">Not shipped</span>
+                    )}
                   </td>
+
 
                   <td className="px-3 py-2 text-right font-medium">
                     ₹{Number(o.total_amount || 0).toFixed(2)}
@@ -306,6 +297,11 @@ export default function OrdersTable() {
           ›
         </button>
       </div>
+                                  <AlertPopup
+                                    open={toastOpen}
+                                    message={toastMsg}
+                                    onClose={() => setToastOpen(false)}
+                                  />
     </div>
   );
 }

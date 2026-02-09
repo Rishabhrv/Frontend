@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import AlertPopup from "@/components/Popups/AlertPopup";
+
 
 type Author = {
   id?: number;
@@ -27,6 +29,8 @@ const AuthorForm = ({ editAuthor, clearEdit }: Props) => {
   const [preview, setPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [slug, setSlug] = useState("");
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastMsg, setToastMsg] = useState("");
 
 
     const generateSlug = (value: string) =>
@@ -82,7 +86,8 @@ const AuthorForm = ({ editAuthor, clearEdit }: Props) => {
       const data = await res.json();
 
       if (!res.ok) {
-        alert(data.message || "Failed");
+        setToastMsg(data.message || "Failed");
+        setToastOpen(true);
         return;
       }
 
@@ -96,7 +101,8 @@ const AuthorForm = ({ editAuthor, clearEdit }: Props) => {
       setPreview(null);
       clearEdit();
     } catch {
-      alert("Server error");
+        setToastMsg("Server error");
+        setToastOpen(true);
     } finally {
       setLoading(false);
     }
@@ -248,6 +254,11 @@ const AuthorForm = ({ editAuthor, clearEdit }: Props) => {
           )}
         </div>
       </form>
+                            <AlertPopup
+                              open={toastOpen}
+                              message={toastMsg}
+                              onClose={() => setToastOpen(false)}
+                            />
     </div>
   );
 };

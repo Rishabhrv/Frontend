@@ -46,7 +46,14 @@ export default function MyBooksPage() {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(res => res.json())
-      .then(setBooks)
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setBooks(data);
+        } else {
+          setBooks([]);
+          window.location.href = "/login";
+        }
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -61,16 +68,19 @@ export default function MyBooksPage() {
   }, []);
 
   /* ===== FILTER BOOKS ===== */
-  const filteredBooks = books.filter(book => {
-    const matchSearch = book.title
-      .toLowerCase()
-      .includes(search.toLowerCase());
+  const filteredBooks = Array.isArray(books)
+  ? books.filter(book => {
+      const matchSearch = book.title
+        .toLowerCase()
+        .includes(search.toLowerCase());
 
-    const matchCategory =
-      !activeCategory || book.category_slug === activeCategory;
+      const matchCategory =
+        !activeCategory || book.category_slug === activeCategory;
 
-    return matchSearch && matchCategory;
-  });
+      return matchSearch && matchCategory;
+    })
+  : [];
+
 
   if (loading) {
     return (

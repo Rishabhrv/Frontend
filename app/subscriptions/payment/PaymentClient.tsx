@@ -3,6 +3,8 @@
 import { useEffect, useState, Suspense  } from "react";
 import { Check } from "lucide-react";
 import { useSearchParams } from "next/navigation";
+import AlertPopup from "@/components/Popups/AlertPopup";
+
 
 /* ================= TYPES ================= */
 type PlanKey = "monthly" | "quarterly" | "yearly";
@@ -52,6 +54,9 @@ export default function SubscriptionPaymentPage() {
   const [plan, setPlan] = useState<PlanKey>("monthly");
   const [months, setMonths] = useState(1); // only for monthly
   const [loading, setLoading] = useState(false);
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastMsg, setToastMsg] = useState("");
+
 
   /* ===== Read plan from URL ONCE ===== */
   useEffect(() => {
@@ -91,7 +96,8 @@ const startPayment = async () => {
 
     const token = localStorage.getItem("token");
     if (!token) {
-      alert("Please login first");
+        setToastMsg("Please login first");
+        setToastOpen(true);
       return;
     }
 
@@ -111,7 +117,7 @@ const startPayment = async () => {
     const sub = await res.json();
 
     if (!sub.subscription_id) {
-      alert(sub.msg || "Failed to create subscription");
+      console.error(sub.msg || "Failed to create subscription");
       return;
     }
 
@@ -141,7 +147,8 @@ const startPayment = async () => {
           }
         );
 
-        alert("Subscription activated 🎉");
+          setToastMsg("Subscription activated successfully");
+          setToastOpen(true);
         window.location.href = "/account/subscription";
       },
       theme: { color: "#2563eb" },
@@ -151,7 +158,8 @@ const startPayment = async () => {
     rzp.open();
   } catch (err) {
     console.error(err);
-    alert("Payment failed");
+      setToastMsg("Payment failed");
+      setToastOpen(true);
   } finally {
     setLoading(false);
   }
@@ -288,6 +296,11 @@ const startPayment = async () => {
           </p>
         </div>
       </div>
+            <AlertPopup
+              open={toastOpen}
+              message={toastMsg}
+              onClose={() => setToastOpen(false)}
+            />
     </div>
   );
 }

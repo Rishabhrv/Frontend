@@ -3,12 +3,15 @@
 import { useState } from "react";
 import Link from "next/link";
 import SocialAuthButtons from "./SocialAuthButtons";
+import AlertPopup from "@/components/Popups/AlertPopup";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
 const LoginForm = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastMsg, setToastMsg] = useState("");
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,7 +25,8 @@ const LoginForm = () => {
     const data = await res.json();
 
     if (!res.ok) {
-      alert(data.msg);
+      setToastMsg(data.msg || "Login failed");
+      setToastOpen(true);
       return;
     }
 
@@ -74,6 +78,11 @@ const LoginForm = () => {
           Create one
         </Link>
       </p>
+                  <AlertPopup
+                    open={toastOpen}
+                    message={toastMsg}
+                    onClose={() => setToastOpen(false)}
+                  />
     </>
   );
 };

@@ -38,7 +38,10 @@ export default function LibraryHeader() {
   ========================== */
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (!token) return;
+    if (!token) {
+      window.location.href = "/login";
+      return;
+    }
 
     fetch(`${API_URL}/api/mylibrary/me`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -288,7 +291,7 @@ export default function LibraryHeader() {
               </button>
 
               <button
-                onClick={() => setBlocked(false)}
+                onClick={() => router.push("/")}
                 className="border border-gray-300 px-5 py-2 rounded-lg text-sm hover:bg-gray-100 transition"
               >
                 Cancel

@@ -4,6 +4,9 @@ import React, { useEffect, useState } from "react";
 import ShippingZonesTable from "./ShippingZonesTable";
 import ShippingZoneForm from "./ShippingZoneForm";
 import { WeightRule } from "./WeightBasedRulesTable";
+import AlertPopup from "@/components/Popups/AlertPopup";
+import ConfirmPopup from "@/components/Popups/ConfirmPopup";
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
 export interface ShippingZone {
@@ -57,6 +60,10 @@ const ShippingZonesPage: React.FC = () => {
   });
 
   const [loading, setLoading] = useState(false);
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastMsg, setToastMsg] = useState("");
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [zoneToDelete, setZoneToDelete] = useState<number | null>(null);
 
   /* ===== FETCH ===== */
   const fetchZones = async () => {
@@ -144,7 +151,11 @@ if (weightMethod?.id) {
 
   /* ===== SAVE ===== */
   const saveZone = async () => {
-  if (!zoneName.trim()) return alert("Zone name required");
+    if (!zoneName.trim()) {
+      setToastMsg("Zone name required");
+      setToastOpen(true);
+      return;
+    }
 
   setLoading(true);
   const token = localStorage.getItem("admin_token");
@@ -212,17 +223,33 @@ if (weightMethod?.id) {
   fetchZones();
 };
 
+const askDeleteZone = (id: number) => {
+  setZoneToDelete(id);
+  setConfirmOpen(true);
+};
 
-  /* ===== DELETE ===== */
-  const deleteZone = async (id: number) => {
-    if (!confirm("Delete this zone?")) return;
-    const token = localStorage.getItem("admin_token");
-    await fetch(`${API_URL}/api/shipping/zones/${id}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    fetchZones();
-  };
+
+
+  const confirmDeleteZone = async () => {
+  if (!zoneToDelete) return;
+
+  const token = localStorage.getItem("admin_token");
+
+  await fetch(`${API_URL}/api/shipping/zones/${zoneToDelete}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  setConfirmOpen(false);
+  setZoneToDelete(null);
+
+  fetchZones();
+
+  // optional toast
+  setToastMsg("Zone deleted successfully");
+  setToastOpen(true);
+};
+
 
   return (
     <>
@@ -230,7 +257,7 @@ if (weightMethod?.id) {
         <ShippingZonesTable
           zones={zones}
           onEdit={openEdit}
-          onDelete={deleteZone}
+          onDelete={askDeleteZone}
           onAdd={openCreate}
         />
       )}
@@ -254,6 +281,25 @@ if (weightMethod?.id) {
           setWeightRules={setWeightRules}
         />
       )}
+
+                            <AlertPopup
+                              open={toastOpen}
+                              message={toastMsg}
+                              onClose={() => setToastOpen(false)}
+                            />
+
+                            <ConfirmPopup
+                              open={confirmOpen}
+                              title="Delete zone?"
+                              message="This zone and all related shipping rules will be permanently removed."
+                              confirmText="Delete"
+                              onCancel={() => {
+                                setConfirmOpen(false);
+                                setZoneToDelete(null);
+                              }}
+                              onConfirm={confirmDeleteZone}
+                            />
+
     </>
   );
 };

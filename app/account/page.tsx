@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import AlertPopup from "@/components/Popups/AlertPopup";
 
 /* ================= TYPES ================= */
 
@@ -35,6 +36,8 @@ export default function AccountHome() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordError, setPasswordError] = useState("");
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastMsg, setToastMsg] = useState("");
 
 
   useEffect(() => {
@@ -57,6 +60,68 @@ export default function AccountHome() {
   }, []);
 
   if (loading || !profile) return null;
+
+  /* ================= API ================= */
+
+const saveProfile = async (profile: Profile) => {
+  const token = localStorage.getItem("token");
+
+  await fetch(`${API_URL}/api/account/profile`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(profile),
+  });
+
+  setToastMsg("Profile updated successfully");
+  setToastOpen(true);
+};
+
+const saveAddress = async (address: Address | null) => {
+  if (!address) return;
+
+  const token = localStorage.getItem("token");
+
+  await fetch(`${API_URL}/api/account/address`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(address),
+  });
+
+  setToastMsg("Address updated successfully");
+  setToastOpen(true);
+};
+
+const updatePassword = async (
+  newPassword: string,
+  confirmPassword: string
+) => {
+  if (newPassword !== confirmPassword) {
+    setToastMsg("Passwords do not match");
+    setToastOpen(true);
+    return;
+  }
+
+  const token = localStorage.getItem("token");
+
+  await fetch(`${API_URL}/api/account/password`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ password: newPassword }),
+  });
+
+  setToastMsg("Password updated successfully");
+  setToastOpen(true);
+};
+
 
   return (
     <div>
@@ -237,6 +302,12 @@ export default function AccountHome() {
           onClick={() => saveProfile(profile)}
         />
       </div>
+      <AlertPopup
+        open={toastOpen}
+        message={toastMsg}
+        onClose={() => setToastOpen(false)}
+      />
+
     </div>
   );
 }
@@ -289,59 +360,3 @@ const SaveButton = ({
   </button>
 );
 
-/* ================= API ================= */
-
-const saveProfile = async (profile: Profile) => {
-  const token = localStorage.getItem("token");
-
-  await fetch(`${API_URL}/api/account/profile`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(profile),
-  });
-
-  alert("Profile updated");
-};
-
-const saveAddress = async (address: Address | null) => {
-  if (!address) return;
-
-  const token = localStorage.getItem("token");
-
-  await fetch(`${API_URL}/api/account/address`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(address),
-  });
-
-  alert("Address updated");
-};
-
-const updatePassword = async (
-  newPassword: string,
-  confirmPassword: string
-) => {
-  if (newPassword !== confirmPassword) {
-    alert("Passwords do not match");
-    return;
-  }
-
-  const token = localStorage.getItem("token");
-
-  await fetch(`${API_URL}/api/account/password`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({ password: newPassword }),
-  });
-
-  alert("Password updated");
-};

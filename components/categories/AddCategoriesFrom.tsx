@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import AlertPopup from "@/components/Popups/AlertPopup";
+
 
 type Category = {
   id: number;
@@ -25,6 +27,8 @@ const AddCategoriesForm = ({ editCategory, clearEdit }: Props) => {
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastMsg, setToastMsg] = useState("");
 
   /* ---------------- FETCH PARENT CATEGORIES ---------------- */
 useEffect(() => {
@@ -96,7 +100,9 @@ useEffect(() => {
     const data = await res.json();
 
     if (!res.ok) {
-      alert(data.message || "Failed");
+      setToastMsg(data.message || "Failed");
+      setToastOpen(true);
+      
       return;
     }
 
@@ -110,7 +116,8 @@ useEffect(() => {
     clearEdit();
 
   } catch (err) {
-    alert("Server error");
+      setToastMsg("Server error");
+      setToastOpen(true);
   } finally {
     setLoading(false);
   }
@@ -223,6 +230,11 @@ useEffect(() => {
 
         </div>
       </form>
+                            <AlertPopup
+                              open={toastOpen}
+                              message={toastMsg}
+                              onClose={() => setToastOpen(false)}
+                            />
     </div>
   );
 };

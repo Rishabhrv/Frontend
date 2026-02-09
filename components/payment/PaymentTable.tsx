@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import dayjs, { Dayjs } from "dayjs";
+
 import {
   LineChart,
   Line,
@@ -10,6 +12,8 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
+
+import TextField from "@mui/material/TextField";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
@@ -26,30 +30,16 @@ type Payment = {
   email: string;
 };
 
-/* ================= DATE HELPERS ================= */
-const formatChartDate = (date: string) =>
-  new Date(date).toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+/* ================= DATE FORMATTERS ================= */
+const formatDate = (date: string) =>
+  dayjs(date).format("DD MMM YYYY");
 
 const formatDateTime = (date: string) =>
-  new Date(date).toLocaleString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  });
+  dayjs(date).format("DD MMM YYYY, hh:mm A");
 
 export default function PaymentTable() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [startDate, setStartDate] = useState<string>("");
-  const [endDate, setEndDate] = useState<string>("");
-  
 
   /* ================= FILTER STATES ================= */
   const [typeFilter, setTypeFilter] =
@@ -57,6 +47,10 @@ export default function PaymentTable() {
 
   const [userFilter, setUserFilter] =
     useState<number | "all">("all");
+
+  const [dateRange, setDateRange] = useState<
+    [Dayjs | null, Dayjs | null]
+  >([null, null]);
 
   /* ================= FETCH ================= */
   useEffect(() => {
@@ -66,9 +60,13 @@ export default function PaymentTable() {
       },
     })
       .then(r => r.json())
-      .then(data => setPayments(Array.isArray(data) ? data : []))
+      .then(data => {
+        setPayments(Array.isArray(data) ? data : []);
+      })
       .finally(() => setLoading(false));
   }, []);
+
+
 
   /* ================= USER LIST ================= */
   const users = useMemo(() => {
@@ -84,30 +82,20 @@ export default function PaymentTable() {
   }, [payments]);
 
   /* ================= FILTER PAYMENTS ================= */
-const filteredPayments = useMemo(() => {
-  return payments.filter(p => {
-    const matchType =
-      typeFilter === "all" || p.type === typeFilter;
+  const filteredPayments = useMemo(() => {
+    return payments.filter(p => {
+      const matchType =
+        typeFilter === "all" || p.type === typeFilter;
 
-    const matchUser =
-      userFilter === "all" ||
-      Number(p.user_id) === Number(userFilter);
-
-    const paymentTime = new Date(p.created_at).getTime();
-
-    const matchStart =
-      !startDate ||
-      paymentTime >= new Date(startDate).setHours(0, 0, 0, 0);
-
-    const matchEnd =
-      !endDate ||
-      paymentTime <= new Date(endDate).setHours(23, 59, 59, 999);
-
-    return matchType && matchUser && matchStart && matchEnd;
-  });
-}, [payments, typeFilter, userFilter, startDate, endDate]);
+      const matchUser =
+        userFilter === "all" ||
+        Number(p.user_id) === Number(userFilter);
 
 
+
+      return matchType && matchUser;
+    });
+  }, [payments, typeFilter, userFilter, dateRange]);
 
   /* ================= STATS ================= */
   const totalRevenue = filteredPayments
@@ -129,7 +117,7 @@ const filteredPayments = useMemo(() => {
     filteredPayments.forEach(p => {
       if (p.status !== "success") return;
 
-      const day = formatChartDate(p.created_at);
+      const day = formatDate(p.created_at);
       map[day] = (map[day] || 0) + Number(p.amount);
     });
 
@@ -144,66 +132,37 @@ const filteredPayments = useMemo(() => {
       <h1 className="text-2xl font-bold">Payments Overview</h1>
 
       {/* ================= FILTER BAR ================= */}
-     <div className="flex flex-wrap gap-3 items-center">
-  {/* TYPE */}
-  <select
-    value={typeFilter}
-    onChange={e => setTypeFilter(e.target.value as any)}
-    className="border rounded px-3 py-2 text-sm"
-  >
-    <option value="all">All Payments</option>
-    <option value="order">Orders</option>
-    <option value="subscription">Subscriptions</option>
-  </select>
+      <div className="flex flex-wrap gap-4 items-center">
+        <select
+          value={typeFilter}
+          onChange={e => setTypeFilter(e.target.value as any)}
+          className="border rounded px-3 py-2 text-sm"
+        >
+          <option value="all">All Payments</option>
+          <option value="order">Orders</option>
+          <option value="subscription">Subscriptions</option>
+        </select>
 
-  {/* USER */}
-  <select
-    value={userFilter}
-    onChange={e =>
-      setUserFilter(
-        e.target.value === "all" ? "all" : Number(e.target.value)
-      )
-    }
-    className="border rounded px-3 py-2 text-sm"
-  >
-    <option value="all">All Users</option>
-    {users.map(u => (
-      <option key={u.id} value={u.id}>
-        {u.name} ({u.email})
-      </option>
-    ))}
-  </select>
+        <select
+          value={userFilter}
+          onChange={e =>
+            setUserFilter(
+              e.target.value === "all"
+                ? "all"
+                : Number(e.target.value)
+            )
+          }
+          className="border rounded px-3 py-2 text-sm"
+        >
+          <option value="all">All Users</option>
+          {users.map(u => (
+            <option key={u.id} value={u.id}>
+              {u.name} ({u.email})
+            </option>
+          ))}
+        </select>
 
-  {/* FROM DATE */}
-  <input
-    type="date"
-    value={startDate}
-    onChange={e => setStartDate(e.target.value)}
-    className="border rounded px-3 py-2 text-sm"
-  />
-
-  {/* TO DATE */}
-  <input
-    type="date"
-    value={endDate}
-    onChange={e => setEndDate(e.target.value)}
-    className="border rounded px-3 py-2 text-sm"
-  />
-
-  {/* RESET */}
-  {(startDate || endDate) && (
-    <button
-      onClick={() => {
-        setStartDate("");
-        setEndDate("");
-      }}
-      className="text-sm text-blue-600 hover:underline"
-    >
-      Reset dates
-    </button>
-  )}
-</div>
-
+      </div>
 
       {/* ================= STATS ================= */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -224,19 +183,14 @@ const filteredPayments = useMemo(() => {
       </div>
 
       {/* ================= CHART ================= */}
-      <div className="bg-white border rounded p-10 h-72">
+      <div className="bg-white border rounded p-6 h-72">
         <h2 className="font-semibold mb-2">Revenue Trend</h2>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData}>
             <XAxis dataKey="date" />
             <YAxis />
             <Tooltip />
-            <Line
-              type="monotone"
-              dataKey="total"
-              stroke="#000"
-              strokeWidth={2}
-            />
+            <Line type="monotone" dataKey="total" stroke="#000" strokeWidth={2} />
           </LineChart>
         </ResponsiveContainer>
       </div>
@@ -275,29 +229,16 @@ const filteredPayments = useMemo(() => {
                     <p className="font-medium">{p.name}</p>
                     <p className="text-xs text-gray-500">{p.email}</p>
                   </td>
-
                   <td className="px-4 py-3 capitalize">{p.type}</td>
-
                   <td className="px-4 py-3 text-xs break-all">
                     {p.payment_id || "—"}
                   </td>
-
-                  <td className="px-4 py-3 font-medium">
-                    ₹{p.amount}
-                  </td>
-
+                  <td className="px-4 py-3 font-medium">₹{p.amount}</td>
                   <td className="px-4 py-3">
-                    <span
-                      className={`px-2 py-1 rounded text-xs ${
-                        p.status === "success"
-                          ? "bg-green-100 text-green-700"
-                          : "bg-gray-100 text-gray-600"
-                      }`}
-                    >
+                    <span className="px-2 py-1 rounded text-xs bg-green-100 text-green-700">
                       {p.status}
                     </span>
                   </td>
-
                   <td className="px-4 py-3 text-xs">
                     {formatDateTime(p.created_at)}
                   </td>

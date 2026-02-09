@@ -6,6 +6,9 @@ import {
   Search, 
 } from "lucide-react";
 import Link from "next/link";
+import AlertPopup from "@/components/Popups/AlertPopup";
+import ConfirmPopup from "@/components/Popups/ConfirmPopup";
+
 
 
 /* ---------------- TYPES ---------------- */
@@ -49,6 +52,15 @@ const [products, setProducts] = useState<Product[]>([]);
 const [allCategories, setAllCategories] = useState<string[]>([]);
 const [loading, setLoading] = useState(true);
 const [selectedIds, setSelectedIds] = useState<number[]>([]);
+    const [toastOpen, setToastOpen] = useState(false);
+    const [toastMsg, setToastMsg] = useState("");
+
+const [confirmOpen, setConfirmOpen] = useState(false);
+const [confirmConfig, setConfirmConfig] = useState<{
+  title: string;
+  message: string;
+  onConfirm: () => void;
+} | null>(null);
 
 useEffect(() => {
   fetch(`${API_URL}/api/products`)
@@ -167,29 +179,163 @@ useEffect(() => {
     );
   }
 
-  const handleDelete = async (id: number) => {
-  if (!confirm("Are you sure you want to delete this product?")) return;
+const handleDelete = (id: number) => {
+  setConfirmConfig({
+    title: "Move product to Trash?",
+    message:
+      "This product will be moved to Trash. You can restore it later.",
+    onConfirm: async () => {
+      try {
+        const res = await fetch(
+          `${API_URL}/api/products/${id}/trash`,
+          { method: "PUT" }
+        );
 
-  try {
-    const res = await fetch(
-      `${API_URL}/api/products/${id}`,
-      { method: "DELETE" }
-    );
+        if (!res.ok) {
+          setToastMsg("Failed to move product to trash");
+          setToastOpen(true);
+          return;
+        }
+
+        // ✅ update UI (no reload)
+        setProducts(prev =>
+          prev.map(p =>
+            p.id === id ? { ...p, status: "trash" } : p
+          )
+        );
+
+        setSelectedIds(prev =>
+          prev.filter(pid => pid !== id)
+        );
+      } catch (err) {
+        console.error(err);
+      }
+    },
+  });
+
+  setConfirmOpen(true);
+};
+
+
+
+
+const handleBulkApply = async () => {
+  if (!bulkAction) {
+      setToastMsg("Please select a bulk action");
+      setToastOpen(true);
+    return;
+  }
+
+  if (selectedIds.length === 0) {
+      setToastMsg("Please select at least one product");
+      setToastOpen(true);
+    return;
+  }
+
+  // ✅ MOVE TO PUBLISHED
+if (bulkAction === "published") {
+  const res = await fetch(`${API_URL}/api/products/bulk-status`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      ids: selectedIds,
+      status: "published",
+    }),
+  });
+
+  if (!res.ok) {
+    setToastMsg("Bulk publish failed");
+    setToastOpen(true);
+    return;
+  }
+
+  setProducts(prev =>
+    prev.map(p =>
+      selectedIds.includes(p.id)
+        ? { ...p, status: "published" }
+        : p
+    )
+  );
+
+  setSelectedIds([]);
+}
+
+
+  // 🗑 MOVE TO TRASH (SOFT DELETE)
+ if (bulkAction === "delete") {
+  setConfirmConfig({
+    title: "Move to Trash?",
+    message: "Selected products will be moved to Trash.",
+    onConfirm: async () => {
+      const res = await fetch(`${API_URL}/api/products/bulk-status`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ids: selectedIds,
+          status: "trash",
+        }),
+      });
+
+      if (!res.ok) {
+        setToastMsg("Bulk trash failed");
+        setToastOpen(true);
+        return;
+      }
+
+      setProducts(prev =>
+        prev.map(p =>
+          selectedIds.includes(p.id)
+            ? { ...p, status: "trash" }
+            : p
+        )
+      );
+
+      setSelectedIds([]);
+      setBulkAction("");
+    },
+  });
+
+  setConfirmOpen(true);
+  return;
+}
+
+
+  // 📝 MOVE TO DRAFT
+  if (bulkAction === "draft") {
+    const res = await fetch(`${API_URL}/api/products/bulk-status`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        ids: selectedIds,
+        status: "draft",
+      }),
+    });
 
     if (!res.ok) {
-      alert("Delete failed");
+      setToastMsg("Bulk update failed");
+      setToastOpen(true);
       return;
     }
 
-    // 🔥 remove from UI instantly
-    setProducts(prev => prev.filter(p => p.id !== id));
-    setSelectedIds(prev => prev.filter(pid => pid !== id));
+    setProducts(prev =>
+      prev.map(p =>
+        selectedIds.includes(p.id)
+          ? { ...p, status: "draft" }
+          : p
+      )
+    );
 
-  } catch (err) {
-    console.error(err);
-    alert("Server error");
+    setSelectedIds([]);
   }
+
+  setBulkAction("");
 };
+
+
 
 
   return (
@@ -231,11 +377,20 @@ useEffect(() => {
             className="rounded border border-gray-300 px-2 py-1 text-sm"
           >
             <option value="">Bulk actions</option>
+            <option value="published">Move to Published</option>
             <option value="delete">Delete</option>
             <option value="draft">Move to Draft</option>
           </select>
 
-          <button className="rounded px-3 py-1 text-sm shadow-lg bg-[#e7f2ff] text-[#385dfc] cursor-pointer">Apply</button>
+          <button
+            onClick={handleBulkApply}
+            disabled={!bulkAction || selectedIds.length === 0}
+            className="rounded px-3 py-1 text-sm shadow-lg disabled:opacity-50 bg-[#e7f2ff] text-[#385dfc]"
+          >
+            Apply
+          </button>
+
+
 
           <select
             value={category}
@@ -424,9 +579,9 @@ useEffect(() => {
           onChange={(e) => setRowsPerPage(Number(e.target.value))}
           className="rounded border border-gray-300 px-2 py-1 text-sm"
         >
+          <option value={10}>10 rows</option>
           <option value={20}>20 rows</option>
           <option value={50}>50 rows</option>
-          <option value={100}>100 rows</option>
         </select>
 
         <Pagination
@@ -435,6 +590,27 @@ useEffect(() => {
           onPageChange={setCurrentPage}
         />
       </div>
+                                  <AlertPopup
+                              open={toastOpen}
+                              message={toastMsg}
+                              onClose={() => setToastOpen(false)}
+                            />
+
+                <ConfirmPopup
+                  open={confirmOpen}
+                  title={confirmConfig?.title || ""}
+                  message={confirmConfig?.message || ""}
+                  confirmText="Confirm"
+                  onCancel={() => {
+                    setConfirmOpen(false);
+                    setConfirmConfig(null);
+                  }}
+                  onConfirm={() => {
+                    confirmConfig?.onConfirm();
+                    setConfirmOpen(false);
+                    setConfirmConfig(null);
+                  }}
+                />
     </div>
   );
 }
@@ -500,6 +676,9 @@ function Pagination({
       >
         Next
       </button>
+
+
+
     </div>
   );
 }

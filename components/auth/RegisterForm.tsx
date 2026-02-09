@@ -3,6 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import SocialAuthButtons from "./SocialAuthButtons";
+import AlertPopup from "@/components/Popups/AlertPopup";
+
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
@@ -11,6 +13,8 @@ const RegisterForm = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastMsg, setToastMsg] = useState("");
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,11 +30,13 @@ const RegisterForm = () => {
     setLoading(false);
 
     if (!res.ok) {
-      alert(data.msg);
+      setToastMsg(data.msg);
+      setToastOpen(true);
       return;
     }
 
-    alert("Account created successfully. Please login.");
+      setToastMsg("Account created successfully. Please login.");
+      setToastOpen(true);
 
     // redirect to login
     window.location.href = "/login";
@@ -84,6 +90,12 @@ const RegisterForm = () => {
           Sign in
         </Link>
       </p>
+
+                  <AlertPopup
+                    open={toastOpen}
+                    message={toastMsg}
+                    onClose={() => setToastOpen(false)}
+                  />
     </>
   );
 };

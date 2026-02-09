@@ -2,6 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import AlertPopup from "@/components/Popups/AlertPopup";
+import ConfirmPopup from "@/components/Popups/ConfirmPopup";
+
 
 type User = {
   id: number;
@@ -25,6 +28,11 @@ export default function UserTable() {
     useState<"all" | "admin" | "customer">("all");
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastMsg, setToastMsg] = useState("");
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
+
 
   useEffect(() => {
     fetchUsers();
@@ -65,6 +73,43 @@ export default function UserTable() {
     (page - 1) * rowsPerPage,
     page * rowsPerPage
   );
+
+
+const askDeleteUser = (user: User) => {
+  setUserToDelete(user);
+  setConfirmOpen(true);
+};
+
+
+const confirmDeleteUser = async () => {
+  if (!userToDelete) return;
+
+  const res = await fetch(
+    `${API_URL}/api/admin/users/${userToDelete.id}`,
+    {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("admin_token")}`,
+      },
+    }
+  );
+
+  if (!res.ok) {
+    setToastMsg("Failed to delete user");
+    setToastOpen(true);
+    return;
+  }
+
+  setUsers(prev => prev.filter(u => u.id !== userToDelete.id));
+
+  setConfirmOpen(false);
+  setUserToDelete(null);
+
+  setToastMsg("User deleted successfully");
+  setToastOpen(true);
+};
+
+
 
   return (
     <div className="p-6 space-y-4">
@@ -182,39 +227,12 @@ export default function UserTable() {
                     <div>|</div>
 
                     <button
-                      onClick={async () => {
-                        if (
-                          !confirm(
-                            "Are you sure you want to delete this user?"
-                          )
-                        )
-                          return;
-
-                        const res = await fetch(
-                          `${API_URL}/api/admin/users/${user.id}`,
-                          {
-                            method: "DELETE",
-                            headers: {
-                              Authorization: `Bearer ${localStorage.getItem(
-                                "admin_token"
-                              )}`,
-                            },
-                          }
-                        );
-
-                        if (!res.ok) {
-                          alert("Failed to delete user");
-                          return;
-                        }
-
-                        setUsers((prev) =>
-                          prev.filter((u) => u.id !== user.id)
-                        );
-                      }}
+                      onClick={() => askDeleteUser(user)}
                       className="text-red-600 hover:underline text-xs cursor-pointer"
                     >
                       Delete
                     </button>
+
                   </td>
                 </tr>
               ))
@@ -258,6 +276,24 @@ export default function UserTable() {
           </button>
         </div>
       </div>
+                            <AlertPopup
+                              open={toastOpen}
+                              message={toastMsg}
+                              onClose={() => setToastOpen(false)}
+                            />
+
+                            <ConfirmPopup
+                              open={confirmOpen}
+                              title="Delete user?"
+                              message="This user will be permanently removed. This action cannot be undone."
+                              confirmText="Delete"
+                              onCancel={() => {
+                                setConfirmOpen(false);
+                                setUserToDelete(null);
+                              }}
+                              onConfirm={confirmDeleteUser}
+                            />
+
     </div>
   );
 }

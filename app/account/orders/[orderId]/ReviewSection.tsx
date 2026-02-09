@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { Star } from "lucide-react";
+import AlertPopup from "@/components/Popups/AlertPopup";
+
 
 type Props = {
   productId: number;
@@ -14,10 +16,13 @@ export default function ReviewSection({ productId, productTitle }: Props) {
   const [comment, setComment] = useState("");
   const [image, setImage] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastMsg, setToastMsg] = useState("");
 
   const submitReview = () => {
     if (!rating || !comment.trim()) {
-      alert("Please give rating and review");
+      setToastMsg("Please give rating and review");
+      setToastOpen(true);
       return;
     }
 
@@ -29,7 +34,8 @@ export default function ReviewSection({ productId, productTitle }: Props) {
       image,
     });
 
-    alert("Review submitted (demo)");
+    setToastMsg("Review submitted (demo)");
+    setToastOpen(true);
     setRating(0);
     setComment("");
     setImage(null);
@@ -97,6 +103,12 @@ export default function ReviewSection({ productId, productTitle }: Props) {
       >
         Submit review
       </button>
+
+                            <AlertPopup
+                              open={toastOpen}
+                              message={toastMsg}
+                              onClose={() => setToastOpen(false)}
+                            />
     </div>
   );
 }
