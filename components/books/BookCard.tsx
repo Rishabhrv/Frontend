@@ -252,7 +252,7 @@ const discountPercent =
         <button
   onClick={addToCart}
   disabled={isDisabled}
-  className={`flex justify-center gap-2 mt-2 w-full py-2 text-xs rounded
+  className={`flex justify-center gap-2 mt-2 w-full py-2 text-xs rounded cursor-pointer
     ${
       isDisabled
         ? "bg-gray-300 text-gray-600 cursor-not-allowed"

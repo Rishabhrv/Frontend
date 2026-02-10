@@ -128,6 +128,12 @@ const groupedCategories = categories.reduce((acc: any, cat: any) => {
 }, {});
 
 
+const visibleAuthors = authorSearch
+  ? authors // 🔍 show searched authors
+  : [...authors]
+      .sort((a, b) => b.product_count - a.product_count)
+      .slice(0, 5); // ⭐ top 5 only
+
 
   return (
     <div className=" mx-auto px-30 py-12">
@@ -238,45 +244,52 @@ const groupedCategories = categories.reduce((acc: any, cat: any) => {
             ))}
           </div>
           <div>
-            <h4 className="font-serif text-base mb-3">Authors</h4>
-          
-            <input
-              type="text"
-              placeholder="Search author..."
-              className="w-full border px-2 py-1 mb-5 text-sm rounded-full "
-              value={authorSearch}
-              onChange={(e) => setAuthorSearch(e.target.value)}
-            />
-          
-            <ul className="space-y-2 text-sm">
-              {authors.map((a) => (
-                <li
-                  key={a.id}
-                  onClick={() => setSelectedAuthor(String(a.id))}
-                  className={`flex items-center justify-between cursor-pointer
-                    ${
-                      selectedAuthor === String(a.id)
-                        ? "font-semibold text-black"
-                        : "text-gray-600 hover:text-black"
-                    }`}
-                >
-                  <span>{a.name}</span>
-                  <span className="text-xs text-gray-400">
-                    ({a.product_count})
-                  </span>
-                </li>
-              ))}
-            </ul>
-  
-            {selectedAuthor && (
-              <button
-                onClick={() => setSelectedAuthor("")}
-                className="text-xs mt-3 underline text-gray-600 hover:text-black"
-              >
-                Clear author filter
-              </button>
-            )}
-          </div>
+  <h4 className="font-serif text-base mb-3">Authors</h4>
+
+  <input
+    type="text"
+    placeholder="Search author..."
+    className="w-full border px-2 py-1 mb-5 text-sm rounded-full"
+    value={authorSearch}
+    onChange={(e) => setAuthorSearch(e.target.value)}
+  />
+
+  <ul className="space-y-2 text-sm">
+    {visibleAuthors.map((a) => (
+      <li
+        key={a.id}
+        onClick={() => setSelectedAuthor(String(a.id))}
+        className={`flex items-center justify-between cursor-pointer
+          ${
+            selectedAuthor === String(a.id)
+              ? "font-semibold text-black"
+              : "text-gray-600 hover:text-black"
+          }`}
+      >
+        <span>{a.name}</span>
+        <span className="text-xs text-gray-400">
+          ({a.product_count})
+        </span>
+      </li>
+    ))}
+  </ul>
+
+  {!authorSearch && authors.length > 5 && (
+    <p className="text-xs text-gray-400 mt-2">
+      Type to search more authors
+    </p>
+  )}
+
+  {selectedAuthor && (
+    <button
+      onClick={() => setSelectedAuthor("")}
+      className="text-xs mt-3 underline text-gray-600 hover:text-black"
+    >
+      Clear author filter
+    </button>
+  )}
+</div>
+
 
 
           {/* Best Sellers */}

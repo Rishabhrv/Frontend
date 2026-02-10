@@ -74,6 +74,16 @@ const [form, setForm] = useState({
   phone: "",
   email: "",
 });
+const [couponCode, setCouponCode] = useState("");
+const [couponDiscount, setCouponDiscount] = useState<number>(0);
+const [couponError, setCouponError] = useState("");
+const [couponApplied, setCouponApplied] = useState(false);
+const [couponInfo, setCouponInfo] = useState<{
+  eligible_items?: string[];
+  applicable_on?: string;
+}>({});
+
+
 const hasPaperback = cart.some(i => i.format === "paperback");
 
   const validateForm = () => {
@@ -263,8 +273,41 @@ const rpRes = await fetch(`${API_URL}/api/payment/create-order`, {
     0
   );
 
+ const applyCoupon = async () => {
+  setCouponError("");
+
+  const token = localStorage.getItem("token");
+
+  const res = await fetch(`${API_URL}/api/checkout/apply-coupon`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ code: couponCode }),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    setCouponError(data.msg);
+    return;
+  }
+
+  setCouponDiscount(Number(data.discount || 0));
+
+  setCouponInfo({
+    eligible_items: data.eligible_items,
+    applicable_on: data.applicable_on,
+  });
+  setCouponApplied(true);
+};
+
+
+
   
-  const total = subtotal + shipping;
+  const total = subtotal + shipping - couponDiscount;
+
 
   return (
     <div className="max-w-7xl mx-auto px-20 py-12">
@@ -414,6 +457,7 @@ const rpRes = await fetch(`${API_URL}/api/payment/create-order`, {
                    )}
                   </div>
                 </div>
+                
 
               {/* PHONE */}
               <div>
@@ -495,6 +539,40 @@ const rpRes = await fetch(`${API_URL}/api/payment/create-order`, {
           </div>
 
           <hr className="my-4 border-gray-200" />
+          {/* COUPON */}
+          <div className="my-4">
+            <label className="text-sm font-medium block mb-1">Have a coupon?</label>
+          
+            <div className="flex gap-2">
+              <input
+                value={couponCode}
+                onChange={e => setCouponCode(e.target.value.toUpperCase())}
+                placeholder="ENTER CODE"
+                className="border px-3 py-2 rounded w-full text-sm"
+                disabled={couponApplied}
+              />
+          
+              <button
+                onClick={applyCoupon}
+                disabled={couponApplied}
+                className="bg-black text-white px-4 rounded text-sm"
+              >
+                Apply
+              </button>
+            </div>
+          
+            {couponError && (
+              <p className="text-xs text-red-600 mt-1">{couponError}</p>
+            )}
+          
+{couponApplied && couponInfo.eligible_items && (
+  <p className="text-xs text-green-600 mt-1">
+    Coupon applied on: {couponInfo.eligible_items.join(", ")}
+  </p>
+)}
+
+          </div>
+
 
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
@@ -512,11 +590,20 @@ const rpRes = await fetch(`${API_URL}/api/payment/create-order`, {
           </div>
 
           <hr className="my-4 border-gray-200" />
+          
+          {couponDiscount > 0 && (
+            <div className="flex justify-between text-sm text-green-700">
+              <span>Coupon Discount</span>
+              <span>-₹{couponDiscount.toFixed(2)}</span>
+            </div>
+          )}
 
           <div className="flex justify-between font-semibold mb-4">
             <span>Total</span>
             <span>₹{total.toFixed(2)}</span>
           </div>
+
+
 
           {/* PAYMENT */}
           <div className="text-sm mb-4">
