@@ -11,6 +11,8 @@ type Admin = {
   email: string;
 };
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL!;
+
 export default function Header() {
   const router = useRouter();
   const [admin, setAdmin] = useState<Admin | null>(null);
@@ -25,7 +27,7 @@ useEffect(() => {
     return;
   }
 
-  fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/me`, {
+  fetch(`${API_URL}/api/admin/me`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },

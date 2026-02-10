@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { Box, Layers, ChevronDown, LibraryBig, Users, ShoppingCart, Truck, BadgeCheck,BadgeIndianRupee } from "lucide-react";
+import { Box, Layers, ChevronDown, LibraryBig, Users, ShoppingCart, Truck, BadgeCheck,BadgeIndianRupee, BadgePercent } from "lucide-react";
 
 export default function Sidebar() {
   const pathname = usePathname() ?? "";
@@ -142,7 +142,7 @@ export default function Sidebar() {
           Subscription
         </Link>
 
-        {/* Subscription (NO SUBMENU) */}
+        {/* Payment (NO SUBMENU) */}
         <Link
           href="/admin/payment/PaymentPage"
           className={`mt-1 flex items-center gap-3 rounded-xl px-4 py-3 transition
@@ -156,6 +156,22 @@ export default function Sidebar() {
           <BadgeIndianRupee size={18} />
           Payment
         </Link>
+
+         {/* Payment (NO SUBMENU) */}
+        <Link
+          href="/admin/coupon/CouponPage"
+          className={`mt-1 flex items-center gap-3 rounded-xl px-4 py-3 transition
+            ${
+              pathname.startsWith("/admin/coupon")
+                ? "bg-blue-50 text-blue-600 font-medium"
+                : "text-gray-700 hover:bg-gray-100"
+            }
+          `}
+        >
+          <BadgePercent size={18} />
+          Coupons
+        </Link>
+
 
 
       </nav>

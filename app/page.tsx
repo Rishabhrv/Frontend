@@ -18,6 +18,13 @@ export default function Home() {
       />
 
       <CategoryBookSection
+        title="AGPH Books"
+        categorySlug="agph-books"
+                visibleCount={6}
+
+      />
+
+      <CategoryBookSection
         title="AG Volumes"
         categorySlug="ag-volumes"
         visibleCount={6}
