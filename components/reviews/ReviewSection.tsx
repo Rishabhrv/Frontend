@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { Star } from "lucide-react";
+import AlertPopup from "@/components/Popups/AlertPopup";
+
 
 /* ================= TYPES ================= */
 
@@ -54,6 +56,8 @@ export default function ReviewSection({ productId }: Props) {
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const [loggedIn, setLoggedIn] = useState(false);
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastMsg, setToastMsg] = useState("");
 
   /* CHECK LOGIN */
   useEffect(() => {
@@ -71,7 +75,8 @@ export default function ReviewSection({ productId }: Props) {
   /* SUBMIT REVIEW */
   const submitReview = async () => {
     if (!rating || !comment.trim()) {
-      alert("Please add rating and comment");
+      setToastMsg("Please add rating and comment");
+      setToastOpen(true);
       return;
     }
 
@@ -94,7 +99,9 @@ export default function ReviewSection({ productId }: Props) {
       }),
     });
 
-    alert("Review submitted for approval");
+      setToastMsg("Review submitted for approval");
+      setToastOpen(true);
+    
     setRating(0);
     setComment("");
 
@@ -127,39 +134,7 @@ export default function ReviewSection({ productId }: Props) {
         Review your best experience.
       </p>
 
-      {/* ADD REVIEW */}
-      <div className="mb-6">
-        {!loggedIn ? (
-          <div className="border rounded-md p-4 text-sm text-gray-600">
-            <a
-              href="/login"
-              className="underline font-medium text-black"
-            >
-              Login
-            </a>{" "}
-            to submit a review.
-          </div>
-        ) : (
-          <>
-            <StarRating value={rating} onChange={setRating} />
-
-            <textarea
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              rows={4}
-              className="mt-3 w-full border rounded-md p-3 text-sm"
-              placeholder="Write your review"
-            />
-
-            <button
-              onClick={submitReview}
-              className="mt-3 bg-black text-white px-6 py-2 rounded"
-            >
-              Submit Review
-            </button>
-          </>
-        )}
-      </div>
+      
 
       {/* REVIEW LIST */}
       <div className="space-y-6">
@@ -182,6 +157,11 @@ export default function ReviewSection({ productId }: Props) {
           <p className="text-sm text-gray-500">No reviews yet.</p>
         )}
       </div>
+                            <AlertPopup
+                              open={toastOpen}
+                              message={toastMsg}
+                              onClose={() => setToastOpen(false)}
+                            />
     </div>
   );
 }

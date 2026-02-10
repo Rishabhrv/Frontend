@@ -8,11 +8,15 @@ type Book = {
   id: number;
   title: string;
   slug: string;
-  price: number;
-  sell_price: number;
+  price: number;          // paperback MRP
+  sell_price: number;     // paperback selling
+  ebook_price?: number;   // ebook MRP
+  ebook_sell_price?: number;
   stock: number;
   main_image: string;
+  product_type: "ebook" | "physical" | "both";
 };
+
 
 type Props = {
   title: string;
@@ -78,15 +82,29 @@ const CategoryBookSection = ({
                 id: book.id,
                 title: book.title,
                 slug: book.slug,
-                price: book.price,
-                sell_price: book.sell_price || book.price,
                 image: book.main_image
                   ? `${API_URL}${book.main_image}`
                   : "/images/placeholder-book.png",
-                badge: book.stock === 0 ? "Out of Stock" : "",
+            
+                product_type: book.product_type,
+                stock: book.stock,
+            
+                // paperback prices
+                price: book.price,
+                sell_price: book.sell_price,
+            
+                // ebook prices (may be undefined)
+                ebook_price: book.ebook_price,
+                ebook_sell_price: book.ebook_sell_price,
+            
+                badge:
+                  book.product_type === "physical" && book.stock === 0
+                    ? "Out of Stock"
+                    : "",
               }}
-              visibleCount={visibleCount} // ✅ PASS DOWN
+              visibleCount={visibleCount}
             />
+
           ))}
         </div>
       </div>

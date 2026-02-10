@@ -4,6 +4,8 @@ import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import Sidebar from "@/components/admin/Sidebar";
 import Header from "@/components/admin/Header";
+import AlertPopup from "@/components/Popups/AlertPopup";
+
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
@@ -20,6 +22,8 @@ export default function OrderDetailPage() {
   const [courier, setCourier] = useState("");
 const [tracking, setTracking] = useState("");
 const [shippingStatus, setShippingStatus] = useState("confirmed");
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastMsg, setToastMsg] = useState("");
 
 
   
@@ -314,7 +318,11 @@ const [shippingStatus, setShippingStatus] = useState("confirmed");
         tracking_number: tracking,
         status: shippingStatus,
       }),
-    }).then(() => alert("Shipping updated"));
+    }).then(() => {
+        setToastMsg("Shipping updated");
+        setToastOpen(true);
+    }      
+    );
   }}
   className="mt-3 w-full bg-blue-600 text-white py-2 rounded"
 >
@@ -327,6 +335,11 @@ const [shippingStatus, setShippingStatus] = useState("confirmed");
           </div>
         </div>
       </div>
+                            <AlertPopup
+                              open={toastOpen}
+                              message={toastMsg}
+                              onClose={() => setToastOpen(false)}
+                            />
     </div>
   );
 }

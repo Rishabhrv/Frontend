@@ -8,12 +8,23 @@ import { useEffect, useState } from "react";
 type Book = {
   id: number;
   title: string;
+  slug: string;
+  image: string;
+
+  product_type: "ebook" | "physical" | "both";
+  stock: number;
+
+  // paperback
   price: number;
   sell_price: number;
-  image: string;
-  slug: string;
+
+  // ebook
+  ebook_price?: number;
+  ebook_sell_price?: number;
+
   badge?: string;
 };
+
 
 type BookCardProps = {
   book: Book;
@@ -81,14 +92,28 @@ const BookCard = ({ book, visibleCount }: BookCardProps) => {
   }
 };
 
+const getCartFormat = () => {
+  // ebook only
+  if (book.product_type === "ebook") return "ebook";
+
+  // physical only
+  if (book.product_type === "physical") return "paperback";
+
+  // both
+  if (book.stock > 0) return "paperback"; // prefer paperback
+  return "ebook"; // paperback out of stock → ebook
+};
+
+
 
 const addToCart = async () => {
   const token = localStorage.getItem("token");
-
   if (!token) {
     window.location.href = "/login";
     return;
   }
+
+  const format = getCartFormat();
 
   try {
     const res = await fetch(`${API_URL}/api/cart/add`, {
@@ -99,28 +124,28 @@ const addToCart = async () => {
       },
       body: JSON.stringify({
         product_id: book.id,
-        format: "paperback",
-        quantity: 1,
+        format,
+        quantity: format === "ebook" ? 1 : 1,
       }),
     });
 
-    if (!res.ok) throw new Error("Add to cart failed");
+    const data = await res.json();
+
+    if (!res.ok) {
+      // ⛔ paperback OOS handled silently
+      if (data.msg === "OUT_OF_STOCK") return;
+      throw new Error();
+    }
 
     window.dispatchEvent(new Event("cart-change"));
-
-    // ✅ SUCCESS UI
     setAddedToCart(true);
 
-    // ⏳ Optional: reset after 2 seconds
-    setTimeout(() => {
-      setAddedToCart(false);
-    }, 2000);
-
-  } catch (err) {
-    console.error(err);
-    alert("Something went wrong");
+    setTimeout(() => setAddedToCart(false), 2000);
+  } catch {
+    console.error("Add to cart failed");
   }
 };
+
 
 
 
@@ -131,6 +156,30 @@ const addToCart = async () => {
           ((book.price - book.sell_price) / book.price) * 100
         )
       : 0;
+
+      const isDisabled =
+  addedToCart ||
+  (book.product_type === "physical" && book.stock === 0);
+
+  const isEbookOnly = book.product_type === "ebook";
+
+const displaySellPrice = isEbookOnly
+  ? book.ebook_sell_price
+  : book.sell_price;
+
+const displayMrp = isEbookOnly
+  ? book.ebook_price
+  : book.price;
+
+const showDiscount =
+  displayMrp && displaySellPrice && displayMrp > displaySellPrice;
+
+const discountPercent =
+  showDiscount
+    ? Math.round(((displayMrp - displaySellPrice) / displayMrp) * 100)
+    : 0;
+
+
 
   return (
     <div
@@ -156,11 +205,17 @@ const addToCart = async () => {
 
         <Link href={`/product/${book.slug}`}>
           <div className="relative overflow-hidden rounded bg-white">
-            {discount > 0 && (
-              <span className="absolute left-2 bottom-2 z-10 bg-green-600 text-white text-[10px] px-2 py-1 rounded">
-                {discount}% OFF
-              </span>
-            )}
+            {/* 🔴 BADGE */}
+    {book.badge && (
+      <span className="absolute top-2 left-2 z-10 bg-red-600 text-white text-[10px] px-2 py-1 rounded">
+        {book.badge}
+      </span>
+    )}
+            {discountPercent > 0 && (
+  <span className="absolute left-2 bottom-2 z-10 bg-green-600 text-white text-[10px] px-2 py-1 rounded">
+    {discountPercent}% OFF
+  </span>
+)}
 
             <Image
               src={book.image}
@@ -178,39 +233,56 @@ const addToCart = async () => {
             </h3>
 
             <div className="mt-1 flex gap-2">
-              <span className="font-semibold">
-                ₹{book.sell_price}
-              </span>
-              {book.price > book.sell_price && (
-                <span className="line-through text-gray-400 text-[11px]">
-                  ₹{book.price}
+              <div className="mt-1 flex gap-2 items-center">
+                <span className="font-semibold">
+                  ₹{displaySellPrice}
                 </span>
-              )}
+              
+                {showDiscount && (
+                  <span className="line-through text-gray-400 text-[11px]">
+                    ₹{displayMrp}
+                  </span>
+                )}
+              </div>
+
             </div>
           </div>
         </Link>
 
         <button
-          onClick={addToCart}
-          disabled={addedToCart}
-          className={`flex justify-center gap-2 mt-2 w-full py-2 text-xs rounded
-            ${addedToCart
-              ? "bg-green-600 text-white cursor-default"
-              : "bg-black text-white hover:bg-gray-800"}
-          `}
-        >
-          {addedToCart ? (
-            <>
-              <CircleCheck size={14} />
-              Added
-            </>
-          ) : (
-            <>
-              <ShoppingCart size={14} />
-              Add to Cart
-            </>
-          )}
-        </button>
+  onClick={addToCart}
+  disabled={isDisabled}
+  className={`flex justify-center gap-2 mt-2 w-full py-2 text-xs rounded cursor-pointer
+    ${
+      isDisabled
+        ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+        : addedToCart
+        ? "bg-green-600 text-white"
+        : "bg-black text-white hover:bg-gray-800"
+    }
+  `}
+>
+  {book.product_type === "both" && book.stock === 0 ? (
+    <>
+      <ShoppingCart size={14} />
+      Add to Cart
+    </>
+  ) : book.product_type === "physical" && book.stock === 0 ? (
+    "Out of Stock"
+  ) : addedToCart ? (
+    <>
+      <CircleCheck size={14} />
+      Added
+    </>
+  ) : (
+    <>
+      <ShoppingCart size={14} />
+      Add to Cart
+    </>
+  )}
+</button>
+
+
 
       </div>
     </div>

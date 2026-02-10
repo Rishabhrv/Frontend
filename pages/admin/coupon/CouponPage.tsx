@@ -1,9 +1,8 @@
 import Sidebar from "@/components/admin/Sidebar";
 import Header from "@/components/admin/Header";
-import SubscriptionTable from "@/components/subscriptions/SubscriptionTable";
+import CouponTable from "@/components/coupon/CouponTable";
 
-export default function SubscriptionPage() {
-  
+export default function ShippingZones() {
   return (
     <div className="p-6">
         <div className="flex">
@@ -11,7 +10,7 @@ export default function SubscriptionPage() {
           <div className="flex-1 flex-col">
             <Header />
             <div className="p-6">
-                <SubscriptionTable /> 
+                <CouponTable />
             </div>
           </div>
         </div>

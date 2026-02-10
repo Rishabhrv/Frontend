@@ -8,6 +8,8 @@ import ProductAttributes from "./ProductAttributes";
 import ProductGallery from "./ProductGallery";
 import ProductAuthor from "./ProductAuthor";
 import PopupModal from "../Popups/PopupModal";
+import AlertPopup from "@/components/Popups/AlertPopup";
+
 
 
 type Category = {
@@ -67,6 +69,8 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
       message: "",
     });
     const [errors, setErrors] = useState<Record<string, string>>({});
+    const [toastOpen, setToastOpen] = useState(false);
+    const [toastMsg, setToastMsg] = useState("");
 
 
     useEffect(() => {
@@ -128,7 +132,9 @@ const handleSubmit = async () => {
   const isValid = validateForm();
   if (!isValid) return;
   if (mode === "add" && !productImage) {
-    alert("Please upload product image");
+      setToastMsg("Please upload product image");
+      setToastOpen(true);
+    
     return;
   }
 
@@ -765,6 +771,11 @@ const handleSubmit = async () => {
               message={popup.message}
               onClose={() => setPopup({ ...popup, open: false })}
             />
+                                              <AlertPopup
+                                                open={toastOpen}
+                                                message={toastMsg}
+                                                onClose={() => setToastOpen(false)}
+                                              />
 
           </div>
   )

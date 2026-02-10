@@ -15,13 +15,33 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [dark, setDark] = useState(false);
 
-  // 🔐 Redirect if admin already logged in
-  useEffect(() => {
-    const token = localStorage.getItem("admin_token");
-    if (token) {
-      router.push("/admin/product/ProductsPage");
-    }
-  }, []);
+
+
+  // 🔐 If admin is already logged in, VERIFY token first
+useEffect(() => {
+  const token = localStorage.getItem("admin_token");
+  if (!token) return;
+
+  fetch(`${API_URL}/api/admin/me`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+    .then((res) => {
+      if (res.ok) {
+        // ✅ token is valid → go to admin panel
+        router.replace("/admin/product/ProductsPage");
+      } else {
+        throw new Error();
+      }
+    })
+    .catch(() => {
+      // ❌ invalid / expired token → clear storage
+      localStorage.removeItem("admin_token");
+      localStorage.removeItem("admin");
+    });
+}, []);
+
 
   const login = async () => {
     setError("");
@@ -82,40 +102,48 @@ export default function Login() {
             </p>
           )}
 
-          {/* EMAIL */}
-          <input
-            type="email"
-            placeholder="Admin Email"
-            className="w-full p-3 mb-4 rounded border dark:bg-gray-700 dark:text-white"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
+         <form
+  onSubmit={(e) => {
+    e.preventDefault();
+    if (!loading) login();
+  }}
+>
+  {/* EMAIL */}
+  <input
+    type="email"
+    placeholder="Admin Email"
+    className="w-full p-3 mb-4 rounded border dark:bg-gray-700 dark:text-white"
+    value={email}
+    onChange={(e) => setEmail(e.target.value)}
+  />
 
-          {/* PASSWORD */}
-          <div className="relative mb-4">
-            <input
-              type={show ? "text" : "password"}
-              placeholder="Password"
-              className="w-full p-3 rounded border dark:bg-gray-700 dark:text-white"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-            <span
-              onClick={() => setShow(!show)}
-              className="absolute right-3 top-3 cursor-pointer text-sm text-blue-500"
-            >
-              {show ? "Hide" : "Show"}
-            </span>
-          </div>
+  {/* PASSWORD */}
+  <div className="relative mb-4">
+    <input
+      type={show ? "text" : "password"}
+      placeholder="Password"
+      className="w-full p-3 rounded border dark:bg-gray-700 dark:text-white"
+      value={password}
+      onChange={(e) => setPassword(e.target.value)}
+    />
+    <span
+      onClick={() => setShow(!show)}
+      className="absolute right-3 top-3 cursor-pointer text-sm text-blue-500"
+    >
+      {show ? "Hide" : "Show"}
+    </span>
+  </div>
 
-          {/* LOGIN BUTTON */}
-          <button
-            onClick={login}
-            disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded transition disabled:opacity-60"
-          >
-            {loading ? "Logging in..." : "Login"}
-          </button>
+  {/* LOGIN BUTTON */}
+  <button
+    type="submit"
+    disabled={loading}
+    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded transition disabled:opacity-60"
+  >
+    {loading ? "Logging in..." : "Login"}
+  </button>
+</form>
+
 
           {/* FOOTER */}
           <p className="text-xs text-center text-gray-500 mt-6">

@@ -2,6 +2,9 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { ChevronsUpDown } from "lucide-react";
+import AlertPopup from "@/components/Popups/AlertPopup";
+import ConfirmPopup from "../Popups/ConfirmPopup";
+
 
 /* ---------------- TYPES ---------------- */
 type Category = {
@@ -28,6 +31,14 @@ const CategoriesList = ({ onEdit }: Props) => {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [selected, setSelected] = useState<number[]>([]);
   const [bulkAction, setBulkAction] = useState("");
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastMsg, setToastMsg] = useState("");
+  const [confirmOpen, setConfirmOpen] = useState(false);
+const [confirmConfig, setConfirmConfig] = useState<{
+  title: string;
+  message: string;
+  onConfirm: () => void;
+} | null>(null);
 
   /* ---------------- FETCH DATA ---------------- */
   useEffect(() => {
@@ -47,6 +58,32 @@ const CategoriesList = ({ onEdit }: Props) => {
     window.removeEventListener("categories:refresh", fetchCategories);
   };
 }, []);
+
+const handleDelete = (id: number) => {
+  setConfirmConfig({
+    title: "Delete category?",
+    message: "This category will be permanently deleted.",
+    onConfirm: async () => {
+      const res = await fetch(
+        `${API_URL}/api/categories/${id}`,
+        { method: "DELETE" }
+      );
+
+      if (!res.ok) {
+        setToastMsg("Delete failed");
+        setToastOpen(true);
+        return;
+      }
+
+      setCategories(prev => prev.filter(c => c.id !== id));
+      setSelected(prev => prev.filter(cid => cid !== id));
+    },
+  });
+
+  setConfirmOpen(true);
+};
+
+
 
 
   /* ---------------- FILTER + SORT ---------------- */
@@ -85,17 +122,100 @@ const CategoriesList = ({ onEdit }: Props) => {
     }
   };
 
-  /* ---------------- BULK APPLY (DUMMY) ---------------- */
-  const applyBulkAction = () => {
-    if (!bulkAction || selected.length === 0) return;
+  /* ---------------- BULK APPLY  ---------------- */
+const applyBulkAction = () => {
+  if (!bulkAction) {
+    setToastMsg("Please select a bulk action");
+    setToastOpen(true);
+    return;
+  }
 
-    alert(
-      `Bulk Action: ${bulkAction}\nSelected IDs: ${selected.join(", ")}`
-    );
+  if (selected.length === 0) {
+    setToastMsg("Please select at least one category");
+    setToastOpen(true);
+    return;
+  }
 
-    setSelected([]);
-    setBulkAction("");
-  };
+  // 🗑 DELETE
+  if (bulkAction === "delete") {
+    setConfirmConfig({
+      title: "Delete selected categories?",
+      message: "This action cannot be undone.",
+      onConfirm: async () => {
+        const res = await fetch(
+          `${API_URL}/api/categories/bulk-delete`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ids: selected }),
+          }
+        );
+
+        if (!res.ok) {
+          setToastMsg("Bulk delete failed");
+          setToastOpen(true);
+          return;
+        }
+
+        setCategories(prev =>
+          prev.filter(c => !selected.includes(c.id))
+        );
+
+        setSelected([]);
+        setBulkAction("");
+      },
+    });
+
+    setConfirmOpen(true);
+    return;
+  }
+
+  // ✅ ACTIVATE / DEACTIVATE
+  if (bulkAction === "activate" || bulkAction === "deactivate") {
+    const newStatus =
+      bulkAction === "activate" ? "active" : "inactive";
+
+    setConfirmConfig({
+      title: `Mark categories as ${newStatus}?`,
+      message: `Selected categories will be marked as ${newStatus}.`,
+      onConfirm: async () => {
+        const res = await fetch(
+          `${API_URL}/api/categories/bulk-status`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              ids: selected,
+              status: newStatus,
+            }),
+          }
+        );
+
+        if (!res.ok) {
+          setToastMsg("Bulk status update failed");
+          setToastOpen(true);
+          return;
+        }
+
+        setCategories(prev =>
+          prev.map(c =>
+            selected.includes(c.id)
+              ? { ...c, status: newStatus }
+              : c
+          )
+        );
+
+        setSelected([]);
+        setBulkAction("");
+      },
+    });
+
+    setConfirmOpen(true);
+    return;
+  }
+};
+
+
 
   /* ---------------- CHECKBOX ---------------- */
   const toggleAll = (checked: boolean) => {
@@ -142,10 +262,12 @@ const CategoriesList = ({ onEdit }: Props) => {
 
           <button
             onClick={applyBulkAction}
-            className="rounded bg-blue-100 px-3 py-1 text-sm text-blue-500 shadow-lg"
+            disabled={!bulkAction || selected.length === 0}
+            className="rounded bg-blue-100 px-3 py-1 text-sm text-blue-500 shadow-lg disabled:opacity-50"
           >
             Apply
           </button>
+
         </div>
 
         <input
@@ -231,10 +353,12 @@ const CategoriesList = ({ onEdit }: Props) => {
                     <span className="text-gray-400">|</span>
                 
                     <button
+                      onClick={() => handleDelete(cat.id)}
                       className="text-red-600 hover:underline"
                     >
                       Delete
                     </button>
+
                 
                   </div>
                 </td>
@@ -306,6 +430,27 @@ const CategoriesList = ({ onEdit }: Props) => {
           </button>
         </div>
       </div>
+                            <AlertPopup
+                              open={toastOpen}
+                              message={toastMsg}
+                              onClose={() => setToastOpen(false)}
+                            />
+                            <ConfirmPopup
+                              open={confirmOpen}
+                              title={confirmConfig?.title || ""}
+                              message={confirmConfig?.message || ""}
+                              confirmText="Delete"
+                              onCancel={() => {
+                                setConfirmOpen(false);
+                                setConfirmConfig(null);
+                              }}
+                              onConfirm={() => {
+                                confirmConfig?.onConfirm();
+                                setConfirmOpen(false);
+                                setConfirmConfig(null);
+                              }}
+                            />
+
     </div>
   );
 };

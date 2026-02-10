@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import ConfirmPopup from "@/components/Popups/ConfirmPopup";
+
 
 /* ================= TYPES ================= */
 type Author = {
@@ -27,6 +29,15 @@ const AuthorTable = ({ onEdit }: Props) => {
   const [sortAsc, setSortAsc] = useState(true);
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmConfig, setConfirmConfig] = useState<{
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  } | null>(null);
+  const [bulkAction, setBulkAction] = useState("");
+
+
 
   /* ================= FETCH ================= */
   useEffect(() => {
@@ -83,31 +94,97 @@ const AuthorTable = ({ onEdit }: Props) => {
   };
 
   /* ================= DELETE ================= */
-  const deleteAuthor = (id: number) => {
-    if (!confirm("Delete this author?")) return;
-
-    fetch(`${API_URL}/api/authors/${id}`, {
-      method: "DELETE",
-    }).then(() => {
-      setAuthors((prev) => prev.filter((a) => a.id !== id));
-      setSelected((prev) => prev.filter((x) => x !== id));
-    });
-  };
-
-  const bulkDelete = () => {
-    if (!confirm("Delete selected authors?")) return;
-
-    selected.forEach((id) => {
-      fetch(`${API_URL}/api/authors/${id}`, {
+const deleteAuthor = (id: number) => {
+  setConfirmConfig({
+    title: "Delete author?",
+    message: "This author will be permanently deleted.",
+    onConfirm: async () => {
+      await fetch(`${API_URL}/api/authors/${id}`, {
         method: "DELETE",
       });
+
+      setAuthors(prev => prev.filter(a => a.id !== id));
+      setSelected(prev => prev.filter(x => x !== id));
+    },
+  });
+
+  setConfirmOpen(true);
+};
+
+
+const applyBulkAction = () => {
+  if (!bulkAction || selected.length === 0) return;
+
+  // 🗑 DELETE
+  if (bulkAction === "delete") {
+    setConfirmConfig({
+      title: "Delete selected authors?",
+      message: "This action cannot be undone.",
+      onConfirm: async () => {
+        const res = await fetch(
+          `${API_URL}/api/authors/bulk-delete`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ids: selected }),
+          }
+        );
+
+        if (!res.ok) return;
+
+        setAuthors(prev =>
+          prev.filter(a => !selected.includes(a.id))
+        );
+        setSelected([]);
+        setBulkAction("");
+      },
     });
 
-    setAuthors((prev) =>
-      prev.filter((a) => !selected.includes(a.id))
-    );
-    setSelected([]);
-  };
+    setConfirmOpen(true);
+    return;
+  }
+
+  // ✅ ACTIVATE / DEACTIVATE
+  if (bulkAction === "activate" || bulkAction === "deactivate") {
+    const status =
+      bulkAction === "activate" ? "active" : "inactive";
+
+    setConfirmConfig({
+      title: `Mark authors as ${status}?`,
+      message: "Selected authors will be updated.",
+      onConfirm: async () => {
+        const res = await fetch(
+          `${API_URL}/api/authors/bulk-status`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              ids: selected,
+              status,
+            }),
+          }
+        );
+
+        if (!res.ok) return;
+
+        setAuthors(prev =>
+          prev.map(a =>
+            selected.includes(a.id)
+              ? { ...a, status }
+              : a
+          )
+        );
+
+        setSelected([]);
+        setBulkAction("");
+      },
+    });
+
+    setConfirmOpen(true);
+  }
+};
+
+
 
   /* ================= UI ================= */
   return (
@@ -115,16 +192,25 @@ const AuthorTable = ({ onEdit }: Props) => {
       {/* TOP BAR */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex gap-2">
-          <select className="rounded border px-3 py-1 text-sm">
-            <option>Bulk actions</option>
+          <select
+            value={bulkAction}
+            onChange={(e) => setBulkAction(e.target.value)}
+            className="rounded border px-3 py-1 text-sm"
+          >
+            <option value="">Bulk actions</option>
             <option value="delete">Delete</option>
+            <option value="activate">Activate</option>
+            <option value="deactivate">Deactivate</option>
           </select>
+
           <button
-            onClick={bulkDelete}
-            className="rounded bg-blue-600 px-3 py-1 text-sm text-white"
+            onClick={applyBulkAction}
+            disabled={!bulkAction || selected.length === 0}
+            className="rounded bg-blue-100 px-3 py-1 text-sm text-blue-500 shadow-lg disabled:opacity-50 cursor-pointer"
           >
             Apply
           </button>
+
         </div>
 
         <input
@@ -286,6 +372,23 @@ const AuthorTable = ({ onEdit }: Props) => {
           </button>
         </div>
       </div>
+
+      <ConfirmPopup
+        open={confirmOpen}
+        title={confirmConfig?.title || ""}
+        message={confirmConfig?.message || ""}
+        confirmText="Update"
+        onCancel={() => {
+          setConfirmOpen(false);
+          setConfirmConfig(null);
+        }}
+        onConfirm={() => {
+          confirmConfig?.onConfirm();
+          setConfirmOpen(false);
+          setConfirmConfig(null);
+        }}
+      />
+
     </div>
   );
 };

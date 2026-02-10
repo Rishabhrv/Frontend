@@ -8,3 +8,4 @@ npm install firebase
 npm install razorpay crypto
 npm install epubjs
 npm install @mui/material @mui/material-nextjs @emotion/cache @emotion/react @emotion/styled
+npm install recharts

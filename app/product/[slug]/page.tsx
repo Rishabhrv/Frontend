@@ -2,10 +2,11 @@
 
 import { useEffect, useState, use } from "react";
 import Image from "next/image";
-import { Heart, ShoppingCart, Star } from "lucide-react";
+import { Bell, Heart, ShoppingCart, Star,CircleCheck  } from "lucide-react";
 import ReviewSection from "@/components/reviews/ReviewSection";
 import CategoryBookSection from "@/components/books/CategoryBookSection";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
@@ -68,6 +69,8 @@ const slug = params.slug;
   const [galleryIndex, setGalleryIndex] = useState(0);
   const [showFullDesc, setShowFullDesc] = useState(false);
   const [expandedAuthors, setExpandedAuthors] = useState<Record<number, boolean>>({});
+  const [stockWarning, setStockWarning] = useState(false);
+  const [addedToCart, setAddedToCart] = useState(false);
 
 
 
@@ -187,14 +190,20 @@ const slug = params.slug;
       throw new Error("Add to cart failed");
     }
 window.dispatchEvent(new Event("cart-change"));
-    alert("Added to cart");
+        // ✅ update UI instead of alert
+    setAddedToCart(true);
   } catch (err) {
     console.error(err);
-    alert("Something went wrong");
+    
   }
 };
 
 
+const isPaperbackOnly =
+  product.product_type === "physical";
+
+const isPaperbackOutOfStock =
+  format === "paperback" && product.stock === 0;
 
       
 
@@ -202,13 +211,39 @@ window.dispatchEvent(new Event("cart-change"));
     <div className="max-w-7xl mx-auto px-25 py-6">
 
       {/* ================= BREADCRUMB ================= */}
-      <nav className="text-sm text-gray-500 mb-6 border-b border-t border-gray-300 py-4">
-        <ol className="flex items-center gap-2">
-          <li><a href="/" className="hover:underline">Home</a></li>
-          <li>/</li>
-          <li className="text-gray-800 font-medium">{product.title}</li>
-        </ol>
-      </nav>
+     <nav className="text-sm text-gray-500 mb-6 border-b border-t border-gray-300 py-4">
+  <ol className="flex items-center gap-2 flex-wrap">
+    {/* HOME */}
+    <li>
+      <Link href="/" className="hover:underline">
+        Home
+      </Link>
+    </li>
+
+    {/* CATEGORY */}
+    {product.categories?.length > 0 && (
+      <>
+        <li>/</li>
+        <li>
+          <Link
+            href={`/category/${product.categories[0].slug}`}
+            className="hover:underline"
+          >
+            {product.categories[0].name}
+          </Link>
+        </li>
+      </>
+    )}
+
+    {/* PRODUCT TITLE */}
+    <li>/</li>
+    <li className="text-gray-800 font-medium truncate">
+      {product.title}
+    </li>
+  </ol>
+</nav>
+
+
 
       {/* ================= TOP ================= */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-14">
@@ -227,7 +262,7 @@ window.dispatchEvent(new Event("cart-change"));
 
             <button
               onClick={toggleWishlist}
-              className="absolute top-4 right-4 bg-white p-2 rounded-full shadow"
+              className="absolute top-4 right-4 bg-white p-2 rounded-full shadow cursor-pointer"
             >
               <Heart
                 className={liked ? "text-red-600 fill-red-600" : "text-gray-600"}
@@ -251,7 +286,7 @@ window.dispatchEvent(new Event("cart-change"));
                 <button
                   onClick={() => canPrev && setGalleryIndex(galleryIndex - 1)}
                   disabled={!canPrev}
-                  className={`px-3 text-lg rounded-full shadow-lg rounded ${
+                  className={`px-3 text-lg rounded-full shadow-lg rounded cursor-pointer ${
                     canPrev ? "hover:bg-gray-100" : "opacity-30 cursor-not-allowed"
                   }`}
                 >
@@ -270,7 +305,7 @@ window.dispatchEvent(new Event("cart-change"));
                       <button
                         key={i}
                         onClick={() => setActiveImage(img.image_path)}
-                        className={`border rounded p-1 flex-shrink-0 ${
+                        className={`border rounded p-1 flex-shrink-0  ${
                           activeImage === img.image_path
                             ? "border-red-400"
                             : "border-gray-300"
@@ -280,7 +315,7 @@ window.dispatchEvent(new Event("cart-change"));
                           src={`${API_URL}${img.image_path}`}
                           width={70}
                           height={100}
-                          className="h-24 w-[70px] object-cover"
+                          className="h-24 w-[70px] object-cover cursor-pointer"
                           unoptimized
                           alt=""
                         />
@@ -293,7 +328,7 @@ window.dispatchEvent(new Event("cart-change"));
                 <button
                   onClick={() => canNext && setGalleryIndex(galleryIndex + 1)}
                   disabled={!canNext}
-                  className={`px-3 text-lg rounded-full  shadow-lg rounded ${
+                  className={`px-3 text-lg rounded-full cursor-pointer shadow-lg rounded ${
                     canNext ? "hover:bg-gray-100" : "opacity-30 cursor-not-allowed"
                   }`}
                 >
@@ -344,12 +379,25 @@ window.dispatchEvent(new Event("cart-change"));
                   <span className="text-lg line-through text-gray-400">
                     ₹{product.price}
                   </span>
-                )}
+              )}
+              
+              {format === "ebook" &&
+                product.ebook_price &&
+                product.ebook_sell_price &&
+                product.ebook_price > product.ebook_sell_price && (
+                  <span className="text-lg line-through text-gray-400">
+                    ₹{product.ebook_price}
+                  </span>
+              )}
+
             </div>
 
             <p className="text-xs text-gray-500">
-                Order now for delivery in 6 to 7 days
+              {format === "paperback"
+                ? "Order now for delivery in 6 to 7 days"
+                : "Buy now and the eBook will be available instantly in My Books"}
             </p>
+
 
             {/* DISCOUNT STRIP */}
             {format === "paperback" && paperbackDiscount > 0 && (
@@ -359,12 +407,19 @@ window.dispatchEvent(new Event("cart-change"));
               </div>
             )}
 
+            {format === "ebook" && ebookDiscount > 0 && (
+              <div className="flex items-center gap-2 bg-red-50 text-red-700 text-sm px-4 py-2 rounded">
+                <span>Save up to {ebookDiscount}% Off on this eBook</span>
+                <button className="underline text-xs">Learn More</button>
+              </div>
+            )}
+
             {/* FORMAT BOXES */}
             <div className="flex gap-3">
               {product.product_type !== "ebook" && (
                 <button
                   onClick={() => setFormat("paperback")}
-                  className={`border rounded-md px-4 py-3 w-40 text-left ${
+                  className={`border rounded-md px-4 py-3 w-40 text-left cursor-pointer ${
                     format === "paperback"
                       ? "border-black shadow-sm"
                       : "border-gray-300"
@@ -378,7 +433,7 @@ window.dispatchEvent(new Event("cart-change"));
               {product.product_type !== "physical" && (
                 <button
                   onClick={() => setFormat("ebook")}
-                  className={`border rounded-md px-4 py-3 w-40 text-left ${
+                  className={`border rounded-md px-4 py-3 w-40 text-left cursor-pointer ${
                     format === "ebook"
                       ? "border-black shadow-sm"
                       : "border-gray-300"
@@ -395,45 +450,96 @@ window.dispatchEvent(new Event("cart-change"));
 
           {/* ================= ACTIONS ================= */}
           <div className="flex flex-col gap-6 mb-10">
+            {format === "paperback" &&
+              (product.stock === 0 || stockWarning) && (
+                <p className="text-xs text-red-600 mt-1">
+                  {product.stock === 0
+                    ? "Out of stock"
+                    : `Only ${product.stock} copies available`}
+                </p>
+            )}
+
+
 
             {/* CONTROLS ROW */}
-            <div className="flex  flex-wrap items-center gap-4">
-          
-              {/* QUANTITY → ONLY FOR PAPERBACK */}
-              {format === "paperback" && (
-                <div className="flex items-center border border-gray-300 rounded-md overflow-hidden">
+            <div className="flex flex-wrap items-center gap-4">
+            
+              {/* OUT OF STOCK MESSAGE (paperback only) */}
+              {isPaperbackOnly && product.stock === 0 ? (
+                <button
+                  className="px-6 py-2 text-sm font-medium bg-black text-white rounded-md hover:bg-gray-800 transition cursor-pointer flex items-center gap-2"
+                >
+                  <Bell size={16} /> Notify when available
+                </button>
+              ) : (
+                <>
+                  {/* QUANTITY → ONLY FOR PAPERBACK */}
+                  {format === "paperback" && (
+                    <div className="flex items-center border border-gray-300 rounded-md overflow-hidden">
+                      <button
+                        onClick={() =>
+                          setQty((q) => (q > 1 ? q - 1 : 1))
+                        }
+                        className="px-3 py-2 text-lg hover:bg-gray-100 cursor-pointer"
+                      >
+                        −
+                      </button>
+            
+                      <span className="px-4 py-2 min-w-[40px] text-center">
+                        {qty}
+                      </span>
+            
+                      <button
+                        onClick={() => {
+                          if (product.stock && qty >= product.stock) {
+                            setStockWarning(true);
+                            return;
+                          }
+            
+                          setQty((q) => q + 1);
+                          setStockWarning(false);
+                        }}
+                        className="px-3 py-2 text-lg hover:bg-gray-100 cursor-pointer"
+                      >
+                        +
+                      </button>
+                    </div>
+                  )}
+            
+                  {/* ADD TO CART */}
                   <button
-                    onClick={() =>
-                      setQty((q) => (q > 1 ? q - 1 : 1))
+                    onClick={addToCart}
+                    disabled={
+                      addedToCart || (format === "paperback" && product.stock === 0)
                     }
-                    className="px-3 py-2 text-lg hover:bg-gray-100"
+                    className={`flex items-center gap-2 px-30 py-3 rounded-md transition cursor-pointer ${
+                      addedToCart
+                        ? "bg-green-600 text-white cursor-default"
+                        : "bg-black text-white hover:bg-gray-800"
+                    } ${
+                      format === "paperback" && product.stock === 0
+                        ? "opacity-50 cursor-not-allowed"
+                        : ""
+                    }`}
                   >
-                    −
+                    {addedToCart ? (
+                      <>
+                        <CircleCheck size={18} />
+                        Added
+                      </>
+                    ) : (
+                      <>
+                        <ShoppingCart size={18} />
+                        Add to Cart
+                      </>
+                    )}
                   </button>
-          
-                  <span className="px-4 py-2 min-w-[40px] text-center">
-                    {qty}
-                  </span>
-          
-                  <button
-                    onClick={() => setQty((q) => q + 1)}
-                    className="px-3 py-2 text-lg hover:bg-gray-100"
-                  >
-                    +
-                  </button>
-                </div>
+
+                </>
               )}
-          
-              {/* ADD TO CART */}
-              <button
-                onClick={addToCart}
-                className="flex items-center gap-2 bg-black text-white px-30 py-3 rounded-md hover:bg-gray-800 transition"
-              >
-                <ShoppingCart size={18} />
-                Add to Cart
-              </button>
-          
-          </div>
+            
+            </div>
+
           
 
             {/* TRUST STRIP */}
@@ -551,7 +657,7 @@ window.dispatchEvent(new Event("cart-change"));
                   src={
                     a.image
                       ? `${API_URL}${a.image}`
-                      : "/images/avatar.png"
+                      : `/default-author.png`
                   }
                   width={60}
                   height={60}
