@@ -19,6 +19,7 @@ jobs:
           host: 178.16.137.226
           username: rishabhvyas
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          connect_timeout: 60s
           script: |
             # set -e makes the script exit immediately if any command returns a non-zero status
             set -e
