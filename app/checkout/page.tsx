@@ -564,6 +564,7 @@ const rpRes = await fetch(`${API_URL}/api/payment/create-order`, {
             {couponError && (
               <p className="text-xs text-red-600 mt-1">{couponError}</p>
             )}
+
           
 {couponApplied && couponInfo.eligible_items && (
   <p className="text-xs text-green-600 mt-1">
@@ -591,12 +592,13 @@ const rpRes = await fetch(`${API_URL}/api/payment/create-order`, {
 
           <hr className="my-4 border-gray-200" />
           
-          {couponDiscount > 0 && (
-            <div className="flex justify-between text-sm text-green-700">
-              <span>Coupon Discount</span>
-              <span>-₹{couponDiscount.toFixed(2)}</span>
-            </div>
-          )}
+          {couponApplied && (
+  <div className="flex justify-between text-sm text-green-700">
+    <span>Coupon Discount</span>
+    <span>-₹{couponDiscount.toFixed(2)}</span>
+  </div>
+)}
+
 
           <div className="flex justify-between font-semibold mb-4">
             <span>Total</span>
