@@ -3,12 +3,13 @@
 
 import React, { useState,useEffect } from "react";
 import { useRef } from "react";
-import { Upload } from "lucide-react";
+import { Upload, Eye } from "lucide-react";
 import ProductAttributes from "./ProductAttributes";
 import ProductGallery from "./ProductGallery";
 import ProductAuthor from "./ProductAuthor";
 import PopupModal from "../Popups/PopupModal";
 import AlertPopup from "@/components/Popups/AlertPopup";
+import { useRouter } from "next/navigation";
 
 
 
@@ -71,6 +72,13 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [toastOpen, setToastOpen] = useState(false);
     const [toastMsg, setToastMsg] = useState("");
+    const [existingEbookType, setExistingEbookType] = useState<string | null>(null);
+    const router = useRouter();
+    const [needsConversion, setNeedsConversion] = useState(false);
+    const [isConverting, setIsConverting] = useState(false);
+    const [convertedFilePath, setConvertedFilePath] = useState<string | null>(null);
+
+
 
 
     useEffect(() => {
@@ -104,6 +112,7 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
       }
       if (data.ebook_path) {
         setExistingEbook(`${API_URL}${data.ebook_path}`);
+        setExistingEbookType(data.ebook_type);
       }
 
       setEbookPrice(data.ebook_price);
@@ -125,6 +134,85 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
       setErrors(newErrors);
       return Object.keys(newErrors).length === 0;
     };
+
+
+const handlePreview = () => {
+  if (!existingEbook) return;
+
+  router.push(
+    `/admin/product/PreviewPage?slug=${slug}`
+  );
+};
+
+const handleConvert = async () => {
+  if (!ebookFile) return;
+
+  setIsConverting(true);
+
+  const attributes = attributesRef.current?.getAttributes() || [];
+  const authors = authorRef.current?.getAuthors() || [];
+
+  const formData = new FormData();
+
+  formData.append("file", ebookFile);
+
+  // 🔥 ALL FORM DATA
+  formData.append("title", title);
+  formData.append("description", description);
+  formData.append("price", price);
+  formData.append("sell_price", sellPrice);
+  formData.append("stock", stock);
+  formData.append("sku", sku);
+  formData.append("product_type", productType);
+  formData.append("status", status);
+
+  formData.append("weight", weight);
+  formData.append("length", length);
+  formData.append("width", width);
+  formData.append("height", height);
+
+  formData.append("ebook_price", ebookPrice);
+  formData.append("ebook_sell_price", ebookSellPrice);
+
+  formData.append("categories", JSON.stringify(selectedCategories));
+  formData.append("authors", JSON.stringify(authors));
+  formData.append("attributes", JSON.stringify(attributes));
+
+  formData.append("meta_title", metaTitle);
+  formData.append("meta_description", metaDescription);
+  formData.append("keywords", keywords);
+
+  if (productId) {
+    formData.append("product_id", String(productId));
+  }
+
+  try {
+    const res = await fetch(`${API_URL}/api/products/convert-doc`, {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) throw new Error(data.message);
+
+    setConvertedFilePath(data.epubPath);
+
+    if (!productId && data.productId) {
+      router.replace(`/admin/product/EditProduct?id=${data.productId}`);
+    }
+
+    setNeedsConversion(false);
+
+  } catch (error: any) {
+    setToastMsg(error.message);
+    setToastOpen(true);
+  }
+
+  setIsConverting(false);
+};
+
+
 
 
 const handleSubmit = async () => {
@@ -164,7 +252,9 @@ const handleSubmit = async () => {
   formData.append("width", width);
   formData.append("height", height);
 
-  if (ebookFile) {
+  if (convertedFilePath) {
+    formData.append("converted_epub", convertedFilePath);
+  } else if (ebookFile) {
     formData.append("ebook", ebookFile);
   }
   formData.append("ebook_price", ebookPrice);
@@ -226,6 +316,8 @@ const handleSubmit = async () => {
           ? "Product updated successfully"
           : "Product added successfully",
       });
+
+
 
 };
 
@@ -303,6 +395,7 @@ const handleSubmit = async () => {
 
 
     const categoryTree = buildCategoryTree(categories);
+
 
 
   return (
@@ -517,7 +610,8 @@ const handleSubmit = async () => {
 
                     {/* ✅ EXISTING FILE */}
                     {existingEbook && !ebookFile && (
-                      <div className="mb-3 text-sm text-green-700">
+                      <div className="flex justify-between">
+                      <div className=" text-sm text-green-700">
                         📘 Existing file:
                         <a
                           href={existingEbook}
@@ -526,9 +620,27 @@ const handleSubmit = async () => {
                         >
                           View / Download
                         </a>
+                        
                       </div>
+                      {mode === "edit" &&
+                         existingEbook &&
+                         existingEbookType === "epub" &&
+                         !ebookFile && (
+                          <div className="mt-3">
+                            <button
+                              type="button"
+                              onClick={handlePreview}
+                              className=" p-1 m-1 bg-gray-800 text-white rounded hover:bg-gray-700 cursor-pointer"
+                            >
+                              <Eye width={20} height={20} />
+                            </button>
+                          </div>
+                        )}
+                      
+                      </div>
+                      
                     )}
-                
+                    
                     {/* 🔁 UPLOAD NEW */}
                     <label className="cursor-pointer block">
                       <div className="flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-500">
@@ -546,14 +658,53 @@ const handleSubmit = async () => {
                 
                       <input
                         type="file"
-                        accept=".pdf,.epub"
+                        accept=".doc,.docx,.epub"
                         hidden
                         onChange={(e) => {
                           const file = e.target.files?.[0];
-                          if (file) setEbookFile(file);
+                          if (!file) return;
+                        
+                          const ext = file.name.split(".").pop()?.toLowerCase();
+                        
+                          if (ext === "doc" || ext === "docx") {
+                            setNeedsConversion(true);
+                          } else {
+                            setNeedsConversion(false);
+                          }
+                        
+                          setEbookFile(file);
                         }}
                       />
                     </label>
+
+                    {needsConversion && ebookFile && !convertedFilePath && (
+                      <div className="mt-3">
+                        <button
+                          type="button"
+                          disabled={isConverting}
+                          onClick={handleConvert}
+                          className="px-4 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700 disabled:opacity-50"
+                        >
+                          {isConverting ? "Converting..." : "Convert to EPUB"}
+                        </button>
+                      </div>
+                    )}
+
+                    {convertedFilePath && (
+                      <div className="mt-3">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            router.push(`/admin/product/TempPreviewPage?temp=${convertedFilePath}`)
+                          }
+                          className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                        >
+                          Preview Converted EPUB
+                        </button>
+                      </div>
+                    )}
+
+
                   </div>
                 )}
 

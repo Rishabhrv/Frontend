@@ -28,6 +28,17 @@ const Header = () => {
   const [showSearch, setShowSearch] = useState(false);
   const [cartCount, setCartCount] = useState(0);
 
+    // 🔥 ADD THIS HERE
+  useEffect(() => {
+    const openSlider = () => setSliderOpen(true);
+
+    window.addEventListener("open-account-slider", openSlider);
+
+    return () => {
+      window.removeEventListener("open-account-slider", openSlider);
+    };
+  }, []);
+
 
   useEffect(() => {
     if (query.length < 2) {

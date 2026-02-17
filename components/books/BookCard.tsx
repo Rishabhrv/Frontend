@@ -68,7 +68,7 @@ const BookCard = ({ book, visibleCount }: BookCardProps) => {
   const token = localStorage.getItem("token");
 
   if (!token) {
-    window.location.href = "/login";
+    window.dispatchEvent(new Event("open-account-slider"));
     return;
   }
 
@@ -109,7 +109,7 @@ const getCartFormat = () => {
 const addToCart = async () => {
   const token = localStorage.getItem("token");
   if (!token) {
-    window.location.href = "/login";
+    window.dispatchEvent(new Event("open-account-slider"));
     return;
   }
 

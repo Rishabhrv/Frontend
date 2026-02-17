@@ -119,7 +119,7 @@ const slug = params.slug;
 
   const toggleWishlist = async () => {
     const token = localStorage.getItem("token");
-    if (!token) return (window.location.href = "/login");
+    if (!token) return (window.dispatchEvent(new Event("open-account-slider")));
 
     await fetch(
       `${API_URL}/api/wishlist/${product?.id}`,
@@ -163,13 +163,12 @@ const slug = params.slug;
     return words.slice(0, limit).join(" ");
   };
 
-  const addToCart = async () => {
+const addToCart = async () => {
   const token = localStorage.getItem("token");
 
-  // 🔐 NOT LOGGED IN → REDIRECT TO LOGIN
   if (!token) {
-    window.location.href = "/login";
-    return; // ⛔ stop function execution
+    window.dispatchEvent(new Event("open-account-slider"));
+    return;
   }
 
   try {
@@ -189,14 +188,22 @@ const slug = params.slug;
     if (!res.ok) {
       throw new Error("Add to cart failed");
     }
-window.dispatchEvent(new Event("cart-change"));
-        // ✅ update UI instead of alert
+
+    window.dispatchEvent(new Event("cart-change"));
+
+    // ✅ Show "Added"
     setAddedToCart(true);
+
+    // 🔥 Reset after 2 seconds
+    setTimeout(() => {
+      setAddedToCart(false);
+    }, 1500);
+
   } catch (err) {
     console.error(err);
-    
   }
 };
+
 
 
 const isPaperbackOnly =
@@ -212,7 +219,7 @@ const isPaperbackOutOfStock =
 
       {/* ================= BREADCRUMB ================= */}
      <nav className="text-sm text-gray-500 mb-6 border-b border-t border-gray-300 py-4">
-  <ol className="flex items-center gap-2 flex-wrap">
+  <ol className="flex items-center gap-2 whitespace-nowrap overflow-hidden">
     {/* HOME */}
     <li>
       <Link href="/" className="hover:underline">
