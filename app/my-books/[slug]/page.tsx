@@ -2,432 +2,491 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
-import ePub from "epubjs";
-import type { Contents } from "epubjs";
 import {
   ChevronLeft,
   ChevronRight,
+  Moon,
+  Sun,
+  Menu,
   Plus,
   Minus,
   BookOpen,
-  Sun,
-  Moon,
-  Bookmark,
+  StickyNote,
+  Search,
+    List,
+  Type,
 } from "lucide-react";
+
+
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
-type TocItem = {
-  id: string;
-  label: string;
-  href: string;
-};
-
-const token =
-  typeof window !== "undefined"
-    ? localStorage.getItem("token")
-    : null;
-
-
-
-const normalizeHref = (href?: string) =>
-  href ? href.split("#")[0].replace(/^(\.\.\/)+/, "") : "";
-
 export default function EpubReaderPage() {
-  const params = useParams();
-  const slug = typeof params?.slug === "string" ? params.slug : null;
+  const { slug } = useParams() as { slug: string };
 
-  const viewerRef = useRef<HTMLDivElement>(null);
-  const tocRef = useRef<HTMLDivElement>(null);
-
-  const bookRef = useRef<any>(null);
-  const renditionRef = useRef<any>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const viewRef = useRef<any>(null);
 
   const [title, setTitle] = useState("");
-  const [toc, setToc] = useState<TocItem[]>([]);
-  const [activeHref, setActiveHref] = useState<string | null>(null);
-
-  const [fontSize, setFontSize] = useState(100);
-  const [theme, setTheme] = useState<"light" | "dark">("light");
   const [progress, setProgress] = useState(0);
+  const [theme, setTheme] = useState<"light" | "dark" | "read">("light");
+  const [pageMode, setPageMode] = useState<"single" | "double">("double");
+  const [fontSize, setFontSize] = useState(100);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [loading, setLoading] = useState(true);
-  const [bookmarks, setBookmarks] = useState<
-  { id: number; cfi: string; label: string }[]
->([]);
+  const [toc, setToc] = useState<any[]>([]);
+  const [fontFamily, setFontFamily] = useState("serif");
+  const [lineHeight, setLineHeight] = useState(1.6);
+  const [panel, setPanel] = useState<"search" | "toc" | "typography">("toc");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
-  /* ================= LOAD BOOK META ================= */
+
+useEffect(() => {
+  if (typeof window !== "undefined") {
+    import("@/lib/foliate/view.js");
+  }
+}, []);
+
+
+  /* ================= LOAD META ================= */
   useEffect(() => {
     if (!slug) return;
+
     const token = localStorage.getItem("token");
 
     fetch(`${API_URL}/api/my-books/${slug}/meta`, {
       headers: { Authorization: `Bearer ${token}` },
     })
-      .then(r => r.json())
-      .then(d => setTitle(d.title || ""))
-      .catch(() => setTitle(""));
+      .then((r) => r.json())
+      .then((d) => setTitle(d.title || ""))
+      .catch(() => {});
   }, [slug]);
 
-  const isCurrentBookmarked = () => {
-  const cfi = renditionRef.current?.location?.start?.cfi;
-  if (!cfi) return false;
+  
 
-  return bookmarks.some(bm => bm.cfi === cfi);
-};
-
-
-const toggleBookmark = async () => {
-  const cfi = renditionRef.current.location.start.cfi;
-
-  if (isCurrentBookmarked()) {
-    // ❌ DELETE
-    await fetch(`${API_URL}/api/my-books/${slug}/bookmark`, {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ cfi }),
-    });
-
-    setBookmarks(prev => prev.filter(b => b.cfi !== cfi));
-  } else {
-    // ✅ ADD
-    const label = `Bookmark at ${progress}%`;
-
-    await fetch(`${API_URL}/api/my-books/${slug}/bookmark`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ cfi, label }),
-    });
-
-    setBookmarks(prev => [
-      { id: Date.now(), cfi, label },
-      ...prev,
-    ]);
-  }
-};
-
-
-  /* ================= LOAD EPUB ================= */
+  /* ================= LOAD BOOK ================= */
   useEffect(() => {
-    setLoading(true);
-    if (!slug || !viewerRef.current) return;
+    if (!slug) return;
+    if (!containerRef.current) return;
 
     const token = localStorage.getItem("token");
-    if (!token) {
-      window.location.href = "/login";
-      return;
-    }
+    if (!token) return;
 
     let destroyed = false;
 
-    (async () => {
+    const loadBook = async () => {
+      setLoading(true);
+
       const res = await fetch(
         `${API_URL}/api/my-books/${slug}/read`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      const buffer = await (await res.blob()).arrayBuffer();
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+
       if (destroyed) return;
 
-      const book = ePub(buffer);
-      bookRef.current = book;
+      const view = document.createElement("foliate-view") as any;
 
-      const rendition = book.renderTo(viewerRef.current!, {
-        width: "100%",
-        height: "100%",
-        flow: "scrolled",
-        spread: "none",
+      containerRef.current!.innerHTML = "";
+      containerRef.current!.appendChild(view);
+
+      viewRef.current = view;
+
+      view.addEventListener("relocate", (e: any) => {
+        setProgress(Math.round(e.detail.fraction * 100));
       });
 
-      renditionRef.current = rendition;
+      await view.open(url);
 
-      /* ===== THEMES ===== */
-      rendition.themes.register("light", {
-        body: { background: "#ffffff", color: "#111827" },
+      requestAnimationFrame(() => {
+        view.goTo(0); // force first page render
       });
 
-      rendition.themes.register("dark", {
-        body: { background: "#111827", color: "#f9fafb" },
-      });
-
-      rendition.themes.default({
-        body: {
-          lineHeight: "1.6",
-          padding: "40px",
-        },
-      });
-
-      rendition.themes.select(theme);
-      rendition.themes.fontSize(`${fontSize}%`);
-
-      /* ===== CONTENT HOOK ===== */
-      rendition.hooks.content.register((contents: Contents) => {
-  const doc = contents.document;
-  const scrollingEl =
-    doc.scrollingElement || doc.documentElement || doc.body;
-
-  // Enable scrolling
-  doc.documentElement.style.height = "100%";
-  doc.body.style.height = "100%";
-  doc.documentElement.style.overflowY = "auto";
-  doc.body.style.overflowY = "auto";
-  doc.documentElement.style.scrollBehavior = "smooth";
-
-  // ---- Scrollbar styling (WebKit) ----
-  const style = doc.createElement("style");
-  style.innerHTML = `
-    ::-webkit-scrollbar {
-      width: 8px;
-    }
-    ::-webkit-scrollbar-track {
-      background: transparent;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: rgba(0,0,0,0.35);
-      border-radius: 8px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-      background: rgba(0,0,0,0.55);
-    }
-  `;
-  doc.head.appendChild(style);
-});
-
-
-      await rendition.display();
-      const bookmarksRes = await fetch(
-        `${API_URL}/api/my-books/${slug}/bookmarks`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
       
-      const bookmarkData = await bookmarksRes.json();
-      setBookmarks(bookmarkData);
+      setToc(view.book?.toc || []);
+
       setLoading(false);
+    };
 
-      /* ===== TOC ===== */
-      const nav = await book.loaded.navigation;
-      setToc(nav.toc || []);
-
-      await book.locations.generate(1600);
-      const progressRes = await fetch(`${API_URL}/api/my-books/continue`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const progress = await progressRes.json();
-      
-      const current = progress.find((b:any) => b.slug === slug);
-      if (current?.last_cfi) {
-        rendition.display(current.last_cfi);
-      }
-
-
-      /* ===== RELOCATION ===== */
-      rendition.on("relocated", (loc: any) => {
-
-          const cfi = loc.start.cfi;
-
-  fetch(`${API_URL}/api/my-books/${slug}/progress`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${localStorage.getItem("token")}`,
-    },
-    body: JSON.stringify({ cfi }),
-  });
-  const href = normalizeHref(loc.start.href);
-  setActiveHref(href);
-
-  try {
-    const percent =
-      book.locations.percentageFromCfi(loc.start.cfi) || 0;
-    setProgress(Math.round(percent * 100));
-  } catch {
-    setProgress(0);
-  }
-
-
-  setTimeout(() => {
-    const el = tocRef.current?.querySelector(
-      `[data-href="${href}"]`
-    ) as HTMLElement | null;
-    el?.scrollIntoView({ block: "center" });
-  }, 100);
-});
-
-    })();
+    loadBook();
 
     return () => {
       destroyed = true;
-      renditionRef.current?.destroy();
-      bookRef.current?.destroy();
+      viewRef.current?.close?.();
+      viewRef.current?.remove?.();
     };
-  }, [slug, theme]);
+  }, [slug]);
 
-  /* ================= FONT SIZE ================= */
-  useEffect(() => {
-    renditionRef.current?.themes.fontSize(`${fontSize}%`);
-  }, [fontSize]);
+/* ================= TYPOGRAPHY ================= */
+useEffect(() => {
+  if (!viewRef.current) return;
 
-  if (!slug) return <p className="p-10">Invalid book</p>;
+  const applyTypography = () => {
+  const contents = viewRef.current.renderer?.getContents?.();
+  if (!contents) return;
+
+  contents.forEach((item: any) => {
+    const doc = item.doc;
+    if (!doc) return;
+
+    // Base styles
+    doc.documentElement.style.fontSize = `${fontSize}%`;
+    doc.documentElement.style.fontFamily = fontFamily;
+
+    // Force line height globally
+    const style = doc.createElement("style");
+    style.innerHTML = `
+      html, body, p, div, span, li, blockquote {
+        line-height: ${lineHeight} !important;
+      }
+    `;
+
+    doc.head.appendChild(style);
+  });
+};
+
+
+  applyTypography();
+
+  viewRef.current.addEventListener("load", applyTypography);
+
+  return () => {
+    viewRef.current?.removeEventListener("load", applyTypography);
+  };
+}, [fontSize, fontFamily, lineHeight]);
+
+const handleSearch = async (query: string) => {
+
+    if (!viewRef.current || query.trim().length < 3) {
+    setSearchResults([]);
+    viewRef.current?.clearSearch?.(); // ← important
+    return;
+  }
+
+  setSearching(true);
+  setSearchResults([]);
+
+  const results: any[] = [];
+
+  try {
+    for await (const item of viewRef.current.search({
+      query,
+      wholeWords: false,
+    })) {
+      if (item === "done") break;
+
+      if (item.subitems) {
+        item.subitems.forEach((sub: any) => {
+          results.push({
+            cfi: sub.cfi,
+            excerpt: sub.excerpt,
+            label: item.label,
+          });
+        });
+      }
+    }
+
+    setSearchResults(results);
+  } catch (err) {
+    console.error(err);
+  }
+
+  setSearching(false);
+};
+
+
+const toggleFullscreen = () => {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen();
+    setIsFullscreen(true);
+  } else {
+    document.exitFullscreen();
+    setIsFullscreen(false);
+  }
+};
+
+
+
+/* ================= THEME ================= */
+useEffect(() => {
+  if (!viewRef.current) return;
+
+  const view = viewRef.current;
+
+  if (theme === "dark") {
+    view.style.setProperty(
+      "--reader-filter",
+      "invert(1) hue-rotate(180deg)"
+    );
+  } else {
+    view.style.setProperty("--reader-filter", "none");
+  }
+
+  // Apply to shadow part
+  view.style.setProperty(
+    "filter",
+    theme === "dark"
+      ? "invert(1) hue-rotate(180deg)"
+      : "none"
+  );
+}, [theme]);
+
+useEffect(() => {
+  if (!viewRef.current?.renderer) return;
+
+  const renderer = viewRef.current.renderer;
+
+  renderer.setAttribute("flow", "paginated");
+
+  renderer.setAttribute(
+    "max-column-count",
+    pageMode === "single" ? "1" : "2"
+  );
+}, [pageMode]);
+
+
+  if (!slug) return null;
 
   return (
-    <div className="fixed inset-0 flex bg-gray-100">
-      {/* ===== SIDEBAR ===== */}
+    <div className="fixed inset-0 flex bg-[#1e1e1e] text-white">
+{/* ===== SIDEBAR ===== */}
+      <div
+        className={`${
+          sidebarOpen ? "w-72" : "w-16"
+        } bg-[#1a1a1a] border-r border-gray-800 transition-all duration-300 flex p-5`}
+      >
+        {/* ICON COLUMN */}
+        <div className="flex flex-col items-center py-4 gap-6 border-b border-gray-800">
+          <button className="cursor-pointer" onClick={() => setSidebarOpen(!sidebarOpen)}><Menu size={20} /></button>
 
-      {loading && (
-  <div className="absolute inset-0 z-50 flex items-center justify-center
-                  bg-white/80 backdrop-blur">
-    <div className="flex flex-col items-center gap-3">
-      <div className="h-8 w-8 border-4 border-gray-300
-                      border-t-blue-600 rounded-full animate-spin" />
-      <p className="text-sm text-gray-600 font-medium">
-        Loading book…
+          <button className="cursor-pointer" onClick={() => setPanel("search")}>
+            <Search size={20} />
+          </button>
+
+          <button className="cursor-pointer" onClick={() => setPanel("toc")}>
+            <List size={20} />
+          </button>
+
+          <button className="cursor-pointer" onClick={() => setPanel("typography")}>
+            <Type size={20} />
+          </button>
+
+          <span className="text-xs">{progress}%</span>
+        </div>
+
+        {/* EXPANDED CONTENT */}
+        {sidebarOpen && (
+          <div className="flex-1 overflow-y-auto p-4 text-sm">
+
+            {panel === "search" && (
+      <div>
+        <input
+          value={searchQuery}
+          onChange={(e) => {
+            const value = e.target.value;
+            setSearchQuery(value);
+          
+            if (value.trim().length >= 3) {
+              handleSearch(value);
+            } else {
+              setSearchResults([]);
+          
+              // 🔥 Clear highlights from book
+              viewRef.current?.clearSearch?.();
+            }
+          }}
+          placeholder="Search..."
+          className="w-full p-2 bg-gray-800"
+        />
+
+
+    {searching && (
+      <p className="text-xs text-gray-400 mt-2">
+        Searching...
       </p>
+    )}
+
+    <div className="mt-4 space-y-3">
+      {searchResults.map((result, i) => (
+        <button
+          key={i}
+          onClick={() => viewRef.current?.goTo(result.cfi)}
+          className="text-left w-full text-xs hover:text-gray-300"
+        >
+          <div className="font-semibold cursor-pointer">
+            {result.label}
+          </div>
+        <div/>
+        </button>
+      ))}
     </div>
   </div>
 )}
 
-      <aside className="w-72 bg-white border-r flex flex-col">
 
-  {/* CONTENTS */}
-  <div className="border-b p-4 font-semibold flex items-center gap-2">
-    <BookOpen size={18} /> Contents
-  </div>
+            {panel === "toc" && (
+              <ul className="space-y-2">
 
-  <div ref={tocRef} className="flex-1 overflow-y-auto">
-    <ul className="text-sm">
-      {toc.map(item => {
-        const href = normalizeHref(item.href);
-        const active =
-          activeHref &&
-          (activeHref === href || activeHref.endsWith(href));
+                {toc.map((item, i) => (
+                  <li key={i}>
+                    <button
+                      onClick={() => viewRef.current?.goTo(item.href)}
+                      className="text-left text-xs w-full hover:bg-gray-100 hover:text-black p-1 rounded-xs cursor-pointer"
+                    >
+                      {item.label}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
 
-        return (
-          <li key={item.id} >
-            <button
-              onClick={() =>
-                renditionRef.current?.display(item.href)
-              }
-              className={`w-full px-4 py-2 text-left ${
-                active
-                  ? "bg-blue-600 text-white"
-                  : "hover:bg-gray-100"
-              }`}
-            >
-              {item.label}
-            </button>
-          </li>
-        );
-      })}
-    </ul>
-  </div>
+            {panel === "typography" && (
+              <div className="space-y-4">
 
-  {/* BOOKMARKS (sticky bottom) */}
-  {bookmarks.length > 0 && (
-    <div className="border-t bg-gray-50">
-      <div className="p-3 font-semibold flex items-center gap-2">
-        <Bookmark size={16} /> Bookmarks
-      </div>
+                <div>
+                  <label>Font</label>
+                  <select
+                    value={fontFamily}
+                    onChange={(e) => setFontFamily(e.target.value)}
+                    className="w-full bg-gray-800 p-2 mt-1 cursor-pointer"
+                  >
+                    <option value="serif">Serif</option>
+                    <option value="sans-serif">Sans</option>
+                    <option value="Georgia">Georgia</option>
+                    <option value="Arial">Arial</option>
+                  </select>
+                </div>
 
-      <ul className="text-sm max-h-48 overflow-y-auto">
-        {bookmarks.map(bm => (
-          <li key={bm.id}>
-            <button
-              onClick={() =>
-                renditionRef.current?.display(bm.cfi)
-              }
-              className="w-full text-left px-4 py-2 hover:bg-yellow-100"
-            >
-              {bm.label}
-            </button>
-          </li>
-        ))}
-      </ul>
-    </div>
-  )}
-</aside>
+                <div>
+                  <label>Font Size</label>
+                  <div className="flex gap-2 mt-1">
+                    <button
+                      onClick={() => setFontSize((f) => f - 10)}
+                      className="flex-1 bg-gray-800 p-2 cursor-pointer"
+                    >
+                      A-
+                    </button>
+                    <button
+                      onClick={() => setFontSize((f) => f + 10)}
+                      className="flex-1 bg-gray-800 p-2 cursor-pointer"
+                    >
+                      A+
+                    </button>
+                  </div>
+                </div>
 
+                <div>
+                  <label>Line Spacing</label>
+                  <div className="flex gap-2 mt-1">
+                    <button
+                      onClick={() => setLineHeight((l) => l - 0.1)}
+                      className="flex-1 bg-gray-800 p-2 cursor-pointer"
+                    >
+                      -
+                    </button>
+                    <button
+                      onClick={() => setLineHeight((l) => l + 0.1)}
+                      className="flex-1 bg-gray-800 p-2 cursor-pointer"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
 
+                <div>
+                  <label>Layout</label>
+                  <div className="flex gap-2 mt-1">
+                    <button
+                      onClick={() => setPageMode("single")}
+                      className={`flex-1 p-2 cursor-pointer ${
+                        pageMode === "single"
+                          ? "bg-white text-black"
+                          : "bg-gray-800"
+                      }`}
+                    >
+                      1 Page
+                    </button>
+                    <button
+                      onClick={() => setPageMode("double")}
+                      className={`flex-1 p-2 cursor-pointer ${
+                        pageMode === "double"
+                          ? "bg-white text-black"
+                          : "bg-gray-800"
+                      }`}
+                    >
+                      2 Page
+                    </button>
+                  </div>
+                </div>
 
-      {/* ===== MAIN ===== */}
-      <div className="flex-1 flex flex-col">
-        {/* ===== TOOLBAR ===== */}
-        <div className="h-14 bg-white border-b border-gray-200 flex items-center px-6 gap-4">
-          
+                <div>
+                  <label>Theme</label>
+                  <div className="flex gap-2 mt-1">
+                    <button
+                      onClick={() => setTheme("light")}
+                      className="flex-1 bg-gray-800 p-2 cursor-pointer"
+                    >
+                      Light
+                    </button>
+                    <button
+                      onClick={() => setTheme("dark")}
+                      className="flex-1 bg-gray-800 p-2 cursor-pointer"
+                    >
+                      Dark
+                    </button>
+                  </div>
+                </div>
 
-          <div className="flex-1 text-center text-sm font-medium truncate">
-            {title}
+              </div>
+            )}
           </div>
-
-          <span className="text-xs text-gray-500">
-            {progress}% read
-          </span>
-
-          <button onClick={() => setFontSize(f => f - 10)}>
-            <Minus />
-          </button>
-
-          <button onClick={() => setFontSize(f => f + 10)}>
-            <Plus />
-          </button>
-
-          <button
-            onClick={() =>
-              setTheme(t => (t === "light" ? "dark" : "light"))
-            }
-          >
-            {theme === "light" ? <Moon /> : <Sun />}
-          </button>
-
-          <button onClick={toggleBookmark}>
-            <Bookmark
-              className={`transition ${
-                isCurrentBookmarked()
-                  ? "fill-black text-black"
-                  : "text-gray-500"
-              }`}
-            />
-          </button>
-
-
-        </div>
+        )}
+      </div>
+      <div className="flex-1 flex flex-col relative">
 
         {/* ===== READER ===== */}
-        <div className="flex-1 bg-gray-200 overflow-hidden relative">
-          <div
-            ref={viewerRef}
-            className="h-full mx-auto"
-            style={{
-              maxWidth: 900,
-              background: theme === "dark" ? "#111827" : "#ffffff",
-              boxShadow: "0 10px 40px rgba(0,0,0,0.15)",
-            }}
-          />
-        
-          {/* ===== FLOATING CONTROLS (PAGE-ALIGNED) ===== */}
+        <div className="flex-1 relative flex items-center justify-center">
+          {loading && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              Loading...
+            </div>
+          )}
+
           <button
-            onClick={() => renditionRef.current?.prev()}
-            className="absolute left-6 top-1/2 -translate-y-1/2 z-30
-                       bg-white/90 backdrop-blur pointer-cursor rounded-full
-                       p-3 shadow hover:bg-white"
+            onClick={toggleFullscreen}
+            className="absolute top-4 right-6 bg-white text-black px-3 py-2 rounded shadow cursor-pointer"
+          >
+            ⛶
+          </button>
+
+          <div
+            ref={containerRef}
+            className={` w-[900px] h-[90vh] shadow-2xl ${ theme === "dark" ? "bg-black" : "bg-white" }`}
+          />
+
+
+          <button
+            onClick={() => viewRef.current?.prev()}
+            className="absolute left-8 top-1/2 -translate-y-1/2 bg-white text-black rounded-full p-3 shadow-xl cursor-pointer"
           >
             <ChevronLeft />
           </button>
-        
+
           <button
-            onClick={() => renditionRef.current?.next()}
-            className="absolute right-6 top-1/2 -translate-y-1/2 z-30
-                       bg-white/90 backdrop-blur pointer-cursor rounded-full
-                       p-3 shadow hover:bg-white"
+            onClick={() => viewRef.current?.next()}
+            className="absolute right-8 top-1/2 -translate-y-1/2 bg-white text-black rounded-full p-3 shadow-xl cursor-pointer"
           >
             <ChevronRight />
           </button>
         </div>
       </div>
+
+
     </div>
   );
 }

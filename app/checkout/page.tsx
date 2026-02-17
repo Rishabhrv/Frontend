@@ -209,7 +209,11 @@ const loadRazorpay = () =>
     "Content-Type": "application/json", // ✅ REQUIRED
     Authorization: `Bearer ${token}`,
   },
-  body: JSON.stringify({ shipping }),
+  body: JSON.stringify({
+    shipping,
+    couponCode: couponApplied ? couponCode : null
+  }),
+
 });
  const orderData = await orderRes.json();
 

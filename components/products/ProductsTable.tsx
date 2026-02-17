@@ -179,13 +179,14 @@ useEffect(() => {
     );
   }
 
-const handleDelete = (id: number) => {
-  setConfirmConfig({
-    title: "Move product to Trash?",
-    message:
-      "This product will be moved to Trash. You can restore it later.",
-    onConfirm: async () => {
-      try {
+const handleDelete = (id: number, status: string) => {
+  if (status !== "trash") {
+    // Move to trash (soft delete)
+    setConfirmConfig({
+      title: "Move product to Trash?",
+      message:
+        "This product will be moved to Trash. You can restore it later.",
+      onConfirm: async () => {
         const res = await fetch(
           `${API_URL}/api/products/${id}/trash`,
           { method: "PUT" }
@@ -197,21 +198,35 @@ const handleDelete = (id: number) => {
           return;
         }
 
-        // ✅ update UI (no reload)
         setProducts(prev =>
           prev.map(p =>
             p.id === id ? { ...p, status: "trash" } : p
           )
         );
-
-        setSelectedIds(prev =>
-          prev.filter(pid => pid !== id)
+      },
+    });
+  } else {
+    // 🔥 Permanent delete
+    setConfirmConfig({
+      title: "Delete product permanently?",
+      message:
+        "This product will be permanently deleted. This action cannot be undone.",
+      onConfirm: async () => {
+        const res = await fetch(
+          `${API_URL}/api/products/${id}`,
+          { method: "DELETE" }
         );
-      } catch (err) {
-        console.error(err);
-      }
-    },
-  });
+
+        if (!res.ok) {
+          setToastMsg("Permanent delete failed");
+          setToastOpen(true);
+          return;
+        }
+
+        setProducts(prev => prev.filter(p => p.id !== id));
+      },
+    });
+  }
 
   setConfirmOpen(true);
 };
@@ -543,7 +558,7 @@ if (bulkAction === "published") {
                         <span>|</span>
                       
                         <button
-                          onClick={() => handleDelete(product.id)}
+                          onClick={() => handleDelete(product.id, product.status)}
                           className="text-red-600 hover:underline"
                         >
                           Delete
@@ -642,8 +657,39 @@ function Pagination({
   totalPages: number;
   onPageChange: (page: number) => void;
 }) {
+  if (totalPages <= 1) return null;
+
+  const pages: (number | string)[] = [];
+
+  const startPage = Math.max(2, currentPage - 1);
+  const endPage = Math.min(totalPages - 1, currentPage + 1);
+
+  // Always show first page
+  pages.push(1);
+
+  // Show dots if gap after first page
+  if (startPage > 2) {
+    pages.push("...");
+  }
+
+  // Middle pages (max 3)
+  for (let i = startPage; i <= endPage; i++) {
+    pages.push(i);
+  }
+
+  // Show dots before last page
+  if (endPage < totalPages - 1) {
+    pages.push("...");
+  }
+
+  // Always show last page
+  if (totalPages > 1) {
+    pages.push(totalPages);
+  }
+
   return (
     <div className="flex items-center gap-2 text-sm">
+      {/* Previous */}
       <button
         disabled={currentPage === 1}
         onClick={() => onPageChange(currentPage - 1)}
@@ -652,12 +698,16 @@ function Pagination({
         Previous
       </button>
 
-      {Array.from({ length: totalPages }).map((_, i) => {
-        const page = i + 1;
-        return (
+      {/* Pages */}
+      {pages.map((page, index) =>
+        page === "..." ? (
+          <span key={index} className="px-2 text-gray-400">
+            ...
+          </span>
+        ) : (
           <button
             key={page}
-            onClick={() => onPageChange(page)}
+            onClick={() => onPageChange(Number(page))}
             className={`h-8 w-8 rounded ${
               page === currentPage
                 ? "bg-blue-600 text-white"
@@ -666,9 +716,10 @@ function Pagination({
           >
             {page}
           </button>
-        );
-      })}
+        )
+      )}
 
+      {/* Next */}
       <button
         disabled={currentPage === totalPages}
         onClick={() => onPageChange(currentPage + 1)}
@@ -676,9 +727,7 @@ function Pagination({
       >
         Next
       </button>
-
-
-
     </div>
   );
 }
+

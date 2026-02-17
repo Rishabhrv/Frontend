@@ -44,8 +44,8 @@ export default function Home() {
 
 
       <CategoryBookSection
-        title="AGPH"
-        categorySlug="agph"
+        title="Academic Guru"
+        categorySlug="academic-guru"
                 visibleCount={6}
 
       />
@@ -53,8 +53,8 @@ export default function Home() {
       <FeaturedBookSection />
 
       <CategoryBookSection
-        title="AG Kids"
-        categorySlug="ag-kids"
+        title="AG Classics"
+        categorySlug="ag-classics"
                 visibleCount={6}
 
       />
