@@ -30,7 +30,6 @@ const Footer = () => {
             <li><Link href="/categories" className="hover:underline">Categories</Link></li>
             <li><Link href="/bestsellers" className="hover:underline">Bestsellers</Link></li>
             <li><Link href="/new-releases" className="hover:underline">New Releases</Link></li>
-            <li><Link href="/subscriptions" className="hover:underline">Subscriptions</Link></li>
           </ul>
         </div>
 
@@ -39,7 +38,6 @@ const Footer = () => {
           <h4 className="font-semibold mb-3">For Authors</h4>
           <ul className="space-y-2 text-gray-600">
             <li><Link href="/publish" className="hover:underline">Publish with AGPH</Link></li>
-            <li><Link href="/author-dashboard" className="hover:underline">Author Dashboard</Link></li>
             <li><Link href="/author-guidelines" className="hover:underline">Guidelines</Link></li>
             <li><Link href="/royalty" className="hover:underline">Royalties</Link></li>
           </ul>
@@ -51,7 +49,6 @@ const Footer = () => {
           <ul className="space-y-2 text-gray-600">
             <li><Link href="/privacy-policy" className="hover:underline">Privacy Policy</Link></li>
             <li><Link href="/terms-and-conditions" className="hover:underline">Terms & Conditions</Link></li>
-            <li><Link href="/refund-policy" className="hover:underline">Refund Policy</Link></li>
             <li><Link href="/copyright" className="hover:underline">Copyright</Link></li>
           </ul>
         </div>

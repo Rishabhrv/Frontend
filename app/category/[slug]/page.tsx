@@ -399,7 +399,8 @@ const visibleAuthors = authorSearch
     id: product.id,
     title: product.title,
     slug: product.slug,
-    image: `${API}${product.main_image}`,
+    // In your products.map() inside CategoryPage
+    image: product.main_image ? `${API}${product.main_image}` : "/images/placeholder.png",
 
     // ✅ REQUIRED FIELDS
     product_type: product.product_type,

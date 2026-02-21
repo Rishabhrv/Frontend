@@ -60,9 +60,6 @@ useEffect(() => {
 
       {/* LEFT */}
       <div className="flex items-center gap-4">
-        <button className="rounded-lg border border-gray-200 p-2 hover:bg-gray-100">
-          <Menu size={18} />
-        </button>
 
       </div>
 
@@ -76,29 +73,28 @@ useEffect(() => {
         </button>
 
         {/* ADMIN USER */}
-        {/* ADMIN USER */}
-<div className="relative">
-  <button
-    onClick={() => setUserMenuOpen(v => !v)}
-    className="flex items-center gap-3 cursor-pointer"
-  >
-    <span className="hidden md:block text-sm font-medium text-gray-700">
-      {admin?.name || "Admin"}
-    </span>
-    <ChevronDown size={16} className="text-gray-500" />
-  </button>
-
-  {userMenuOpen && (
-    <div className="absolute right-0 mt-2 w-32 rounded-lg border bg-white shadow-lg">
-      <button
-        onClick={logout}
-        className="w-full px-4 py-2 text-sm text-left hover:bg-gray-100"
-      >
-        Logout
-      </button>
-    </div>
-  )}
-</div>
+        <div className="relative">
+          <button
+            onClick={() => setUserMenuOpen(v => !v)}
+            className="flex items-center gap-3 cursor-pointer"
+          >
+            <span className="hidden md:block text-sm font-medium text-gray-700">
+              {admin?.name || "Admin"}
+            </span>
+            <ChevronDown size={16} className="text-gray-500" />
+          </button>
+        
+          {userMenuOpen && (
+            <div className="absolute right-0 mt-2 w-32 rounded-lg border bg-white shadow-lg">
+              <button
+                onClick={logout}
+                className="w-full px-4 py-2 text-sm text-left hover:bg-gray-100"
+              >
+                Logout
+              </button>
+            </div>
+          )}
+        </div>
 
       </div>
     </header>

@@ -546,7 +546,7 @@ if (bulkAction === "published") {
                       className="h-15 w-15 rounded object-cover"
                     />
                     <div>
-                      <p className="font-medium ">{product.name}</p>
+                      <p className="font-medium text-xs ">{product.name}</p>
                         <p className="text-xs text-gray-500 space-x-2">
                         <Link
                           href={`/admin/product/EditProduct?id=${product.id}`}

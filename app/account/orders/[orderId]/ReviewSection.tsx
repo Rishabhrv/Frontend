@@ -15,32 +15,64 @@ export default function ReviewSection({ productId, productTitle }: Props) {
   const [hover, setHover] = useState(0);
   const [comment, setComment] = useState("");
   const [image, setImage] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
   const [toastOpen, setToastOpen] = useState(false);
   const [toastMsg, setToastMsg] = useState("");
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+const [preview, setPreview] = useState<string[]>([]);
 
-  const submitReview = () => {
-    if (!rating || !comment.trim()) {
-      setToastMsg("Please give rating and review");
-      setToastOpen(true);
-      return;
-    }
 
-    // 🔗 connect backend later
-    console.log({
-      productId,
-      rating,
-      comment,
-      image,
-    });
-
-    setToastMsg("Review submitted (demo)");
+ const submitReview = async () => {
+  if (!rating || !comment.trim()) {
+    setToastMsg("Please give rating and review");
     setToastOpen(true);
-    setRating(0);
-    setComment("");
-    setImage(null);
-    setPreview(null);
-  };
+    return;
+  }
+
+  const token = localStorage.getItem("token");
+
+  if (!token) {
+    setToastMsg("Please login first");
+    setToastOpen(true);
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("product_id", productId.toString());
+  formData.append("rating", rating.toString());
+  formData.append("comment", comment);
+
+  if (imageFiles.length > 0) {
+    imageFiles.forEach(file => {
+      formData.append("images", file);
+    });
+  }
+
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL}/api/reviews`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    }
+  );
+
+  if (!res.ok) {
+    setToastMsg("Failed to submit review");
+    setToastOpen(true);
+    return;
+  }
+
+  setToastMsg("Review submitted for approval");
+  setToastOpen(true);
+
+  setRating(0);
+  setComment("");
+  setImageFiles([]);
+  setPreview([]);
+};
+
 
   return (
     <div className="border border-gray-200 rounded-md p-5 bg-white mt-4">
@@ -74,27 +106,30 @@ export default function ReviewSection({ productId, productTitle }: Props) {
       />
 
       {/* 🖼 IMAGE UPLOAD */}
-      <div className="flex items-center gap-3 mb-3">
-        <input
-          type="file"
-          accept="image/*"
-          onChange={e => {
-            const file = e.target.files?.[0];
-            if (file) {
-              setImage(file);
-              setPreview(URL.createObjectURL(file));
-            }
-          }}
-        />
+<input
+  type="file"
+  multiple
+  accept="image/*"
+  onChange={(e) => {
+    const files = Array.from(e.target.files || []);
+    setImageFiles(files);
 
-        {preview && (
-          <img
-            src={preview}
-            alt="preview"
-            className="w-16 h-16 object-cover rounded border"
-          />
-        )}
-      </div>
+    const previews = files.map(file =>
+      URL.createObjectURL(file)
+    );
+    setPreview(previews);
+  }}
+/>
+
+<div className="flex gap-2">
+  {preview.map((p, i) => (
+    <img
+      key={i}
+      src={p}
+      className="w-16 h-16 object-cover rounded border"
+    />
+  ))}
+</div>
 
       {/* 🚀 SUBMIT */}
       <button

@@ -58,19 +58,24 @@ const CategoryBookSection = ({
     <section className="mt-10 px-5">
       {/* HEADER */}
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-semibold">{title}</h2>
+
         <Link
           href={`/category/${categorySlug}`}
-          className="text-sm text-red-600 hover:underline"
+          className="text-sm text-red-600 cursor-pointer font-semibold flex items-center"
         >
-          See More
+        <h2
+          className="text-3xl md:text-4xl font-black text-gray-900 leading-tight pl-2"
+          style={{ fontFamily: "'Playfair Display', serif" }}
+        >
+          {title}
+        </h2>
         </Link>
       </div>
 
       {/* SLIDER */}
       <div className="relative overflow-hidden">
         <div
-          className="flex transition-transform duration-700 ease-in-out"
+          className="flex transition-transform duration-1200 ease-in-out"
           style={{
             transform: `translateX(-${start * (100 / visibleCount)}%)`,
           }}
