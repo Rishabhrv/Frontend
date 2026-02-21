@@ -75,39 +75,39 @@ export default function UserTable() {
   );
 
 
-const askDeleteUser = (user: User) => {
-  setUserToDelete(user);
-  setConfirmOpen(true);
-};
+  const askDeleteUser = (user: User) => {
+    setUserToDelete(user);
+    setConfirmOpen(true);
+  };
 
 
-const confirmDeleteUser = async () => {
-  if (!userToDelete) return;
+  const confirmDeleteUser = async () => {
+    if (!userToDelete) return;
 
-  const res = await fetch(
-    `${API_URL}/api/admin/users/${userToDelete.id}`,
-    {
-      method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("admin_token")}`,
-      },
+    const res = await fetch(
+      `${API_URL}/api/admin/users/${userToDelete.id}`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("admin_token")}`,
+        },
+      }
+    );
+
+    if (!res.ok) {
+      setToastMsg("Failed to delete user");
+      setToastOpen(true);
+      return;
     }
-  );
 
-  if (!res.ok) {
-    setToastMsg("Failed to delete user");
+    setUsers(prev => prev.filter(u => u.id !== userToDelete.id));
+
+    setConfirmOpen(false);
+    setUserToDelete(null);
+
+    setToastMsg("User deleted successfully");
     setToastOpen(true);
-    return;
-  }
-
-  setUsers(prev => prev.filter(u => u.id !== userToDelete.id));
-
-  setConfirmOpen(false);
-  setUserToDelete(null);
-
-  setToastMsg("User deleted successfully");
-  setToastOpen(true);
-};
+  };
 
 
 
@@ -164,12 +164,15 @@ const confirmDeleteUser = async () => {
                 >
                   {/* USER COLUMN */}
                   <td className="px-4 py-3">
-                    <p className="font-medium text-gray-900">
-                      {user.name}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {user.email}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium text-gray-900">{user.name}</p>
+                      {user.id === 1 && (
+                        <span className="text-[10px] font-medium bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded-full">
+                          Super Admin
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500">{user.email}</p>
                   </td>
 
                   {/* ROLE */}
@@ -205,34 +208,34 @@ const confirmDeleteUser = async () => {
 
                   {/* DATE */}
                   <td className="px-4 py-3 text-center text-xs">
-                    {new Date(user.created_at).toLocaleDateString(
-                      "en-GB",
-                      {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                      }
-                    )}
+                    {new Date(user.created_at).toLocaleDateString("en-GB", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    })}
                   </td>
 
                   {/* ACTIONS */}
-                  <td className="px-4 py-3 text-right space-x-3 flex justify-end">
+                  <td className="px-4 py-3 text-right flex justify-end items-center gap-3">
                     <Link
-                      href={`/admin/users/${user.id}`}
+                      href={`/admin/users/EditUser?id=${user.id}`}
                       className="text-blue-600 hover:underline text-xs cursor-pointer"
                     >
-                      View
+                      Edit
                     </Link>
 
-                    <div>|</div>
-
-                    <button
-                      onClick={() => askDeleteUser(user)}
-                      className="text-red-600 hover:underline text-xs cursor-pointer"
-                    >
-                      Delete
-                    </button>
-
+                    {/* Delete hidden for superadmin (id === 1) */}
+                    {user.id !== 1 && (
+                      <>
+                        <span className="text-gray-300">|</span>
+                        <button
+                          onClick={() => askDeleteUser(user)}
+                          className="text-red-600 hover:underline text-xs cursor-pointer"
+                        >
+                          Delete
+                        </button>
+                      </>
+                    )}
                   </td>
                 </tr>
               ))
@@ -276,24 +279,24 @@ const confirmDeleteUser = async () => {
           </button>
         </div>
       </div>
-                            <AlertPopup
-                              open={toastOpen}
-                              message={toastMsg}
-                              onClose={() => setToastOpen(false)}
-                            />
 
-                            <ConfirmPopup
-                              open={confirmOpen}
-                              title="Delete user?"
-                              message="This user will be permanently removed. This action cannot be undone."
-                              confirmText="Delete"
-                              onCancel={() => {
-                                setConfirmOpen(false);
-                                setUserToDelete(null);
-                              }}
-                              onConfirm={confirmDeleteUser}
-                            />
+      <AlertPopup
+        open={toastOpen}
+        message={toastMsg}
+        onClose={() => setToastOpen(false)}
+      />
 
+      <ConfirmPopup
+        open={confirmOpen}
+        title="Delete user?"
+        message="This user will be permanently removed. This action cannot be undone."
+        confirmText="Delete"
+        onCancel={() => {
+          setConfirmOpen(false);
+          setUserToDelete(null);
+        }}
+        onConfirm={confirmDeleteUser}
+      />
     </div>
   );
 }

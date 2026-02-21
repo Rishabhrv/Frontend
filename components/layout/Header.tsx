@@ -371,18 +371,17 @@ const fetchCartCount = () => {
 
       {/* ================= CATEGORY NAV ================= */}
       <nav>
-        <div className="mx-auto max-w-7xl px-9 py-5 flex gap-6 text-sm font-medium text-gray-800">
-          <Link href="/ebooks" className="nav-link text-green-600 font-semibold">
-            Books
+        <div className="mx-auto  px-9 py-5 flex gap-10 text-sm font-medium text-gray-800 align-middle justify-center">
+          <Link href="/" className="nav-link text-green-600 font-semibold">
+            Home
           </Link>
-          <Link href="/category/books" className="nav-link">E-Books</Link>
-          <Link href="/category/books" className="nav-link">AGPH</Link>
+          <Link href="/ebooks" className="nav-link">E-Books</Link>
+          <Link href="/category/books" className="nav-link">AGPH Books</Link>
+          <Link href="/category/kids" className="nav-link">Kids</Link>
+          <Link href="/category/kids" className="nav-link">Edited Books</Link>
           <Link href="/category/bestsellers" className="nav-link">New Release</Link>
-          <Link href="/category/kids" className="nav-link">AGPH Kids</Link>
-          <Link href="/category/kids" className="nav-link">AG Classics</Link>
-          <Link href="/category/kids" className="nav-link">AG Volumes</Link>
           <Link href="/category/bestsellers" className="nav-link">Bestsellers</Link>
-          <Link href="/about" className="nav-link text-red-600">
+          <Link href="/about" className="nav-link">
             About Us
           </Link>
         </div>

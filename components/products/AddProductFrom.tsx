@@ -10,6 +10,10 @@ import ProductAuthor from "./ProductAuthor";
 import PopupModal from "../Popups/PopupModal";
 import AlertPopup from "@/components/Popups/AlertPopup";
 import { useRouter } from "next/navigation";
+import RichTextEditor from "./RichTextEditor";
+import SeoPanel from "./SeoPanel";
+import MediaLibraryModal from "./MediaLibraryModal";
+
 
 
 
@@ -24,6 +28,12 @@ type Category = {
 type Props = {
   mode?: "add" | "edit";
   productId?: number;
+};
+
+type ProductImage = {
+  file_path: string;
+  alt_text: string | null;
+  source: "main" | "gallery";
 };
 
 
@@ -77,7 +87,22 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
     const [needsConversion, setNeedsConversion] = useState(false);
     const [isConverting, setIsConverting] = useState(false);
     const [convertedFilePath, setConvertedFilePath] = useState<string | null>(null);
+    const [mediaModalOpen, setMediaModalOpen] = useState(false);
+    const [mainImageAlt, setMainImageAlt] = useState("");
 
+const [productImages, setProductImages] = useState<ProductImage[]>([]);
+
+// 3. Fetch product images for SEO panel (add inside the edit useEffect, after the existing fetch)
+// Add this function called whenever productId exists:
+const fetchProductImages = async (id: number) => {
+  try {
+    const res = await fetch(`${API_URL}/api/media/product-images/${id}`);
+    const data = await res.json();
+    setProductImages(Array.isArray(data) ? data : []);
+  } catch {
+    setProductImages([]);
+  }
+};
 
 
 
@@ -118,7 +143,10 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
       setEbookPrice(data.ebook_price);
       setEbookSellPrice(data.ebook_sell_price);
     });
+    fetchProductImages(productId);
 }, [mode, productId]);
+
+if (productId) fetchProductImages(productId);
 
     const validateForm = () => {
       const newErrors: Record<string, string> = {};
@@ -414,47 +442,7 @@ const handleSubmit = async () => {
                     Basic Information
                   </h2>
                     <div className="flex gap-6">
-                        {/* LEFT: IMAGE UPLOAD */}
-                        <div className="w-50">
-                          <label className="block cursor-pointer">
-                            <div className="flex h-60 w-50 flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 text-center hover:border-blue-500 overflow-hidden">
-                              
-                              {preview ? (
-                                <img
-                                  src={preview}
-                                  alt="Product Preview"
-                                  className="h-full w-full object-cover"
-                                />
-                              ) : (
-                                <>
-                                  <span className="text-sm text-gray-500">
-                                    Upload Product Image
-                                  </span>
-                                  <span className="mt-1 text-xs text-gray-400">
-                                    JPG, PNG, WebP
-                                  </span>
-                                  {errors.image && (
-                                    <p className="text-red-500 text-xs mt-2">{errors.image}</p>
-                                  )}
-                                </>
-                              )}
-                          
-                            </div>
-                          
-                            <input
-                              type="file"
-                              accept="image/*"
-                              hidden
-                              onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (!file) return;
-                          
-                                setProductImage(file);
-                                setPreview(URL.createObjectURL(file));
-                              }}
-                            />
-                          </label>
-                        </div>
+
                     
                         {/* RIGHT: FORM FIELDS */}
                         <div className="flex-1 space-y-4">
@@ -479,23 +467,24 @@ const handleSubmit = async () => {
                           </div>
                     
                           <div>
-                          <label className="block text-sm mb-1">
-                            Full Description
-                          </label>
-                          <textarea
-                            rows={5}
-                            placeholder="Full product description"
-                            className="w-full rounded border px-3 py-2 text-sm"
-                            value={description}
-                            onChange={(e) => {
-                              setDescription(e.target.value);
-                              setErrors((prev) => ({ ...prev, description: "" }));
-                            }}
-                          />
-                          {errors.description && (
-                                <p className="text-red-500 text-xs mt-1">{errors.description}</p>
-                              )}
-                        </div>
+                            <label className="block text-sm mb-1">
+                              Full Description
+                            </label>
+                          
+                            <RichTextEditor
+                              value={description}
+                              onChange={(value) => {
+                                setDescription(value);
+                                setErrors((prev) => ({ ...prev, description: "" }));
+                              }}
+                            />
+                          
+                            {errors.description && (
+                              <p className="text-red-500 text-xs mt-1">
+                                {errors.description}
+                              </p>
+                            )}
+                          </div>
                       </div>
                     </div>
                   
@@ -782,11 +771,69 @@ const handleSubmit = async () => {
                   productId={productId}
                 />
 
+                 {/* SEO */}
+
+<SeoPanel
+  title={title}
+  slug={slug}
+  description={description}
+  metaTitle={metaTitle}
+  metaDescription={metaDescription}
+  keywords={keywords}
+  onMetaTitleChange={setMetaTitle}
+  onMetaDescriptionChange={setMetaDescription}
+  onKeywordsChange={setKeywords}
+  onSlugChange={setSlug}
+  productImages={productImages}   // ← replaces mainImage / mainImageAlt props
+/>
+
 
               </div>
 
               {/* RIGHT SIDEBAR */}
               <div className="space-y-6">
+
+               
+
+<div className="bg-white rounded-xl border border-gray-300 p-6">
+  <h2 className="mb-4 font-medium text-gray-700">Product Image</h2>
+
+  <div className="w-full">
+    <button
+      type="button"
+      onClick={() => setMediaModalOpen(true)}
+      className="w-full"
+    >
+      <div className="flex h-60 w-full flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 text-center hover:border-blue-500 overflow-hidden transition-colors">
+        {preview ? (
+          <img
+            src={preview}
+            alt={mainImageAlt || "Product image"}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <>
+            <span className="text-sm text-gray-500">Upload Product Image</span>
+            <span className="mt-1 text-xs text-gray-400">Click to open media library</span>
+            {errors.image && (
+              <p className="text-red-500 text-xs mt-2">{errors.image}</p>
+            )}
+          </>
+        )}
+      </div>
+    </button>
+
+    {preview && (
+      <button
+        type="button"
+        onClick={() => { setPreview(null); setProductImage(null); setMainImageAlt(""); }}
+        className="mt-2 text-xs text-red-500 hover:underline w-full text-center"
+      >
+        Remove image
+      </button>
+    )}
+  </div>
+</div>
                 {/* STATUS */}
                 <div className="bg-white rounded-xl border border-gray-300 p-6">
                   <h2 className="mb-4 font-medium text-gray-700">
@@ -877,38 +924,7 @@ const handleSubmit = async () => {
                   />
 
 
-                {/* SEO */}
-                <div className="bg-white rounded-xl border border-gray-300 p-6">
-                  <h2 className="mb-4 font-medium text-gray-700">
-                    SEO Settings
-                  </h2>
-                
-                  <div className="space-y-3">
-                    <input
-                      type="text"
-                      placeholder="Meta title"
-                      className="w-full rounded border px-3 py-2 text-sm"
-                      value={metaTitle}
-                      onChange={(e) => setMetaTitle(e.target.value)}
-                    />
-                
-                    <textarea
-                      rows={3}
-                      placeholder="Meta description"
-                      className="w-full rounded border px-3 py-2 text-sm"
-                      value={metaDescription}
-                      onChange={(e) => setMetaDescription(e.target.value)}
-                    />
-                
-                    <input
-                      type="text"
-                      placeholder="Keywords (comma separated)"
-                      className="w-full rounded border px-3 py-2 text-sm"
-                      value={keywords}
-                      onChange={(e) => setKeywords(e.target.value)}
-                    />
-                  </div>
-                </div>
+               
 
 
 
@@ -927,6 +943,20 @@ const handleSubmit = async () => {
                                                 message={toastMsg}
                                                 onClose={() => setToastOpen(false)}
                                               />
+
+
+<MediaLibraryModal
+  open={mediaModalOpen}
+  onClose={() => setMediaModalOpen(false)}
+  onSelect={(media) => {
+    setPreview(`${process.env.NEXT_PUBLIC_API_URL}${media.url}`);
+    setProductImage(null);
+  }}
+  folder="products"
+  productId={productId}        // ← pass productId (undefined in add mode)
+  title="Product image"
+  confirmLabel="Set product image"
+/>
 
           </div>
   )
