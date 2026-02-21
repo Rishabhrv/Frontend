@@ -35,7 +35,7 @@ export default function HomeReviewSection() {
           className="text-3xl md:text-4xl font-black text-gray-900 leading-tight pl-2 pb-4"
           style={{ fontFamily: "'Playfair Display', serif" }}
         >
-          What Our Happy Users Say!
+          What Our Happy User's Say!
         </h2>
 
 
