@@ -10,10 +10,10 @@ const Footer = () => {
         {/* BRAND */}
         <div className="md:col-span-2">
           <h3 className="text-lg font-semibold mb-3">
-            AGPH Store
+            AGPH Books Store
           </h3>
           <p className="text-gray-600 leading-relaxed mb-4">
-            AGPH Store is India’s trusted self-publishing and eBook platform,
+             AGPH Books Store is India’s trusted self-publishing and eBook platform,
             connecting authors with readers across the world.
           </p>
 
@@ -55,32 +55,11 @@ const Footer = () => {
 
       </div>
 
-      {/* ================= NEWSLETTER ================= */}
-      <div className=" bg-white">
-        <div className="mx-auto max-w-7xl px-6 py-8 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-gray-700">
-            Subscribe to get updates on new books, offers & author news.
-          </p>
-
-          <form className="flex w-full md:w-auto">
-            <input
-              type="email"
-              placeholder="Enter your email"
-              className="w-full md:w-64 rounded-l border border-gray-300 px-4 py-2 text-sm focus:outline-none"
-            />
-            <button
-              type="submit"
-              className="rounded-r bg-black px-5 py-2 text-sm text-white hover:bg-gray-800"
-            >
-              Subscribe
-            </button>
-          </form>
-        </div>
-      </div>
+   
 
       {/* ================= BOTTOM BAR ================= */}
       <div className="bg-gray-100 text-center text-xs text-gray-500 py-4">
-        © {new Date().getFullYear()} AGPH Store. All rights reserved.
+        © {new Date().getFullYear()}   AGPH Books Store. All rights reserved.
       </div>
     </footer>
   );

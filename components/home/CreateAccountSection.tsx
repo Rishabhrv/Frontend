@@ -8,11 +8,11 @@ const CreateAccountSection = () => {
         {/* LEFT CONTENT */}
         <div>
           <h2 className="text-3xl md:text-4xl font-serif font-semibold mb-4">
-            Join AGPH Store Today
+            Join Today
           </h2>
 
           <p className="text-gray-700 mb-6 leading-relaxed">
-            Create your free AGPH account to explore exclusive books, manage your
+            Create your free AGPH Books account to explore exclusive books, manage your
             orders, access special discounts, and stay updated with new releases
             from India’s leading self-publishing platform.
           </p>

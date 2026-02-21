@@ -98,25 +98,11 @@ const schema = {
 
 
       <CategoryBookSection
-        title="LKG Books"
+        title="Kids"
         categorySlug="lkg"
         visibleCount={5}
       />
-      <CategoryBookSection
-        title="UKG Books"
-        categorySlug="ukg"
-        visibleCount={5}
-      />
-      <CategoryBookSection
-        title="Nursery Books"
-        categorySlug="nursery"
-        visibleCount={5}
-      />
-      <CategoryBookSection
-        title="Pre-Nursery Books"
-        categorySlug="pre-nursery"
-        visibleCount={5}
-      />
+
 
     <HeroBanner />
 

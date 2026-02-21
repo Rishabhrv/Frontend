@@ -14,7 +14,7 @@ const AuthLayout = ({
       
       {/* LEFT BRAND */}
       <div className="hidden md:flex flex-col justify-center bg-black text-white px-16">
-        <h1 className="text-4xl font-serif mb-4">AGPH Store</h1>
+        <h1 className="text-4xl font-serif mb-4">AGPH Books Store</h1>
         <p className="text-gray-300 max-w-md">
           India’s trusted self-publishing & eBook platform.  
           Read, publish & grow with AGPH.
