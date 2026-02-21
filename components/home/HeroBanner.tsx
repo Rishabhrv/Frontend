@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 
 // ─── Config ───────────────────────────────────────────────────────────────────
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL!;
 const AUTO_INTERVAL_MS = 2500; // slide every 2.5 s
 
 // ─── Types ───────────────────────────────────────────────────────────────────

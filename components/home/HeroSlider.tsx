@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 // ─── Config ───────────────────────────────────────────────────────────────────
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL!;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Product {
