@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
+import Link from "next/link";
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 const API_BASE = process.env.NEXT_PUBLIC_API_URL!;
@@ -10,6 +11,7 @@ const AUTO_INTERVAL_MS = 2500; // slide every 2.5 s
 interface Product {
   id: number;
   name: string;
+  slug: string; // ← NEW
   image: string | null;
   sku: string;
   stock: number;
@@ -18,6 +20,11 @@ interface Product {
   status: string;
   date: string;
   categories: string[];
+}
+
+interface Category { // ← NEW
+  name: string;
+  imprint: "agph";
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -32,13 +39,13 @@ const CARD_SHADOWS = [
 ];
 
 const FALLBACK_PRODUCTS: Product[] = [
-  { id: 1, name: "Luxora",    price: 2200, sell_price: 1980, image: "https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=400&q=80", sku: "LUX-01", stock: 10, status: "active", date: "", categories: ["Handbags"] },
-  { id: 2, name: "Grandeur",  price: 3200, sell_price: 2900, image: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=400&q=80", sku: "GRN-02", stock:  5, status: "active", date: "", categories: ["Handbags"] },
-  { id: 3, name: "Prestigio", price: 4500, sell_price: 4500, image: "https://images.unsplash.com/photo-1591561954557-26941169b49e?w=400&q=80", sku: "PRE-03", stock:  3, status: "active", date: "", categories: ["Luxury"]  },
-  { id: 4, name: "Auron",     price: 3500, sell_price: 3200, image: "https://images.unsplash.com/photo-1566150905458-1bf1fc113f0d?w=400&q=80", sku: "AUR-04", stock:  8, status: "active", date: "", categories: ["Handbags"] },
-  { id: 5, name: "Noir",      price: 2200, sell_price: 2200, image: "https://images.unsplash.com/photo-1601924357840-3e50ad4dd9a5?w=400&q=80", sku: "NOR-05", stock: 12, status: "active", date: "", categories: ["Classic"] },
-  { id: 6, name: "Velara",    price: 2800, sell_price: 2600, image: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&q=80", sku: "VEL-06", stock:  6, status: "active", date: "", categories: ["Handbags"] },
-  { id: 7, name: "Solenne",   price: 3900, sell_price: 3500, image: "https://images.unsplash.com/photo-1575032617751-6ddec2089882?w=400&q=80", sku: "SOL-07", stock:  4, status: "active", date: "", categories: ["Luxury"]  },
+  { id: 1, name: "Luxora",    slug: "luxora",    price: 2200, sell_price: 1980, image: "https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=400&q=80", sku: "LUX-01", stock: 10, status: "active", date: "", categories: ["Handbags"] },
+  { id: 2, name: "Grandeur",  slug: "grandeur",  price: 3200, sell_price: 2900, image: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=400&q=80", sku: "GRN-02", stock:  5, status: "active", date: "", categories: ["Handbags"] },
+  { id: 3, name: "Prestigio", slug: "prestigio", price: 4500, sell_price: 4500, image: "https://images.unsplash.com/photo-1591561954557-26941169b49e?w=400&q=80", sku: "PRE-03", stock:  3, status: "active", date: "", categories: ["Luxury"]  },
+  { id: 4, name: "Auron",     slug: "auron",     price: 3500, sell_price: 3200, image: "https://images.unsplash.com/photo-1566150905458-1bf1fc113f0d?w=400&q=80", sku: "AUR-04", stock:  8, status: "active", date: "", categories: ["Handbags"] },
+  { id: 5, name: "Noir",      slug: "noir",      price: 2200, sell_price: 2200, image: "https://images.unsplash.com/photo-1601924357840-3e50ad4dd9a5?w=400&q=80", sku: "NOR-05", stock: 12, status: "active", date: "", categories: ["Classic"] },
+  { id: 6, name: "Velara",    slug: "velara",    price: 2800, sell_price: 2600, image: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&q=80", sku: "VEL-06", stock:  6, status: "active", date: "", categories: ["Handbags"] },
+  { id: 7, name: "Solenne",   slug: "solenne",   price: 3900, sell_price: 3500, image: "https://images.unsplash.com/photo-1575032617751-6ddec2089882?w=400&q=80", sku: "SOL-07", stock:  4, status: "active", date: "", categories: ["Luxury"]  },
 ];
 
 // ─── Position config — 7 visible slots ───────────────────────────────────────
@@ -127,13 +134,17 @@ const ProductCard = ({ product, index, current, total, onSelect }: CardProps) =>
         )}
       </div>
 
-      {/* Bottom info */}
+      {/* Bottom info — center card is clickable link ← NEW */}
       <div className="relative z-10">
         <p
-          className="font-black uppercase tracking-widest text-gray-800 text-xs mb-3 mt-5"
+          className="font-black uppercase tracking-widest text-gray-800 text-xs mb-3 mt-5 hover:text-gray-200"
           style={{ fontFamily: "'Bebas Neue', sans-serif" }}
         >
-          {product.name}
+          {isCenter ? (
+            <Link href={`/product/${product.slug}`}>{product.name}</Link>
+          ) : (
+            product.name
+          )}
         </p>
         <span className="text-gray-800 font-bold text-sm whitespace-nowrap">
           ₹{Number(displayPrice).toLocaleString()}
@@ -151,15 +162,30 @@ export default function ProductCarousel() {
   const [error, setError]       = useState<string | null>(null);
   const intervalRef             = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // ── Fetch products ────────────────────────────────────────────────────────
+  // ── Fetch products filtered by agph imprint ── ← CHANGED
   useEffect(() => {
     (async () => {
       try {
+        // 1️⃣ Get agph category names
+        const catRes = await fetch(`${API_BASE}/api/categories`);
+        const catData: Category[] = await catRes.json();
+        const agphNames = new Set(
+          catData
+            .filter((c) => c.imprint === "agph")
+            .map((c) => c.name)
+        );
+
+        // 2️⃣ Fetch products
         const res = await fetch(`${API_BASE}/api/products?limit=10`);
         if (!res.ok) throw new Error(`Server responded with ${res.status}`);
         const data: Product[] = await res.json();
-        const sliced = data.slice(0, 10);
-        setProducts(sliced.length ? sliced : FALLBACK_PRODUCTS);
+
+        // 3️⃣ Keep only products belonging to an agph category
+        const filtered = data
+          .filter((p) => p.categories.some((cat) => agphNames.has(cat)))
+          .slice(0, 10);
+
+        setProducts(filtered.length ? filtered : FALLBACK_PRODUCTS);
       } catch (err) {
         console.error("Failed to fetch products:", err);
         setError("Could not reach the server — showing demo data.");

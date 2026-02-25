@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useParams } from "next/navigation";
 import BookCard from "@/components/books/BookCard";
 import { Star } from 'lucide-react';
@@ -297,7 +298,8 @@ const visibleAuthors = authorSearch
             <h4 className="font-serif text-base mb-3">Best Sellers</h4>
             <ul className="space-y-3 text-xs">
               {bestSellers.map((b) => (
-                <li key={b.id} className="flex gap-3 items-center">
+                <Link key={b.id} href={`/product/${b.slug}`} className="flex gap-3 items-center">
+                    <li key={b.id} className="flex gap-3 items-center">
                   <img
                     src={`${API}${b.main_image}`}
                     className="w-10 h-14 object-cover"
@@ -305,6 +307,8 @@ const visibleAuthors = authorSearch
                   />
                   <span className="line-clamp-2">{b.title}</span>
                 </li>
+                </Link>
+ 
               ))}
             </ul>
           </div>

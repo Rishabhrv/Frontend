@@ -27,6 +27,16 @@ type OrderItem = {
   transaction_id?: string;
   paid_amount?: number;
   created_at: string;
+  shipping_cost: number;
+
+  first_name?: string;
+  last_name?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+  phone?: string;
+  shipping_email?: string;
 };
 
 /* ================= COMPONENT ================= */
@@ -201,15 +211,28 @@ export default function OrderDetailsPage() {
           ))}
         </div>
       </div>
-
-      {/* ================= ORDER TOTAL ================= */}
+       {/* ================= ORDER TOTAL ================= */}
       <div className="flex justify-end">
         <div className="w-80 border border-gray-200 rounded-md p-5 bg-white">
           <div className="flex justify-between text-sm mb-2">
-            <span className="text-gray-500">Order total</span>
+            <span className="text-gray-500">Subtotal</span>
             <span className="font-semibold">
-              ₹{order.total_amount}
+              ₹{(order.total_amount - Number(order.shipping_cost)).toFixed(2)}
             </span>
+          </div>
+
+          {Number(order.shipping_cost) > 0 && (
+            <div className="flex justify-between text-sm mb-2">
+              <span className="text-gray-500">Shipping</span>
+              <span className="font-semibold">
+                ₹{Number(order.shipping_cost).toFixed(2)}
+              </span>
+            </div>
+          )}
+
+          <div className="flex justify-between text-sm font-bold border-t border-gray-100 pt-2 mt-2">
+            <span>Order total</span>
+            <span>₹{order.total_amount}</span>
           </div>
 
           <button
@@ -220,6 +243,24 @@ export default function OrderDetailsPage() {
           </button>
         </div>
       </div>
+
+{/* ================= SHIPPING ADDRESS ================= */}
+      {order.address && (
+        <div className="border border-gray-200 rounded-md p-5 bg-white">
+          <h2 className="font-semibold mb-3">Shipping Address</h2>
+          <div className="text-sm text-gray-600 leading-relaxed">
+            <p className="font-medium text-gray-800">
+              {order.first_name} {order.last_name}
+            </p>
+            <p>{order.address}</p>
+            <p>{order.city}, {order.state} – {order.pincode}</p>
+            {order.phone && <p className="mt-1 text-gray-500">📞 {order.phone}</p>}
+            {order.shipping_email && <p className="text-gray-500">✉ {order.shipping_email}</p>}
+          </div>
+        </div>
+      )}
+
+     
 
       {/* ================= REVIEW POPUP ================= */}
 {reviewItem && (

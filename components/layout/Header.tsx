@@ -168,7 +168,7 @@ const fetchCartCount = () => {
 
           {/* SOCIAL ICONS */}
           <a
-            href="https://facebook.com"
+            href="https://www.facebook.com/agphbooks/"
             target="_blank"
             rel="noopener noreferrer"
             className="hover:text-black"
@@ -177,7 +177,7 @@ const fetchCartCount = () => {
           </a>
       
           <a
-            href="https://instagram.com"
+            href="https://www.instagram.com/agphbooks/"
             target="_blank"
             rel="noopener noreferrer"
             className="hover:text-black"
@@ -186,7 +186,7 @@ const fetchCartCount = () => {
           </a>
       
           <a
-            href="https://linkedin.com"
+            href="https://in.linkedin.com/company/agphbooks"
             target="_blank"
             rel="noopener noreferrer"
             className="hover:text-black"
@@ -376,13 +376,12 @@ const fetchCartCount = () => {
             Home
           </Link>
           <Link href="/ebooks" className="nav-link">E-Books</Link>
-          <Link href="/category/books" className="nav-link">AGPH Books</Link>
+          <Link href="/category/academic-books" className="nav-link">Academic Books</Link>
           <Link href="/category/kids" className="nav-link">Kids</Link>
-          <Link href="/category/kids" className="nav-link">Edited Books</Link>
-          <Link href="/category/bestsellers" className="nav-link">New Release</Link>
-          <Link href="/category/bestsellers" className="nav-link">Bestsellers</Link>
-          <Link href="/about" className="nav-link">
-            About Us
+          <Link href="/category/edited-books" className="nav-link">Edited Books</Link>
+          <Link href="/category/new-release" className="nav-link">New Release</Link>
+          <Link href="https://agphbooks.com/contact-us/" className="nav-link">
+            Contact Us
           </Link>
         </div>
       </nav>

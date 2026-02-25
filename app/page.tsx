@@ -71,15 +71,15 @@ const schema = {
     <HeroSlider />
 
       <CategoryBookSection
-        title="AGPH Books"
-        categorySlug="agph-books"
+        title="Academic Books"
+        categorySlug="academic-books"
                 visibleCount={5}
 
       />
 
       <CategoryBookSection
         title="Edited Books"
-        categorySlug="edit-books"
+        categorySlug="edited-books"
         visibleCount={5}
       />
 
@@ -105,23 +105,11 @@ const schema = {
 
 
     <HeroBanner />
-
     <CategoryBookTab />
-
-
-
-
-
-
-
-      
-      <FeaturedBookSection />
-
-        <AuthorCarousel />
-
-        <HomeReviewSection />
-      
-      <CreateAccountSection />
+    <FeaturedBookSection />
+    <AuthorCarousel />
+    <HomeReviewSection />
+    <CreateAccountSection />
     </>
   );
 }

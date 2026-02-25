@@ -6,9 +6,7 @@ import { usePathname } from "next/navigation";
 const menu = [
   { name: "My Account", href: "/account" },
   { name: "My Orders", href: "/account/orders" },
-  { name: "My Rewards", href: "/account/rewards" },
-  { name: "Gift Cards", href: "/account/gift-cards" },
-  { name: "Subscriptions", href: "/account/subscriptions" },
+  { name: "My Coupons", href: "/account/coupons" },
   { name: "Payment History", href: "/account/payment-history" },
 ];
 

@@ -62,7 +62,10 @@ export default function MyBooksPage() {
     fetch(`${API_URL}/api/categories`)
       .then(res => res.json())
       .then(data => {
-        const active = data.filter((c: Category) => c.status !== "inactive");
+        const active = data.filter(
+          (c: Category & { imprint?: string }) =>
+            c.status !== "inactive" && c.imprint === "agph"
+        );
         setCategories(active);
       });
   }, []);

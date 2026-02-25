@@ -189,11 +189,27 @@ const loadRazorpay = () =>
       return;
     }
 
-    fetch(`${API_URL}/api/cart/my`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then(res => res.json())
-      .then(data => setCart(data))
+    Promise.all([
+      fetch(`${API_URL}/api/cart/my`, {
+        headers: { Authorization: `Bearer ${token}` },
+      }).then(res => res.json()),
+      fetch(`${API_URL}/api/categories`).then(res => res.json()),
+    ])
+      .then(([cartData, categories]) => {
+        const agphNames = new Set(
+          categories
+            .filter((c: { imprint: string }) => c.imprint === "agph")
+            .map((c: { name: string }) => c.name)
+        );
+    
+        const filtered = Array.isArray(cartData)
+          ? cartData.filter((item: CartItem & { category_imprints?: string }) =>
+              item.category_imprints?.split(",").includes("agph")
+            )
+          : [];
+    
+        setCart(filtered);
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -209,11 +225,20 @@ const loadRazorpay = () =>
     "Content-Type": "application/json", // ✅ REQUIRED
     Authorization: `Bearer ${token}`,
   },
-  body: JSON.stringify({
-    shipping,
-    couponCode: couponApplied ? couponCode : null
-  }),
-
+    body: JSON.stringify({
+      shipping,
+      couponCode: couponApplied ? couponCode : null,
+      address: {
+        first_name: form.first_name,
+        last_name:  form.last_name,
+        address:    form.address1,
+        city:       form.city,
+        state:      form.state,
+        pincode:    form.pincode,
+        phone:      form.phone,
+        email:      form.email,
+      },
+    }),
 });
  const orderData = await orderRes.json();
 
@@ -529,7 +554,7 @@ const rpRes = await fetch(`${API_URL}/api/payment/create-order`, {
                     unoptimized
                   />
                   <div>
-                    <p className="font-medium">{item.title}</p>
+                    <p className="font-medium text-xs">{item.title}</p>
                     <p className="text-xs text-gray-500">
                       {item.format === "ebook"
                         ? "eBook"

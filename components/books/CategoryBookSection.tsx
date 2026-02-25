@@ -8,20 +8,24 @@ type Book = {
   id: number;
   title: string;
   slug: string;
-  price: number;          // paperback MRP
-  sell_price: number;     // paperback selling
-  ebook_price?: number;   // ebook MRP
+  price: number;
+  sell_price: number;
+  ebook_price?: number;
   ebook_sell_price?: number;
   stock: number;
   main_image: string;
   product_type: "ebook" | "physical" | "both";
 };
 
+type Category = {
+  slug: string;
+  imprint: "agph";
+};
 
 type Props = {
   title: string;
   categorySlug: string;
-  visibleCount?: number; // ✅ NEW
+  visibleCount?: number;
 };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
@@ -29,17 +33,33 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 const CategoryBookSection = ({
   title,
   categorySlug,
-  visibleCount = 6, // ✅ DEFAULT = 6
+  visibleCount = 6,
 }: Props) => {
   const [books, setBooks] = useState<Book[]>([]);
   const [start, setStart] = useState(0);
+  const [isAgph, setIsAgph] = useState<boolean | null>(null); // null = loading
 
+  // ── 1️⃣ Check if this category's imprint is agph ──────────────────────────
   useEffect(() => {
-    fetch(`${API_URL}/api/categories/${categorySlug}/products`)
+    fetch(`${API_URL}/api/categories`)
       .then((res) => res.json())
-      .then((data) => setBooks(data.slice(0, 12))); // fetch more for slider
+      .then((data: Category[]) => {
+        const match = data.find((c) => c.slug === categorySlug);
+        setIsAgph(match?.imprint === "agph");
+      })
+      .catch(() => setIsAgph(false));
   }, [categorySlug]);
 
+  // ── 2️⃣ Fetch books only if imprint is confirmed agph ─────────────────────
+  useEffect(() => {
+    if (!isAgph) return;
+
+    fetch(`${API_URL}/api/categories/${categorySlug}/products`)
+      .then((res) => res.json())
+      .then((data) => setBooks(data.slice(0, 12)));
+  }, [isAgph, categorySlug]);
+
+  // ── 3️⃣ Auto-slide ────────────────────────────────────────────────────────
   useEffect(() => {
     if (books.length <= visibleCount) return;
 
@@ -52,23 +72,23 @@ const CategoryBookSection = ({
     return () => clearInterval(interval);
   }, [books, visibleCount]);
 
-  if (!books.length) return null;
+  // ── Not agph or still loading or no books → render nothing ───────────────
+  if (!isAgph || !books.length) return null;
 
   return (
     <section className="mt-10 px-5">
       {/* HEADER */}
       <div className="flex items-center justify-between mb-4">
-
         <Link
           href={`/category/${categorySlug}`}
           className="text-sm text-red-600 cursor-pointer font-semibold flex items-center"
         >
-        <h2
-          className="text-3xl md:text-4xl font-black text-gray-900 leading-tight pl-2"
-          style={{ fontFamily: "'Playfair Display', serif" }}
-        >
-          {title}
-        </h2>
+          <h2
+            className="text-3xl md:text-4xl font-black text-gray-900 leading-tight pl-2"
+            style={{ fontFamily: "'Playfair Display', serif" }}
+          >
+            {title}
+          </h2>
         </Link>
       </div>
 
@@ -90,18 +110,12 @@ const CategoryBookSection = ({
                 image: book.main_image
                   ? `${API_URL}${book.main_image}`
                   : "/images/placeholder-book.png",
-            
                 product_type: book.product_type,
                 stock: book.stock,
-            
-                // paperback prices
                 price: book.price,
                 sell_price: book.sell_price,
-            
-                // ebook prices (may be undefined)
                 ebook_price: book.ebook_price,
                 ebook_sell_price: book.ebook_sell_price,
-            
                 badge:
                   book.product_type === "physical" && book.stock === 0
                     ? "Out of Stock"
@@ -109,7 +123,6 @@ const CategoryBookSection = ({
               }}
               visibleCount={visibleCount}
             />
-
           ))}
         </div>
       </div>
