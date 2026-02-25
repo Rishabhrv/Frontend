@@ -10,6 +10,7 @@ type Order = {
   total_amount: number;
   order_date: string;
   items_count: number;
+  shipping_cost: number;
 };
 
 type OrderItem = {
@@ -96,7 +97,7 @@ export default function OrdersPage() {
                     href={`/account/orders/${order.order_id}`}
                     className="block rounded bg-white hover:shadow-md transition"
                   >
-                    {/* ORDER HEADER */}
+{/* ORDER HEADER */}
                     <div className="p-4 flex justify-between">
                       <div>
                         <p className="font-medium">
@@ -107,9 +108,14 @@ export default function OrdersPage() {
                         </p>
                       </div>
 
-                      <p className="font-semibold">
-                        ₹{order.total_amount}
-                      </p>
+                      <div className="text-right">
+                        <p className="font-semibold">₹{order.total_amount}</p>
+                        {Number(order.shipping_cost) > 0 && (
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            incl. ₹{Number(order.shipping_cost).toFixed(2)} shipping
+                          </p>
+                        )}
+                      </div>
                     </div>
 
                     {/* ORDER ITEMS (ALWAYS VISIBLE) */}

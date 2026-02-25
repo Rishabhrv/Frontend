@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 const API_BASE = process.env.NEXT_PUBLIC_API_URL!;
@@ -9,6 +10,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL!;
 interface Product {
   id: number;
   name: string;
+  slug: string; // ← NEW
   image: string | null;
   sku: string;
   stock: number;
@@ -19,13 +21,16 @@ interface Product {
   categories: string[];
 }
 
-// ─── Fallback if API is unreachable ──────────────────────────────────────────
-
+interface Category {
+  id: number;
+  name: string;
+  imprint: "agph";
+}
 
 // Tilt angles for the ribbon
 const TILTS = [-6, -3, 0, 4, -2, 5, -4, -5, 3, -1];
 
-// ─── Resolve image URL (handles relative or absolute paths) ──────────────────
+// ─── Resolve image URL ────────────────────────────────────────────────────────
 function resolveImage(image: string | null): string | null {
   if (!image) return null;
   if (image.startsWith("http")) return image;
@@ -34,10 +39,10 @@ function resolveImage(image: string | null): string | null {
 
 // ─── Marquee strip ────────────────────────────────────────────────────────────
 function BookStrip({ books }: { books: Product[] }) {
-  const items = [...books, ...books]; // duplicate for seamless loop
+  const items = [...books, ...books];
 
   return (
-    <div className="relative w-full overflow-x-hidden overflow-y-visible  select-none" >
+    <div className="relative w-full overflow-x-hidden overflow-y-visible select-none">
       {/* Fade edges */}
       <div
         className="pointer-events-none absolute left-0 top-0 h-full w-32 z-10"
@@ -62,9 +67,10 @@ function BookStrip({ books }: { books: Product[] }) {
           const imgSrc = resolveImage(book.image);
 
           return (
-            <div
+            <Link
               key={`${book.id}-${i}`}
-              className="group relative flex-shrink-0 cursor-pointer "
+              href={`/product/${book.slug}`}
+              className="group relative flex-shrink-0 cursor-pointer"
               style={{
                 transform: `rotate(${tilt}deg)`,
                 transition: "transform 0.35s ease",
@@ -73,7 +79,7 @@ function BookStrip({ books }: { books: Product[] }) {
             >
               {/* Book card */}
               <div
-                className="overflow-hidden shadow-xl bg-amber-100 "
+                className="overflow-hidden shadow-xl bg-amber-100"
                 style={{
                   width: isHighlighted ? 150 : 130,
                   height: isHighlighted ? 210 : 190,
@@ -82,10 +88,7 @@ function BookStrip({ books }: { books: Product[] }) {
                 }}
               >
                 {imgSrc ? (
-                  <img
-                    src={imgSrc}
-                    alt={book.name}
-                  />
+                  <img src={imgSrc} alt={book.name} className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-amber-100">
                     <svg viewBox="0 0 24 24" className="w-10 h-10 fill-amber-400">
@@ -109,7 +112,7 @@ function BookStrip({ books }: { books: Product[] }) {
                 </p>
                 <div className="absolute bottom-[-5px] left-1/2 -translate-x-1/2 w-2 h-2 bg-neutral-900 rotate-45" />
               </div>
-            </div>
+            </Link>
           );
         })}
       </div>
@@ -129,16 +132,29 @@ export default function BookstoreHero() {
   const [books, setBooks]     = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // ── Fetch top 10 products ─────────────────────────────────────────────────
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch(`${API_BASE}/api/products?limit=10`);
-        if (!res.ok) throw new Error(`Server error: ${res.status}`);
-        const data: Product[] = await res.json();
-        // Safety: slice to 10 even if server ignores the query param
-        const sliced = data.slice(0, 10);
-        setBooks(sliced.length > 0 ? sliced : []); // empty if API returns no products
+        const catRes = await fetch(`${API_BASE}/api/categories`);
+        const catData: Category[] = await catRes.json();
+        const agphNames = new Set(
+          catData
+            .filter((c) => c.imprint === "agph")
+            .map((c) => c.name)
+        );
+
+        // 2️⃣ Fetch products
+        const prodRes = await fetch(`${API_BASE}/api/products?limit=10`);
+        if (!prodRes.ok) throw new Error(`Server error: ${prodRes.status}`);
+        const prodData: Product[] = await prodRes.json();
+
+        const filtered = prodData
+          .filter((p) =>
+            p.categories.some((cat) => agphNames.has(cat))
+          )
+          .slice(0, 10);
+
+        setBooks(filtered);
       } catch (err) {
         console.error("Failed to fetch products:", err);
       } finally {
@@ -159,17 +175,13 @@ export default function BookstoreHero() {
 
       {/* ── Badge ── */}
       <div className="flex justify-center mt-8 z-10">
-        <span
-          className="text-xs font-semibold px-4 py-1.5 rounded-full bg-gray-200 text-gray-600 tracking-wide uppercase"
-
-        >
+        <span className="text-xs font-semibold px-4 py-1.5 rounded-full bg-gray-200 text-gray-600 tracking-wide uppercase">
           ✦ Over 1500 titles in our collection
         </span>
       </div>
 
       {/* ── Headline ── */}
       <div className="relative text-center mt-8 px-6 z-10">
-        {/* Decorative left annotation */}
         <span
           className="absolute left-[12%] top-4 text-sm text-neutral-400 italic select-none hidden lg:block"
           style={{ fontFamily: "'Playfair Display', serif", transform: "rotate(-10deg)" }}
@@ -187,7 +199,6 @@ export default function BookstoreHero() {
           <span className="text-gray-600">Worth Reading</span>
         </h1>
 
-        {/* Decorative right annotation */}
         <span
           className="absolute right-[10%] top-6 text-sm text-neutral-400 italic select-none hidden lg:block"
           style={{ fontFamily: "'Playfair Display', serif", transform: "rotate(8deg)" }}
@@ -221,9 +232,7 @@ export default function BookstoreHero() {
           >
             Buy Now ↗
           </span>
-          <button
-            className="px-8 py-3.5 rounded-full text-white font-semibold text-sm shadow-lg transition-all hover:opacity-90 hover:-translate-y-0.5 active:scale-95 bg-gray-500"
-          >
+          <button className="px-8 py-3.5 rounded-full text-white font-semibold text-sm shadow-lg transition-all hover:opacity-90 hover:-translate-y-0.5 active:scale-95 bg-gray-500">
             Browse the Collection
           </button>
         </div>

@@ -13,6 +13,7 @@ type Category = {
   slug: string;
   status: "active" | "inactive";
   parent_id: number | null;
+  imprint: "agph" | "agclassics"; // ← NEW
 };
 
 type Props = {
@@ -34,57 +35,51 @@ const CategoriesList = ({ onEdit }: Props) => {
   const [toastOpen, setToastOpen] = useState(false);
   const [toastMsg, setToastMsg] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
-const [confirmConfig, setConfirmConfig] = useState<{
-  title: string;
-  message: string;
-  onConfirm: () => void;
-} | null>(null);
+  const [confirmConfig, setConfirmConfig] = useState<{
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  } | null>(null);
 
   /* ---------------- FETCH DATA ---------------- */
   useEffect(() => {
-  const fetchCategories = () => {
-    fetch(`${API_URL}/api/categories`)
-      .then((res) => res.json())
-      .then((data) => setCategories(data))
-      .catch((err) => console.error(err));
+    const fetchCategories = () => {
+      fetch(`${API_URL}/api/categories`)
+        .then((res) => res.json())
+        .then((data) => setCategories(data))
+        .catch((err) => console.error(err));
+    };
+
+    fetchCategories();
+
+    window.addEventListener("categories:refresh", fetchCategories);
+    return () => {
+      window.removeEventListener("categories:refresh", fetchCategories);
+    };
+  }, []);
+
+  const handleDelete = (id: number) => {
+    setConfirmConfig({
+      title: "Delete category?",
+      message: "This category will be permanently deleted.",
+      onConfirm: async () => {
+        const res = await fetch(`${API_URL}/api/categories/${id}`, {
+          method: "DELETE",
+        });
+
+        if (!res.ok) {
+          setToastMsg("Delete failed");
+          setToastOpen(true);
+          return;
+        }
+
+        setCategories((prev) => prev.filter((c) => c.id !== id));
+        setSelected((prev) => prev.filter((cid) => cid !== id));
+      },
+    });
+
+    setConfirmOpen(true);
   };
-
-  fetchCategories(); // initial load
-
-  // 👂 listen for refresh
-  window.addEventListener("categories:refresh", fetchCategories);
-
-  return () => {
-    window.removeEventListener("categories:refresh", fetchCategories);
-  };
-}, []);
-
-const handleDelete = (id: number) => {
-  setConfirmConfig({
-    title: "Delete category?",
-    message: "This category will be permanently deleted.",
-    onConfirm: async () => {
-      const res = await fetch(
-        `${API_URL}/api/categories/${id}`,
-        { method: "DELETE" }
-      );
-
-      if (!res.ok) {
-        setToastMsg("Delete failed");
-        setToastOpen(true);
-        return;
-      }
-
-      setCategories(prev => prev.filter(c => c.id !== id));
-      setSelected(prev => prev.filter(cid => cid !== id));
-    },
-  });
-
-  setConfirmOpen(true);
-};
-
-
-
 
   /* ---------------- FILTER + SORT ---------------- */
   const filteredData = useMemo(() => {
@@ -123,129 +118,102 @@ const handleDelete = (id: number) => {
   };
 
   /* ---------------- BULK APPLY  ---------------- */
-const applyBulkAction = () => {
-  if (!bulkAction) {
-    setToastMsg("Please select a bulk action");
-    setToastOpen(true);
-    return;
-  }
+  const applyBulkAction = () => {
+    if (!bulkAction) {
+      setToastMsg("Please select a bulk action");
+      setToastOpen(true);
+      return;
+    }
 
-  if (selected.length === 0) {
-    setToastMsg("Please select at least one category");
-    setToastOpen(true);
-    return;
-  }
+    if (selected.length === 0) {
+      setToastMsg("Please select at least one category");
+      setToastOpen(true);
+      return;
+    }
 
-  // 🗑 DELETE
-  if (bulkAction === "delete") {
-    setConfirmConfig({
-      title: "Delete selected categories?",
-      message: "This action cannot be undone.",
-      onConfirm: async () => {
-        const res = await fetch(
-          `${API_URL}/api/categories/bulk-delete`,
-          {
+    if (bulkAction === "delete") {
+      setConfirmConfig({
+        title: "Delete selected categories?",
+        message: "This action cannot be undone.",
+        onConfirm: async () => {
+          const res = await fetch(`${API_URL}/api/categories/bulk-delete`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ ids: selected }),
+          });
+
+          if (!res.ok) {
+            setToastMsg("Bulk delete failed");
+            setToastOpen(true);
+            return;
           }
-        );
 
-        if (!res.ok) {
-          setToastMsg("Bulk delete failed");
-          setToastOpen(true);
-          return;
-        }
+          setCategories((prev) => prev.filter((c) => !selected.includes(c.id)));
+          setSelected([]);
+          setBulkAction("");
+        },
+      });
 
-        setCategories(prev =>
-          prev.filter(c => !selected.includes(c.id))
-        );
+      setConfirmOpen(true);
+      return;
+    }
 
-        setSelected([]);
-        setBulkAction("");
-      },
-    });
+    if (bulkAction === "activate" || bulkAction === "deactivate") {
+      const newStatus = bulkAction === "activate" ? "active" : "inactive";
 
-    setConfirmOpen(true);
-    return;
-  }
-
-  // ✅ ACTIVATE / DEACTIVATE
-  if (bulkAction === "activate" || bulkAction === "deactivate") {
-    const newStatus =
-      bulkAction === "activate" ? "active" : "inactive";
-
-    setConfirmConfig({
-      title: `Mark categories as ${newStatus}?`,
-      message: `Selected categories will be marked as ${newStatus}.`,
-      onConfirm: async () => {
-        const res = await fetch(
-          `${API_URL}/api/categories/bulk-status`,
-          {
+      setConfirmConfig({
+        title: `Mark categories as ${newStatus}?`,
+        message: `Selected categories will be marked as ${newStatus}.`,
+        onConfirm: async () => {
+          const res = await fetch(`${API_URL}/api/categories/bulk-status`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              ids: selected,
-              status: newStatus,
-            }),
+            body: JSON.stringify({ ids: selected, status: newStatus }),
+          });
+
+          if (!res.ok) {
+            setToastMsg("Bulk status update failed");
+            setToastOpen(true);
+            return;
           }
-        );
 
-        if (!res.ok) {
-          setToastMsg("Bulk status update failed");
-          setToastOpen(true);
-          return;
-        }
+          setCategories((prev) =>
+            prev.map((c) =>
+              selected.includes(c.id) ? { ...c, status: newStatus } : c
+            )
+          );
 
-        setCategories(prev =>
-          prev.map(c =>
-            selected.includes(c.id)
-              ? { ...c, status: newStatus }
-              : c
-          )
-        );
+          setSelected([]);
+          setBulkAction("");
+        },
+      });
 
-        setSelected([]);
-        setBulkAction("");
-      },
-    });
-
-    setConfirmOpen(true);
-    return;
-  }
-};
-
-
+      setConfirmOpen(true);
+      return;
+    }
+  };
 
   /* ---------------- CHECKBOX ---------------- */
   const toggleAll = (checked: boolean) => {
-    setSelected(
-      checked ? paginatedData.map((c) => c.id) : []
-    );
+    setSelected(checked ? paginatedData.map((c) => c.id) : []);
   };
 
   const toggleOne = (id: number) => {
     setSelected((prev) =>
-      prev.includes(id)
-        ? prev.filter((i) => i !== id)
-        : [...prev, id]
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
     );
   };
 
   const parentMap = useMemo(() => {
-  const map = new Map<number, string>();
-  categories.forEach((c) => {
-    map.set(c.id, c.name);
-  });
-  return map;
-}, [categories]);
+    const map = new Map<number, string>();
+    categories.forEach((c) => {
+      map.set(c.id, c.name);
+    });
+    return map;
+  }, [categories]);
 
   return (
     <div className="p-1">
-      <h1 className="mb-6 text-xl font-semibold">
-        
-      </h1>
-
       {/* TOP BAR */}
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
@@ -267,7 +235,6 @@ const applyBulkAction = () => {
           >
             Apply
           </button>
-
         </div>
 
         <input
@@ -281,7 +248,7 @@ const applyBulkAction = () => {
 
       {/* TABLE */}
       <div className="overflow-x-auto rounded-lg border border-gray-200">
-        <table className="min-w-full text-sm">
+        <table className="min-w-full text-xs">
           <thead className="bg-gray-50 text-gray-600">
             <tr>
               <th className="px-4 py-3">
@@ -291,9 +258,7 @@ const applyBulkAction = () => {
                     paginatedData.length > 0 &&
                     selected.length === paginatedData.length
                   }
-                  onChange={(e) =>
-                    toggleAll(e.target.checked)
-                  }
+                  onChange={(e) => toggleAll(e.target.checked)}
                 />
               </th>
 
@@ -304,8 +269,14 @@ const applyBulkAction = () => {
                 Name <ChevronsUpDown className="inline h-4 w-4" />
               </th>
 
-              <th className="px-4 py-3 text-left">
-                Parent
+              <th className="px-4 py-3 text-left">Parent</th>
+
+              {/* IMPRINT COLUMN ← NEW */}
+              <th
+                onClick={() => handleSort("imprint")}
+                className="cursor-pointer px-4 py-3 text-left"
+              >
+                Imprint <ChevronsUpDown className="inline h-4 w-4" />
               </th>
 
               <th
@@ -315,18 +286,13 @@ const applyBulkAction = () => {
                 Status <ChevronsUpDown className="inline h-4 w-4" />
               </th>
 
-              <th className="px-4 py-3 text-left">
-                Slug
-              </th>
+              <th className="px-4 py-3 text-left">Slug</th>
             </tr>
           </thead>
 
           <tbody className="divide-y divide-gray-200">
             {paginatedData.map((cat) => (
-              <tr
-                key={cat.id}
-                className="hover:bg-gray-50"
-              >
+              <tr key={cat.id} className="hover:bg-gray-50">
                 <td className="px-4 py-3">
                   <input
                     type="checkbox"
@@ -336,12 +302,7 @@ const applyBulkAction = () => {
                 </td>
 
                 <td className="px-4 py-3">
-                  {/* Category Name */}
-                  <div className="font-medium text-gray-900">
-                    {cat.name}
-                  </div>
-                
-                  {/* Action Links */}
+                  <div className="font-medium text-gray-900">{cat.name}</div>
                   <div className="mt-1 text-xs text-blue-600 space-x-2">
                     <button
                       onClick={() => onEdit(cat)}
@@ -349,24 +310,31 @@ const applyBulkAction = () => {
                     >
                       Edit
                     </button>
-                
                     <span className="text-gray-400">|</span>
-                
                     <button
                       onClick={() => handleDelete(cat.id)}
                       className="text-red-600 hover:underline"
                     >
                       Delete
                     </button>
-
-                
                   </div>
                 </td>
 
                 <td className="px-4 py-3 text-gray-500">
-                  {cat.parent_id
-                    ? parentMap.get(cat.parent_id) || "—"
-                    : "—"}
+                  {cat.parent_id ? parentMap.get(cat.parent_id) || "—" : "—"}
+                </td>
+
+                {/* IMPRINT CELL ← NEW */}
+                <td className="px-4 py-3">
+                  <span
+                    className={`rounded-full px-2 py-1 text-xs font-medium ${
+                      cat.imprint === "agph"
+                        ? "bg-blue-100 text-blue-700"
+                        : "bg-purple-100 text-purple-700"
+                    }`}
+                  >
+                    {cat.imprint === "agph" ? "AGPH" : "AG Classics"}
+                  </span>
                 </td>
 
                 <td className="px-4 py-3">
@@ -381,9 +349,7 @@ const applyBulkAction = () => {
                   </span>
                 </td>
 
-                <td className="px-4 py-3 text-gray-500">
-                  {cat.slug}
-                </td>
+                <td className="px-4 py-3 text-gray-500">{cat.slug}</td>
               </tr>
             ))}
           </tbody>
@@ -394,9 +360,7 @@ const applyBulkAction = () => {
       <div className="mt-4 flex items-center justify-between">
         <select
           value={rowsPerPage}
-          onChange={(e) =>
-            setRowsPerPage(Number(e.target.value))
-          }
+          onChange={(e) => setRowsPerPage(Number(e.target.value))}
           className="rounded border px-2 py-1 text-sm"
         >
           <option value={10}>10 rows</option>
@@ -407,9 +371,7 @@ const applyBulkAction = () => {
         <div className="flex items-center gap-2">
           <button
             disabled={currentPage === 1}
-            onClick={() =>
-              setCurrentPage((p) => p - 1)
-            }
+            onClick={() => setCurrentPage((p) => p - 1)}
             className="rounded border px-3 py-1 disabled:opacity-50 text-sm"
           >
             Previous
@@ -421,36 +383,34 @@ const applyBulkAction = () => {
 
           <button
             disabled={currentPage === totalPages}
-            onClick={() =>
-              setCurrentPage((p) => p + 1)
-            }
+            onClick={() => setCurrentPage((p) => p + 1)}
             className="rounded border px-3 py-1 disabled:opacity-50 text-sm"
           >
             Next
           </button>
         </div>
       </div>
-                            <AlertPopup
-                              open={toastOpen}
-                              message={toastMsg}
-                              onClose={() => setToastOpen(false)}
-                            />
-                            <ConfirmPopup
-                              open={confirmOpen}
-                              title={confirmConfig?.title || ""}
-                              message={confirmConfig?.message || ""}
-                              confirmText="Delete"
-                              onCancel={() => {
-                                setConfirmOpen(false);
-                                setConfirmConfig(null);
-                              }}
-                              onConfirm={() => {
-                                confirmConfig?.onConfirm();
-                                setConfirmOpen(false);
-                                setConfirmConfig(null);
-                              }}
-                            />
 
+      <AlertPopup
+        open={toastOpen}
+        message={toastMsg}
+        onClose={() => setToastOpen(false)}
+      />
+      <ConfirmPopup
+        open={confirmOpen}
+        title={confirmConfig?.title || ""}
+        message={confirmConfig?.message || ""}
+        confirmText="Delete"
+        onCancel={() => {
+          setConfirmOpen(false);
+          setConfirmConfig(null);
+        }}
+        onConfirm={() => {
+          confirmConfig?.onConfirm();
+          setConfirmOpen(false);
+          setConfirmConfig(null);
+        }}
+      />
     </div>
   );
 };

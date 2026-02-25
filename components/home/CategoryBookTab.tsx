@@ -15,6 +15,7 @@ type Category = {
   slug: string;
   parent_id: number | null;
   status: string;
+  imprint: "agph"; // ← NEW
 };
 
 type Book = {
@@ -95,8 +96,8 @@ const BookCard = ({ book }: { book: Book }) => {
   };
 
   const isEbookOnly     = book.product_type === "ebook";
-  const displaySell     = isEbookOnly ? book.ebook_sell_price : book.sell_price;
-  const displayMrp      = isEbookOnly ? book.ebook_price : book.price;
+  const displaySell     = book.ebook_sell_price ?? book.sell_price;
+  const displayMrp      = book.ebook_price ?? book.price;
   const showDiscount    = displayMrp && displaySell && displayMrp > displaySell;
   const discountPct     = showDiscount ? Math.round(((displayMrp! - displaySell!) / displayMrp!) * 100) : 0;
   const isOutOfStock    = book.product_type === "physical" && book.stock === 0;
@@ -208,7 +209,7 @@ export default function CategoryBookSection() {
     fetch(`${API_URL}/api/categories`)
       .then((r) => r.json())
       .then(async (data: Category[]) => {
-        const active = data.filter((c) => c.status === "active");
+        const active = data.filter((c) => c.status === "active" && c.imprint === "agph");
         // Check each category in parallel for ebook presence
         const checks = await Promise.all(
           active.map((cat) =>

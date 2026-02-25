@@ -20,10 +20,9 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 const AddCategoriesForm = ({ editCategory, clearEdit }: Props) => {
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
-  const [status, setStatus] =
-    useState<"active" | "inactive">("active");
-  const [parentId, setParentId] =
-    useState<number | null>(null);
+  const [status, setStatus] = useState<"active" | "inactive">("active");
+  const [parentId, setParentId] = useState<number | null>(null);
+  const [imprint, setImprint] = useState<"agph" | "agclassics">("agph"); // ← NEW
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
@@ -31,32 +30,31 @@ const AddCategoriesForm = ({ editCategory, clearEdit }: Props) => {
   const [toastMsg, setToastMsg] = useState("");
 
   /* ---------------- FETCH PARENT CATEGORIES ---------------- */
-useEffect(() => {
-  fetch(`${API_URL}/api/categories`)
-    .then((res) => {
-      if (!res.ok) throw new Error("Failed to fetch");
-      return res.json();
-    })
-    .then((data: Category[]) => {
-      const parentOnly = data.filter(
-        (cat) => cat.parent_id === null
-      );
-      setCategories(parentOnly);
-    })
-    .catch((err) => {
-      console.error("Category fetch error:", err);
-      setCategories([]);
-    });
-}, []);
+  useEffect(() => {
+    fetch(`${API_URL}/api/categories`)
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch");
+        return res.json();
+      })
+      .then((data: Category[]) => {
+        const parentOnly = data.filter((cat) => cat.parent_id === null);
+        setCategories(parentOnly);
+      })
+      .catch((err) => {
+        console.error("Category fetch error:", err);
+        setCategories([]);
+      });
+  }, []);
 
-useEffect(() => {
-  if (!editCategory) return;
+  useEffect(() => {
+    if (!editCategory) return;
 
-  setName(editCategory.name);
-  setSlug(editCategory.slug);
-  setStatus(editCategory.status);
-  setParentId(editCategory.parent_id);
-}, [editCategory]);
+    setName(editCategory.name);
+    setSlug(editCategory.slug);
+    setStatus(editCategory.status);
+    setParentId(editCategory.parent_id);
+    setImprint(editCategory.imprint ?? "agph"); // ← NEW
+  }, [editCategory]);
 
 
   /* ---------------- AUTO SLUG ---------------- */
@@ -74,54 +72,55 @@ useEffect(() => {
 
   /* ---------------- SUBMIT ---------------- */
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setLoading(true);
+    e.preventDefault();
+    setLoading(true);
 
-  const payload = {
-    name,
-    slug,
-    status,
-    parent_id: parentId,
-  };
+    const payload = {
+      name,
+      slug,
+      status,
+      parent_id: parentId,
+      imprint, // ← NEW
+    };
 
-  try {
-    const url = editCategory
-      ? `${API_URL}/api/categories/${editCategory.id}`
-      : `${API_URL}/api/categories`;
+    try {
+      const url = editCategory
+        ? `${API_URL}/api/categories/${editCategory.id}`
+        : `${API_URL}/api/categories`;
 
-    const method = editCategory ? "PUT" : "POST";
+      const method = editCategory ? "PUT" : "POST";
 
-    const res = await fetch(url, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (!res.ok) {
-      setToastMsg(data.message || "Failed");
-      setToastOpen(true);
-      
-      return;
-    }
+      if (!res.ok) {
+        setToastMsg(data.message || "Failed");
+        setToastOpen(true);
+        return;
+      }
 
-    window.dispatchEvent(new Event("categories:refresh"));
+      window.dispatchEvent(new Event("categories:refresh"));
 
-    // RESET FORM
-    setName("");
-    setSlug("");
-    setStatus("active");
-    setParentId(null);
-    clearEdit();
+      // RESET FORM
+      setName("");
+      setSlug("");
+      setStatus("active");
+      setParentId(null);
+      setImprint("agph"); // ← NEW
+      clearEdit();
 
-  } catch (err) {
+    } catch (err) {
       setToastMsg("Server error");
       setToastOpen(true);
-  } finally {
-    setLoading(false);
-  }
-};
+    } finally {
+      setLoading(false);
+    }
+  };
 
 
   return (
@@ -142,9 +141,7 @@ useEffect(() => {
           <input
             type="text"
             value={name}
-            onChange={(e) =>
-              handleNameChange(e.target.value)
-            }
+            onChange={(e) => handleNameChange(e.target.value)}
             className="w-full rounded border px-3 py-2 text-sm"
             placeholder="Enter category name"
             required
@@ -177,21 +174,31 @@ useEffect(() => {
           <select
             value={parentId ?? ""}
             onChange={(e) =>
-              setParentId(
-                e.target.value
-                  ? Number(e.target.value)
-                  : null
-              )
+              setParentId(e.target.value ? Number(e.target.value) : null)
             }
             className="w-full rounded border px-3 py-2 text-sm"
           >
             <option value="">None</option>
-
             {categories.map((cat) => (
               <option key={cat.id} value={cat.id}>
                 {cat.name}
               </option>
             ))}
+          </select>
+        </div>
+
+        {/* IMPRINT ← NEW */}
+        <div>
+          <label className="block text-sm mb-1 font-medium">
+            Imprint
+          </label>
+          <select
+            value={imprint}
+            onChange={(e) => setImprint(e.target.value as "agph" | "agclassics")}
+            className="w-full rounded border px-3 py-2 text-sm"
+          >
+            <option value="agph">AGPH</option>
+            <option value="agclassics">AG Classics</option>
           </select>
         </div>
 
@@ -202,11 +209,7 @@ useEffect(() => {
           </label>
           <select
             value={status}
-            onChange={(e) =>
-              setStatus(
-                e.target.value as "active" | "inactive"
-              )
-            }
+            onChange={(e) => setStatus(e.target.value as "active" | "inactive")}
             className="w-full rounded border px-3 py-2 text-sm"
           >
             <option value="active">Active</option>
@@ -217,24 +220,24 @@ useEffect(() => {
         {/* ACTIONS */}
         <div className="flex gap-3 pt-4">
           <button
-  type="submit"
-  disabled={loading}
-  className="rounded bg-blue-600 px-5 py-2 text-sm text-white"
->
-  {loading
-    ? "Saving..."
-    : editCategory
-    ? "Update Category"
-    : "Save Category"}
-</button>
-
+            type="submit"
+            disabled={loading}
+            className="rounded bg-blue-600 px-5 py-2 text-sm text-white"
+          >
+            {loading
+              ? "Saving..."
+              : editCategory
+              ? "Update Category"
+              : "Save Category"}
+          </button>
         </div>
       </form>
-                            <AlertPopup
-                              open={toastOpen}
-                              message={toastMsg}
-                              onClose={() => setToastOpen(false)}
-                            />
+
+      <AlertPopup
+        open={toastOpen}
+        message={toastMsg}
+        onClose={() => setToastOpen(false)}
+      />
     </div>
   );
 };

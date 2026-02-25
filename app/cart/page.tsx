@@ -17,7 +17,9 @@ type CartItem = {
   main_image: string;
   price: number;
   stock: number;
+  category_imprints?: string; 
 };
+
 
 export default function CartPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -42,8 +44,13 @@ export default function CartPage() {
         }
         return res.json();
       })
-      .then((data) => {
-        setCart(Array.isArray(data) ? data : []);
+      .then((data: CartItem[]) => {
+        const filtered = Array.isArray(data)
+          ? data.filter(item =>
+              item.category_imprints?.split(",").includes("agph")
+            )
+          : [];
+        setCart(filtered);
       })
       .catch(() => {
         setCart([]);
