@@ -205,7 +205,7 @@ export default function EbookHero() {
 
               {/* Subtitle */}
               <p className="hero-text-3 text-gray-500 text-lg font-light leading-relaxed mb-8 max-w-lg">
-                Thousands of titles across every genre.
+                Instant access to your ebook.
                 Start reading in seconds.
               </p>
 

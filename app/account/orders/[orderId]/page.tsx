@@ -7,6 +7,7 @@ import Link from "next/link";
 import { CheckCircle, XCircle, Clock } from "lucide-react";
 import DeliveryTimeline from "./DeliveryTimeline";
 import ReviewSection from "./ReviewSection";
+import InvoiceButton from "@/components/invoice/InvoiceButton";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
@@ -48,9 +49,10 @@ export default function OrderDetailsPage() {
   const [items, setItems] = useState<OrderItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [reviewItem, setReviewItem] = useState<{
-  product_id: number;
-  title: string;
-} | null>(null);
+    product_id: number;
+    title: string;
+  } | null>(null);
+  const [shippingStatus, setShippingStatus] = useState<string | null>(null);
 
   useEffect(() => {
     if (!orderId) return;
@@ -67,7 +69,20 @@ export default function OrderDetailsPage() {
       .then(res => res.json())
       .then(data => setItems(data))
       .finally(() => setLoading(false));
+
+      fetch(`${API_URL}/api/orders/${orderId}/shipping`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then(res => res.json())
+        .then(data => {
+          setShippingStatus(
+            data?.status?.toLowerCase().trim() || "confirmed"
+          );
+        });
   }, [orderId]);
+
+
+  
 
   if (!orderId) {
     return <p className="p-10">Invalid order</p>;
@@ -179,17 +194,19 @@ export default function OrderDetailsPage() {
                 <p className="text-sm text-gray-500">
                   {item.format.toUpperCase()} × {item.quantity}
                 </p>
-                <button
-                  onClick={() =>
-                    setReviewItem({
-                      product_id: item.product_id,
-                      title: item.title,
-                    })
-                  }
-                  className="text-xs m-2 ml-0 text-white px-4 py-1.5 rounded-sm bg-black hover:bg-gray-800 cursor-pointer"
-                >
-                  Write a review
-                </button>
+                {shippingStatus === "delivered" && (
+                  <button
+                    onClick={() =>
+                      setReviewItem({
+                        product_id: item.product_id,
+                        title: item.title,
+                      })
+                    }
+                    className="text-xs m-2 ml-0 text-white px-4 py-1.5 rounded-sm bg-black hover:bg-gray-800 cursor-pointer"
+                  >
+                    Write a review
+                  </button>
+                )}
 
                 {item.format === "ebook" && (
                   <span className="inline-block mt-1 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">
@@ -235,12 +252,7 @@ export default function OrderDetailsPage() {
             <span>₹{order.total_amount}</span>
           </div>
 
-          <button
-            className="mt-4 w-full border border-gray-300 rounded py-2 text-sm hover:bg-gray-50"
-            onClick={() => window.print()}
-          >
-            Download invoice
-          </button>
+          <InvoiceButton orderId={order.order_id} />
         </div>
       </div>
 
@@ -280,7 +292,7 @@ export default function OrderDetailsPage() {
         </h2>
         <button
           onClick={() => setReviewItem(null)}
-          className="text-gray-500 hover:text-black text-xl"
+          className="text-gray-500 hover:text-black text-xl cursor-pointer transition"
         >
           ✕
         </button>

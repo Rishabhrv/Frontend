@@ -159,7 +159,7 @@ export default function ForgotPassword() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-black text-white py-2 rounded hover:bg-gray-800 disabled:opacity-60 transition"
+            className="w-full bg-black text-white py-2 rounded hover:bg-gray-800 disabled:opacity-60 transition cursor-pointer" 
           >
             {loading ? "Sending..." : "Send OTP"}
           </button>
@@ -194,7 +194,7 @@ export default function ForgotPassword() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-black text-white py-2 rounded hover:bg-gray-800 disabled:opacity-60 transition"
+            className="w-full bg-black text-white py-2 rounded hover:bg-gray-800 disabled:opacity-60 transition cursor-pointer"
           >
             {loading ? "Verifying..." : "Verify OTP"}
           </button>
@@ -205,7 +205,7 @@ export default function ForgotPassword() {
               type="button"
               onClick={handleResend}
               disabled={loading}
-              className="text-blue-600 hover:underline disabled:opacity-50"
+              className="text-blue-600 hover:underline disabled:opacity-50 transition cursor-pointer"
             >
               Resend OTP
             </button>
@@ -215,7 +215,7 @@ export default function ForgotPassword() {
             <button
               type="button"
               onClick={() => setStep("email")}
-              className="text-gray-500 hover:underline"
+              className="text-gray-500 hover:underline transition cursor-pointer"
             >
               ← Change email
             </button>
@@ -257,7 +257,7 @@ export default function ForgotPassword() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-black text-white py-2 rounded hover:bg-gray-800 disabled:opacity-60 transition"
+            className="w-full bg-black text-white py-2 rounded hover:bg-gray-800 disabled:opacity-60 transition cursor-pointer"
           >
             {loading ? "Resetting..." : "Reset Password"}
           </button>

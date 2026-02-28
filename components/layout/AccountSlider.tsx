@@ -43,7 +43,7 @@ const AccountSlider = ({ open, onClose, user, onLogout }: Props) => {
             <h2 className="text-3xl font-medium">Welcome</h2>
           )}
 
-          <button onClick={onClose}>
+          <button onClick={onClose} className="cursor-pointer">
             <X className="h-6 w-6" />
           </button>
         </div>
@@ -68,9 +68,8 @@ const AccountSlider = ({ open, onClose, user, onLogout }: Props) => {
             </Link>
 
             <div className="divide-y divide-gray-100 pt-6 text-sm">
-              <MenuItem label="Order status" href="/orders" />
-              <MenuItem label="Wish List" href="/wishlist" />
-              <MenuItem label="Gift Card Balance" href="/gift-cards" />
+              <MenuItem label="Order status" href="/account/orders" onClick={onClose}/>
+              <MenuItem label="Wish List" href="/wishlist" onClick={onClose} />
             </div>
           </div>
         )}
@@ -80,18 +79,17 @@ const AccountSlider = ({ open, onClose, user, onLogout }: Props) => {
           <div className="px-6 py-4 text-sm">
 
             <div className="divide-y divide-gray-100 ">
-              <MenuItem label="My Account" href="/account" />
-              <MenuItem label="Wish List" href="/wishlist" />
-              <MenuItem label="My Rewards" href="/rewards" />
-              <MenuItem label="Gift Card Balance" href="/gift-cards" />
-              <MenuItem label="Order History" href="/account/orders" />
+              <MenuItem label="My Account" href="/account" onClick={onClose} />
+              <MenuItem label="Wish List" href="/wishlist" onClick={onClose} />
+              <MenuItem label="My Coupons" href="/account/coupons" onClick={onClose} />
+              <MenuItem label="Order History" href="/account/orders" onClick={onClose} />
             </div>
 
             {/* SIGN OUT */}
             <div className="pt-10">
               <button
                 onClick={onLogout}
-                className="w-full border-2 border-black py-3 rounded-md font-medium hover:bg-gray-50 transition"
+                className="w-full cursor-pointer border-2 border-black py-3 rounded-md font-medium hover:bg-gray-50 transition"
               >
                 Sign Out
               </button>
@@ -110,13 +108,16 @@ export default AccountSlider;
 const MenuItem = ({
   label,
   href,
+  onClick,
 }: {
   label: string;
   href: string;
+  onClick: () => void;
 }) => {
   return (
     <Link
       href={href}
+      onClick={onClick}
       className="flex items-center justify-between py-4 hover:text-black transition"
     >
       <span>{label}</span>

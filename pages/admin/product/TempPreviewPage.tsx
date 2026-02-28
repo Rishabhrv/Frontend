@@ -39,6 +39,9 @@ export default function TempPreviewPage() {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+        useEffect(() => {
+          document.title = "Preview Temp E-Book | Admin Panel";
+        }, []);
 
   /* Load Foliate */
   useEffect(() => {

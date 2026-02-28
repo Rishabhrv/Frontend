@@ -224,7 +224,7 @@ export default function ProductCarousel() {
 
   return (
     <div
-      className="min-h-screen bg-gray-100 flex flex-col items-center justify-center overflow-hidden"
+      className="pt-15  bg-gray-100 flex flex-col items-center justify-center overflow-hidden"
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >

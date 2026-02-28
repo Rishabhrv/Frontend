@@ -49,7 +49,7 @@ function CopyButton({ code }: { code: string }) {
   return (
     <button
       onClick={copy}
-      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold tracking-wider transition-all duration-200
+      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold tracking-wider transition-all duration-200 cursor-pointer
         ${copied
           ? "bg-emerald-500 text-white"
           : "bg-gray-900 text-white hover:bg-gray-700"
@@ -255,7 +255,7 @@ export default function CouponsPage() {
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`px-4 py-2 rounded-full text-xs font-bold capitalize transition-all duration-200
+              className={`px-4 py-2 rounded-full text-xs font-bold capitalize transition-all duration-200 cursor-pointer
                 ${filter === f
                   ? "bg-gray-900 text-white"
                   : "bg-white text-gray-500 border border-gray-200 hover:border-gray-400"

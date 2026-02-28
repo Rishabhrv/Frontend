@@ -137,7 +137,7 @@ const WeightBasedRulesTable: React.FC<Props> = ({ rules, setRules }) => {
               {/* Shipping (RELATIVE CELL) */}
               <td className="px-3 py-2 relative">
                 <button
-                  className="text-blue-600 hover:underline"
+                  className="text-blue-600 hover:underline cursor-pointer"
                   onClick={() => {
                     setActiveIndex(i);
                     setTempRule({ ...rule });
@@ -346,7 +346,7 @@ const WeightBasedRulesTable: React.FC<Props> = ({ rules, setRules }) => {
                       {/* Footer */}
                       <div className="flex justify-end gap-3 px-4 py-3">
                         <button
-                          className="text-xs text-gray-500"
+                          className="text-xs text-gray-500 cursor-pointer"
                           onClick={() => {
                             setActiveIndex(null);
                             setTempRule(null);
@@ -355,7 +355,7 @@ const WeightBasedRulesTable: React.FC<Props> = ({ rules, setRules }) => {
                           Cancel
                         </button>
                         <button
-                          className="bg-blue-600 text-white text-xs px-4 py-1 rounded"
+                          className="bg-blue-600 text-white text-xs px-4 py-1 rounded cursor-pointer"
                           onClick={() => {
                             const updated = [...rules];
                             updated[i] = tempRule;
@@ -376,7 +376,7 @@ const WeightBasedRulesTable: React.FC<Props> = ({ rules, setRules }) => {
               <td className="px-3 py-2 text-right">
                 <button
                   onClick={() => removeRule(i)}
-                  className="text-xs text-red-500 hover:underline"
+                  className="text-xs text-red-500 hover:underline cursor-pointer"
                 >
                   Delete
                 </button>
@@ -390,7 +390,7 @@ const WeightBasedRulesTable: React.FC<Props> = ({ rules, setRules }) => {
       <div className="px-4 py-3 border-t border-gray-200">
         <button
           onClick={addRule}
-          className="text-blue-600 text-sm font-medium hover:underline"
+          className="text-blue-600 text-sm font-medium hover:underline cursor-pointer"
         >
           + Add rule
         </button>

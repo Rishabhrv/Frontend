@@ -1,14 +1,19 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState,useEffect } from "react";
 import Sidebar from "@/components/admin/Sidebar";
 import Header from "@/components/admin/Header";
 import AuthorTable from "@/components/authors/AuthorTable";
 import AuthorForm from "@/components/authors/AuthorForm";
 import "../../../app/globals.css";
 
+
+
 const ProductAuthor = () => {
   const [editAuthor, setEditAuthor] = useState<any>(null);
+  useEffect(() => {
+    document.title = "Manage Authors | Admin Panel";
+  }, []);
 
   return (
     <div className="p-6">

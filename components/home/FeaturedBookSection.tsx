@@ -192,7 +192,7 @@ const FeaturedBookSection = () => {
               href={`/product/${book.slug}`}
               className="inline-block rounded-xl bg-gray-900 px-7 py-3 text-sm font-semibold text-white hover:bg-amber-700 transition-colors duration-200"
             >
-              View Book
+              Buy Now
             </Link>
             <Link
               href={`/product/${book.slug}#reviews`}

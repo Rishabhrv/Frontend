@@ -1,9 +1,13 @@
+import React, { useEffect } from "react";
 import Sidebar from "@/components/admin/Sidebar";
 import Header from "@/components/admin/Header";
 import UserTable from "@/components/users/UserTable";
 import "../../../app/globals.css";
 
 export default function UsersPage() {
+        useEffect(() => {
+          document.title = "Manage Users | Admin Panel";
+        }, []);
   return (
     <div className="p-6">
 

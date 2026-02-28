@@ -1,8 +1,13 @@
+import React, { useEffect } from "react";
 import Sidebar from "@/components/admin/Sidebar";
 import Header from "@/components/admin/Header";
 import SubscriptionTable from "@/components/subscriptions/SubscriptionTable";
 
 export default function SubscriptionPage() {
+  useEffect(() => {
+    document.title = "Manage Subscriptions | Admin Panel";
+  }, []);
+
   
   return (
     <div className="p-6">

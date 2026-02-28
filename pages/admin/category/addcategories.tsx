@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from "react";
 import Sidebar from "@/components/admin/Sidebar";
 import Header from "@/components/admin/Header";
 import AddCategoriesForm from '@/components/categories/AddCategoriesFrom';
@@ -6,7 +6,10 @@ import CategoriesList from '@/components/categories/CategoriesList';
 import "../../../app/globals.css";
 
 const addcategories = () => {
-  const [editCategory, setEditCategory] = React.useState<any>(null); 
+  const [editCategory, setEditCategory] = React.useState<any>(null);
+    useEffect(() => {
+      document.title = "Manage Categories | Admin Panel";
+    }, []);
 
   return (
     <div className="p-6">

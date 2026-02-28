@@ -157,13 +157,13 @@ export default function HomeReviewSection() {
             <div className="flex items-center gap-2">
               <button
                 onClick={prev}
-                className="w-9 h-9 rounded-full border border-gray-200 bg-white flex items-center justify-center hover:bg-gray-900 hover:text-white hover:border-gray-900 transition-all duration-200"
+                className="w-9 h-9 cursor-pointer rounded-full border border-gray-200 bg-white flex items-center justify-center hover:bg-gray-900 hover:text-white hover:border-gray-900 transition-all duration-200"
               >
                 <ChevronLeft size={16} />
               </button>
               <button
                 onClick={next}
-                className="w-9 h-9 rounded-full border border-gray-200 bg-white flex items-center justify-center hover:bg-gray-900 hover:text-white hover:border-gray-900 transition-all duration-200"
+                className="w-9 h-9 cursor-pointer rounded-full border border-gray-200 bg-white flex items-center justify-center hover:bg-gray-900 hover:text-white hover:border-gray-900 transition-all duration-200"
               >
                 <ChevronRight size={16} />
               </button>
@@ -198,7 +198,7 @@ export default function HomeReviewSection() {
               <button
                 key={i}
                 onClick={() => goTo(i)}
-                className={`rounded-full transition-all duration-300 ${
+                className={`rounded-full cursor-pointer transition-all duration-300 ${
                   i === current
                     ? "w-5 h-2 bg-gray-900"
                     : "w-2 h-2 bg-gray-300 hover:bg-gray-400"

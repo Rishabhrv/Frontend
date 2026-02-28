@@ -174,7 +174,7 @@ export default function WishlistPage() {
             <button
   onClick={() => addToCart(book)}
   disabled={book.product_type === "physical" && book.stock === 0}
-  className="bg-black text-white px-5 py-2 rounded hover:bg-gray-800 text-sm disabled:bg-gray-300 disabled:text-gray-600"
+  className="bg-black text-white px-5 py-2 rounded hover:bg-gray-800 text-sm disabled:bg-gray-300 disabled:text-gray-600 cursor-pointer disabled:cursor-not-allowed transition"
 >
 
               Add to Bag
@@ -183,7 +183,7 @@ export default function WishlistPage() {
             {/* DELETE */}
             <button
               onClick={() => removeItem(book.id)}
-              className="text-gray-500 hover:text-red-600"
+              className="text-gray-500 hover:text-red-600 cursor-pointer transition"
               title="Remove"
             >
               <Trash2 size={18} />

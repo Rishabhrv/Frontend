@@ -222,7 +222,7 @@ const AddCategoriesForm = ({ editCategory, clearEdit }: Props) => {
           <button
             type="submit"
             disabled={loading}
-            className="rounded bg-blue-600 px-5 py-2 text-sm text-white"
+            className="rounded bg-blue-600 px-5 py-2 text-sm text-white cursor-pointer transition disabled:opacity-50"
           >
             {loading
               ? "Saving..."

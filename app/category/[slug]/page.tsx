@@ -284,7 +284,7 @@ const visibleAuthors = authorSearch
   {selectedAuthor && (
     <button
       onClick={() => setSelectedAuthor("")}
-      className="text-xs mt-3 underline text-gray-600 hover:text-black"
+      className="text-xs mt-3 underline text-gray-600 hover:text-black cursor-pointer transition"
     >
       Clear author filter
     </button>

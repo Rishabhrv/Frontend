@@ -162,7 +162,7 @@ function PlanCard({
         onClick={() =>
           router.push(`/subscriptions/payment?plan=${planType}`)
         }
-        className={`mt-auto rounded-lg py-3 text-sm font-semibold transition ${
+        className={`mt-auto rounded-lg py-3 text-sm font-semibold cursor-pointer transition ${
           highlight
             ? "bg-blue-600 text-white hover:bg-blue-700"
             : "border border-gray-300 hover:bg-gray-100"

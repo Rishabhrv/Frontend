@@ -232,9 +232,12 @@ export default function BookstoreHero() {
           >
             Buy Now ↗
           </span>
-          <button className="px-8 py-3.5 rounded-full text-white font-semibold text-sm shadow-lg transition-all hover:opacity-90 hover:-translate-y-0.5 active:scale-95 bg-gray-500">
+          <Link href="/category/academic-books">
+          <button className=" cursor-pointer px-8 py-3.5 rounded-full text-white font-semibold text-sm shadow-lg transition-all hover:opacity-90 hover:-translate-y-0.5 active:scale-95 bg-gray-500">
             Browse the Collection
           </button>
+          </Link>
+
         </div>
       </div>
     </section>

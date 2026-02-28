@@ -65,7 +65,7 @@ function StarPicker({ value, onChange }: { value: number; onChange: (v: number) 
           onMouseEnter={() => setHover(i + 1)}
           onMouseLeave={() => setHover(0)}
           onClick={() => onChange(i + 1)}
-          className={`text-2xl transition-colors ${(hover || value) > i ? "text-yellow-400" : "text-gray-200"}`}
+          className={`text-2xl transition-colors cursor-pointer ${(hover || value) > i ? "text-yellow-400" : "text-gray-200"}`}
         >
           ★
         </button>
@@ -161,13 +161,13 @@ function EditModal({
           <button
             onClick={handleSave}
             disabled={saving}
-            className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-medium px-5 py-2 rounded-lg transition"
+            className="bg-blue-600 cursor-pointer hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-medium px-5 py-2 rounded-lg transition"
           >
             {saving ? "Saving…" : "Save Changes"}
           </button>
           <button
             onClick={onClose}
-            className="border border-gray-200 text-gray-600 text-sm font-medium px-5 py-2 rounded-lg hover:bg-gray-50 transition"
+            className="border cursor-pointer border-gray-200 text-gray-600 text-sm font-medium px-5 py-2 rounded-lg hover:bg-gray-50 transition"
           >
             Cancel
           </button>
@@ -370,7 +370,7 @@ export default function ReviewTable() {
                     <td className="px-4 py-4 min-w-[160px]">
                       <button
                         onClick={() => router.push(`/product/${r.slug}`)}
-                        className="text-blue-600 hover:underline text-xs font-medium text-left leading-snug"
+                        className="text-blue-600 hover:underline text-xs font-medium text-left leading-snug cursor-pointer"
                       >
                         {r.product_title}
                       </button>
@@ -398,27 +398,27 @@ export default function ReviewTable() {
                         {r.status === "pending" ? (
                           <button
                             onClick={() => toggleStatus(r)}
-                            className="text-xs text-green-600 hover:underline font-medium"
+                            className="text-xs text-green-600 hover:underline font-medium cursor-pointer"
                           >
                             Approve
                           </button>
                         ) : (
                           <button
                             onClick={() => toggleStatus(r)}
-                            className="text-xs text-yellow-600 hover:underline font-medium"
+                            className="text-xs text-yellow-600 hover:underline font-medium cursor-pointer"
                           >
                             Unapprove
                           </button>
                         )}
                         <button
                           onClick={() => setEditing(r)}
-                          className="text-xs text-blue-600 hover:underline font-medium"
+                          className="text-xs text-blue-600 hover:underline font-medium cursor-pointer"
                         >
                           Edit
                         </button>
                         <button
                           onClick={() => deleteReview(r.id)}
-                          className="text-xs text-red-500 hover:underline font-medium"
+                          className="text-xs text-red-500 hover:underline font-medium cursor-pointer"
                         >
                           Delete
                         </button>

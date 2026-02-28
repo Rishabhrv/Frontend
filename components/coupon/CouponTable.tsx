@@ -96,7 +96,7 @@ export default function CouponTable() {
             setEditCoupon(null);
             setOpen(true);
           }}
-          className="bg-blue-600 text-white px-4 py-2 rounded text-sm"
+          className="bg-blue-600 text-white px-4 py-2 rounded text-sm cursor-pointer transition"
         >
           Add new coupon
         </button>
@@ -109,7 +109,7 @@ export default function CouponTable() {
             <option>Bulk actions</option>
             <option>Delete</option>
           </select>
-          <button className="border px-3 py-2 rounded">
+          <button className="border px-3 py-2 rounded cursor-pointer transition">
             Apply
           </button>
         </div>
@@ -204,7 +204,7 @@ export default function CouponTable() {
               <td className=" space-x-2 flex justify-center">
               <button
   onClick={() => editCouponHandler(c.id)}
-  className="text-blue-600"
+  className="text-blue-600 hover:underline cursor-pointer transition"
 >
   Edit
 </button>
@@ -212,7 +212,7 @@ export default function CouponTable() {
                 <div>|</div>
                 <button
                   onClick={() => deleteCoupon(c.id)}
-                  className="text-red-600 hover:underline text-xs"
+                  className="text-red-600 hover:underline text-xs cursor-pointer transition"
                 >
                   Delete
                 </button>
@@ -249,7 +249,7 @@ export default function CouponTable() {
           <button
             disabled={page === 1}
             onClick={() => setPage((p) => p - 1)}
-            className="px-3 py-1 border rounded disabled:opacity-40"
+            className="px-3 py-1 border rounded disabled:opacity-40 cursor-pointer transition"
           >
             Previous
           </button>
@@ -261,7 +261,7 @@ export default function CouponTable() {
           <button
             disabled={page === totalPages}
             onClick={() => setPage((p) => p + 1)}
-            className="px-3 py-1 border rounded disabled:opacity-40"
+            className="px-3 py-1 border rounded disabled:opacity-40 cursor-pointer transition"
           >
             Next
           </button>

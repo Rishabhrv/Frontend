@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import BookCard from "./BookCard";
+import { ChevronRight } from "lucide-react";
 
 type Book = {
   id: number;
@@ -78,19 +79,23 @@ const CategoryBookSection = ({
   return (
     <section className="mt-10 px-5">
       {/* HEADER */}
-      <div className="flex items-center justify-between mb-4">
-        <Link
-          href={`/category/${categorySlug}`}
-          className="text-sm text-red-600 cursor-pointer font-semibold flex items-center"
-        >
-          <h2
-            className="text-3xl md:text-4xl font-black text-gray-900 leading-tight pl-2"
-            style={{ fontFamily: "'Playfair Display', serif" }}
+        <div className="flex items-center justify-between mb-4">
+          <Link
+            href={`/category/${categorySlug}`}
+            className="group text-red-600 cursor-pointer font-semibold flex items-center"
           >
-            {title}
-          </h2>
-        </Link>
-      </div>
+            <h2
+              className="text-3xl md:text-4xl font-black text-gray-900 leading-tight pl-2 flex items-center "
+              style={{ fontFamily: "'Playfair Display', serif" }}
+            >
+              {title}
+        
+              <ChevronRight
+                className="h-11 w-11 translate-x-[-4px] transition-all duration-300 group-hover:pl-2 group-hover:translate-x-0"
+              />
+            </h2>
+          </Link>
+        </div>
 
       {/* SLIDER */}
       <div className="relative overflow-hidden">

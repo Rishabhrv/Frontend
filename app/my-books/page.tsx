@@ -218,14 +218,10 @@ export default function MyBooksPage() {
 
         <div className="flex flex-wrap gap-3">
           {categories.map(cat => (
-            <button
+            <Link href={`/category/${cat.slug}`}>
+            <button 
               key={cat.id}
-              onClick={() =>
-                setActiveCategory(
-                  activeCategory === cat.slug ? null : cat.slug
-                )
-              }
-              className={`px-4 py-2 rounded-lg text-sm  transition
+              className={`px-4 py-2 rounded-lg text-sm  transition cursor-pointer
                 ${
                   activeCategory === cat.slug
                     ? "bg-black text-white border-black"
@@ -235,6 +231,8 @@ export default function MyBooksPage() {
             >
               {cat.name}
             </button>
+            </Link>
+
           ))}
         </div>
       </div>

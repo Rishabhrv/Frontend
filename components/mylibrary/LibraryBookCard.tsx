@@ -83,7 +83,7 @@ export default function LibraryBookCard({
               onClick={toggleFavorite}
               className="absolute top-2 left-2 z-10
                          rounded-full bg-white/90 p-1
-                         hover:bg-white transition"
+                         hover:bg-white transition cursor-pointer"
             >
               <Heart
                 size={16}
