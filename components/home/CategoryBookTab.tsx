@@ -113,7 +113,7 @@ const BookCard = ({ book }: { book: Book }) => {
 
           <button
             onClick={toggleWishlist}
-            className="absolute right-2.5 top-2.5 z-10 rounded-full bg-white/90 backdrop-blur-sm p-1.5 shadow transition-transform hover:scale-110"
+            className="absolute right-2.5 top-2.5 z-10 rounded-full bg-white/90 backdrop-blur-sm p-1.5 shadow transition-transform hover:scale-110 cursor-pointer"
           >
             <Heart size={13} className={liked ? "fill-red-500 text-red-500" : "text-gray-400"} />
           </button>
@@ -280,7 +280,7 @@ export default function CategoryBookSection() {
                     <button
                       key={cat.id}
                       onClick={() => setActiveSlug(cat.slug)}
-                      className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200
+                      className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 
                         ${isActive
                           ? "bg-gray-700 text-white shadow-sm shadow-amber-200"
                           : "text-gray-600 hover:bg-amber-50 hover:text-amber-800"

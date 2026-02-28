@@ -14,6 +14,9 @@ export default function Login() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [dark, setDark] = useState(false);
+        useEffect(() => {
+          document.title = "Admin Login | Admin Panel";
+        }, []);
 
 
 
@@ -89,7 +92,7 @@ useEffect(() => {
 
             <button
               onClick={() => setDark(!dark)}
-              className="text-sm text-blue-500"
+              className="text-sm text-blue-500 hover:text-blue-700 transition cursor-pointer"
             >
               {dark ? "☀ Light" : "🌙 Dark"}
             </button>
@@ -138,7 +141,7 @@ useEffect(() => {
   <button
     type="submit"
     disabled={loading}
-    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded transition disabled:opacity-60"
+    className="cursor-pointer w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded transition disabled:opacity-60"
   >
     {loading ? "Logging in..." : "Login"}
   </button>

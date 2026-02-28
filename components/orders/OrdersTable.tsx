@@ -195,7 +195,10 @@ export default function OrdersTable() {
                 <tr key={o.id} className="border-t border-gray-300 hover:bg-gray-50 text-xs">
 
                   <td className="px-3 py-2">
-                    <p className="font-medium text-blue-600">
+                    <p className="font-medium text-blue-600 cursor-pointer"
+                      onClick={() => {
+                          window.location.href = `/admin/orders/${o.id}`;
+                        }} >
                       #{o.id} {o.user_name || "Guest"}
                     </p>
                   </td>
@@ -266,8 +269,6 @@ export default function OrdersTable() {
                           window.location.href = `/admin/orders/${o.id}`;
                         }}
                       />
-                      <Truck size={16} className="text-gray-500" />
-                      <CheckSquare size={16} className="text-gray-500" />
                     </div>
                   </td>
                 </tr>
@@ -282,7 +283,7 @@ export default function OrdersTable() {
         <button
           disabled={page === 1}
           onClick={() => setPage(page - 1)}
-          className="rounded border px-2 py-1 disabled:opacity-50"
+          className="rounded border px-2 py-1 disabled:opacity-50 cursor-pointer"
         >
           ‹
         </button>
@@ -292,7 +293,7 @@ export default function OrdersTable() {
         <button
           disabled={page === totalPages}
           onClick={() => setPage(page + 1)}
-          className="rounded border px-2 py-1 disabled:opacity-50"
+          className="rounded border px-2 py-1 disabled:opacity-50 cursor-pointer"
         >
           ›
         </button>

@@ -228,7 +228,7 @@ export default function PrivacyPolicyPage() {
                   Questions about your privacy?
                 </p>
                 <Link
-                  href="/contact"
+                  href="https://agphbooks.com/contact-us/"
                   className="inline-flex items-center gap-1.5 text-[11px] font-medium text-gray-900 hover:text-gray-600 transition-colors"
                   style={{ fontFamily: "system-ui, sans-serif" }}
                 >
@@ -335,7 +335,7 @@ export default function PrivacyPolicyPage() {
                         style={{ paddingLeft: "52px" }}
                       >
                         <Link
-                          href="/contact"
+                          href="https://agphbooks.com/contact-us/"
                           className="inline-flex items-center justify-center gap-2 bg-gray-950 text-white text-[12px] font-medium uppercase tracking-[0.15em] px-6 py-3 rounded-lg hover:bg-gray-800 transition-colors duration-200"
                           style={{ fontFamily: "system-ui, sans-serif" }}
                         >

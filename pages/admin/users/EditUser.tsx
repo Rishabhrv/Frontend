@@ -1,3 +1,4 @@
+import React, { useEffect } from "react";
 import Sidebar from "@/components/admin/Sidebar";
 import Header from "@/components/admin/Header";
 import { useRouter } from "next/router";
@@ -8,6 +9,9 @@ import EditUserPage from "@/components/users/EditUserPage";
 export default function EditUser() {
       const router = useRouter();
       const { id } = router.query;
+            useEffect(() => {
+              document.title = "Edit User | Admin Panel";
+            }, []);
     
       if (!id) return null;
   return (

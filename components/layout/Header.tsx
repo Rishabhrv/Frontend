@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Search, Heart, User, ShoppingBag, LogOut, X, Facebook, Instagram, Twitter, Linkedin } from "lucide-react";
 import AccountSlider from "./AccountSlider";
+import { usePathname } from "next/navigation";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
@@ -27,6 +28,18 @@ const Header = () => {
   });
   const [showSearch, setShowSearch] = useState(false);
   const [cartCount, setCartCount] = useState(0);
+  const pathname = usePathname() ?? "";
+  const isActive = (path: string) => {
+    if (path === "/") {
+      return pathname === "/"
+        ? "text-green-600 font-semibold"
+        : "hover:text-green-600";
+    }
+  
+    return pathname.startsWith(path)
+      ? "text-green-600 font-semibold"
+      : "hover:text-green-600";
+  };
 
     // 🔥 ADD THIS HERE
   useEffect(() => {
@@ -208,7 +221,7 @@ const fetchCartCount = () => {
               </span>
               <button
                 onClick={logout}
-                className="flex items-center gap-1 text-red-600 hover:underline"
+                className="flex items-center gap-1 text-red-600 hover:underline cursor-pointer"
               >
                 <LogOut className="h-3 w-3" />
                 Logout
@@ -372,14 +385,29 @@ const fetchCartCount = () => {
       {/* ================= CATEGORY NAV ================= */}
       <nav>
         <div className="mx-auto  px-9 py-5 flex gap-10 text-sm font-medium text-gray-800 align-middle justify-center">
-          <Link href="/" className="nav-link text-green-600 font-semibold">
+          <Link href="/" className={`nav-link ${isActive("/")}`}>
             Home
           </Link>
-          <Link href="/ebooks" className="nav-link">E-Books</Link>
-          <Link href="/category/academic-books" className="nav-link">Academic Books</Link>
-          <Link href="/category/kids" className="nav-link">Kids</Link>
-          <Link href="/category/edited-books" className="nav-link">Edited Books</Link>
-          <Link href="/category/new-release" className="nav-link">New Release</Link>
+          
+          <Link href="/ebooks" className={`nav-link ${isActive("/ebooks")}`}>
+            E-Books
+          </Link>
+          
+          <Link href="/category/academic-books" className={`nav-link ${isActive("/category/academic-books")}`}>
+            Academic Books
+          </Link>
+          
+          <Link href="/category/kids" className={`nav-link ${isActive("/category/kids")}`}>
+            Kids
+          </Link>
+          
+          <Link href="/category/edited-books" className={`nav-link ${isActive("/category/edited-books")}`}>
+            Edited Books
+          </Link>
+          
+          <Link href="/new-release" className={`nav-link ${isActive("/new-release")}`}>
+            New Release
+          </Link>
           <Link href="https://agphbooks.com/contact-us/" className="nav-link">
             Contact Us
           </Link>

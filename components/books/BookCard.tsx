@@ -107,7 +107,7 @@ const BookCard = ({ book, visibleCount }: BookCardProps) => {
             {/* Wishlist button */}
             <button
               onClick={toggleWishlist}
-              className="absolute right-3 top-3 z-10 rounded-full bg-white/90 backdrop-blur-sm p-1.5 shadow transition-transform hover:scale-110"
+              className="absolute right-3 top-3 z-10 rounded-full bg-white/90 backdrop-blur-sm p-1.5 shadow transition-transform hover:scale-110 cursor-pointer"
             >
               <Heart
                 size={14}

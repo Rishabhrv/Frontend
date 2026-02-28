@@ -43,6 +43,9 @@ const slug = searchParams?.get("slug") ?? "";
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+        useEffect(() => {
+          document.title = "Preview E-Book | Admin Panel";
+        }, []);
 
 
 useEffect(() => {

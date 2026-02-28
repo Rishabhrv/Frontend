@@ -231,7 +231,7 @@ const CategoriesList = ({ onEdit }: Props) => {
           <button
             onClick={applyBulkAction}
             disabled={!bulkAction || selected.length === 0}
-            className="rounded bg-blue-100 px-3 py-1 text-sm text-blue-500 shadow-lg disabled:opacity-50"
+            className="rounded bg-blue-100 px-3 py-1 text-sm text-blue-500 shadow-lg disabled:opacity-50 cursor-pointer transition"
           >
             Apply
           </button>
@@ -306,14 +306,14 @@ const CategoriesList = ({ onEdit }: Props) => {
                   <div className="mt-1 text-xs text-blue-600 space-x-2">
                     <button
                       onClick={() => onEdit(cat)}
-                      className="hover:underline"
+                      className="hover:underline cursor-pointer transition"
                     >
                       Edit
                     </button>
                     <span className="text-gray-400">|</span>
                     <button
                       onClick={() => handleDelete(cat.id)}
-                      className="text-red-600 hover:underline"
+                      className="text-red-600 hover:underline cursor-pointer transition"
                     >
                       Delete
                     </button>
@@ -372,7 +372,7 @@ const CategoriesList = ({ onEdit }: Props) => {
           <button
             disabled={currentPage === 1}
             onClick={() => setCurrentPage((p) => p - 1)}
-            className="rounded border px-3 py-1 disabled:opacity-50 text-sm"
+            className="rounded border px-3 py-1 disabled:opacity-50 text-sm cursor-pointer transition"
           >
             Previous
           </button>
@@ -384,7 +384,7 @@ const CategoriesList = ({ onEdit }: Props) => {
           <button
             disabled={currentPage === totalPages}
             onClick={() => setCurrentPage((p) => p + 1)}
-            className="rounded border px-3 py-1 disabled:opacity-50 text-sm"
+            className="rounded border px-3 py-1 disabled:opacity-50 text-sm cursor-pointer transition"
           >
             Next
           </button>

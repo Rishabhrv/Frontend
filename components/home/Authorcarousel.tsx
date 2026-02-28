@@ -165,7 +165,7 @@ const ArrowBtn = memo(function ArrowBtn({
       className="
         flex h-9 w-9 shrink-0 items-center justify-center rounded-full
         border border-gray-200 bg-white text-gray-600 shadow-sm
-        transition-all duration-200
+        transition-all duration-200 cursor-pointer
         hover:scale-105 hover:border-[#1a1209]  hover:text-white
         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500
         disabled:pointer-events-none disabled:opacity-20

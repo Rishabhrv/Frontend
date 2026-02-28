@@ -1,8 +1,12 @@
+import React, { useEffect } from "react";
 import Sidebar from "@/components/admin/Sidebar";
 import Header from "@/components/admin/Header";
 import PaymentTable from "@/components/payment/PaymentTable";
 
 export default function PaymentPage() {
+        useEffect(() => {
+          document.title = "Manage Payments | Admin Panel";
+        }, []);
   return (
     <div className="p-6">
         <div className="flex">

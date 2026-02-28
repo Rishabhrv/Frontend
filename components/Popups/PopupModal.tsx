@@ -33,7 +33,7 @@ const PopupModal = ({
         <div className="mt-5 flex justify-end">
           <button
             onClick={onClose}
-            className={`px-4 py-2 rounded text-sm text-white ${
+            className={`px-4 py-2 cursor-pointer rounded text-sm text-white ${
               type === "success"
                 ? "bg-green-600 hover:bg-green-700"
                 : "bg-red-600 hover:bg-red-700"

@@ -284,14 +284,14 @@ const applyBulkAction = () => {
                       <div className="text-xs mt-1">
                         <button
                           onClick={() => onEdit(author)}
-                          className="text-blue-600 hover:underline text-xs mr-2"
+                          className="text-blue-600 hover:underline text-xs mr-2 cursor-pointer transition"
                         >
                           Edit
                         </button>
                         |
                         <button
                           onClick={() => deleteAuthor(author.id)}
-                          className="text-red-600 hover:underline ml-2"
+                          className="text-red-600 hover:underline ml-2 text-xs cursor-pointer transition"
                         >
                           Delete
                         </button>
@@ -353,7 +353,7 @@ const applyBulkAction = () => {
           <button
             disabled={page === 1}
             onClick={() => setPage(page - 1)}
-            className="rounded border px-3 py-1 disabled:opacity-50"
+            className="rounded border px-3 py-1 disabled:opacity-50 cursor-pointer transition"
           >
             Previous
           </button>
@@ -366,7 +366,7 @@ const applyBulkAction = () => {
           <button
             disabled={page === totalPages || totalPages === 0}
             onClick={() => setPage(page + 1)}
-            className="rounded border px-3 py-1 disabled:opacity-50"
+            className="rounded border px-3 py-1 disabled:opacity-50 cursor-pointer transition"
           >
             Next
           </button>

@@ -52,6 +52,21 @@ export default function Sidebar() {
           />
         </SidebarItem>
 
+        {/* ORDERS (NO SUBMENU) */}
+        <Link
+          href="/admin/orders/OrdersPage"
+          className={`mt-1 flex items-center gap-3 rounded-xl px-4 py-3 transition
+            ${
+              pathname.startsWith("/admin/orders")
+                ? "bg-blue-50 text-blue-600 font-medium"
+                : "text-gray-700 hover:bg-gray-100"
+            }
+          `}
+        >
+          <ShoppingCart size={18} />
+          Orders
+        </Link>
+
         {/* CATEGORY (NO SUBMENU) */}
         <Link
           href="/admin/category/addcategories"
@@ -95,21 +110,6 @@ export default function Sidebar() {
         >
           <Users size={18} />
           Users
-        </Link>
-
-        {/* ORDERS (NO SUBMENU) */}
-        <Link
-          href="/admin/orders/OrdersPage"
-          className={`mt-1 flex items-center gap-3 rounded-xl px-4 py-3 transition
-            ${
-              pathname.startsWith("/admin/orders")
-                ? "bg-blue-50 text-blue-600 font-medium"
-                : "text-gray-700 hover:bg-gray-100"
-            }
-          `}
-        >
-          <ShoppingCart size={18} />
-          Orders
         </Link>
 
 
@@ -216,7 +216,7 @@ function SidebarItem({
       <button
         type="button"
         onClick={onClick}
-        className={`flex w-full items-center justify-between rounded-xl px-4 py-3 transition
+        className={`flex w-full items-center justify-between rounded-xl px-4 py-3 transition cursor-pointer
           ${
             isOpen
               ? "bg-blue-50 text-blue-600"

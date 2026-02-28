@@ -127,7 +127,7 @@ const ShippingZoneForm: React.FC<Props> = ({
                               {r}
                               <button
                                 onClick={() => removeRegion(r)}
-                                className="hover:text-red-500"
+                                className="hover:text-red-500 cursor-pointer"
                               >
                                 ×
                               </button>

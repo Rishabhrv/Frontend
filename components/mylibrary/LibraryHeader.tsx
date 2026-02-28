@@ -285,14 +285,14 @@ export default function LibraryHeader() {
                 onClick={() =>
                   (window.location.href = "/subscriptions")
                 }
-                className="bg-blue-600 text-white px-5 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition"
+                className="bg-blue-600 text-white px-5 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition cursor-pointer"
               >
                 Choose Plan Now
               </button>
 
               <button
                 onClick={() => router.push("/")}
-                className="border border-gray-300 px-5 py-2 rounded-lg text-sm hover:bg-gray-100 transition"
+                className="border border-gray-300 px-5 py-2 rounded-lg text-sm hover:bg-gray-100 transition cursor-pointer"
               >
                 Cancel
               </button>

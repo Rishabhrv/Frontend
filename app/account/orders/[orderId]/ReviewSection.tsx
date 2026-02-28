@@ -134,7 +134,7 @@ const [preview, setPreview] = useState<string[]>([]);
       {/* 🚀 SUBMIT */}
       <button
         onClick={submitReview}
-        className="bg-black text-white px-4 py-2 rounded text-sm hover:bg-gray-800"
+        className="bg-black text-white px-4 py-2 rounded text-sm hover:bg-gray-800 cursor-pointer transition"
       >
         Submit review
       </button>

@@ -44,7 +44,7 @@ const LoginForm = () => {
         <input
           type="email"
           placeholder="Email address"
-          className="w-full border rounded px-4 py-2 text-sm"
+          className="w-full border rounded px-4 py-3 text-sm"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
@@ -52,7 +52,7 @@ const LoginForm = () => {
         <input
           type="password"
           placeholder="Password"
-          className="w-full border rounded px-4 py-2 text-sm"
+          className="w-full border rounded px-4 py-3 text-sm"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
@@ -63,7 +63,7 @@ const LoginForm = () => {
           </Link>
         </div>
 
-        <button className="w-full bg-black text-white py-2 rounded hover:bg-gray-800">
+        <button className="w-full bg-black text-white p-3 rounded hover:bg-gray-800 cursor-pointer transition">
           Sign In
         </button>
       </form>

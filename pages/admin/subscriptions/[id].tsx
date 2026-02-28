@@ -52,6 +52,10 @@ export default function SubscriptionDetailsPage() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
 
+        useEffect(() => {
+          document.title = "Manage Subscription Details | Admin Panel";
+        }, []);
+
   useEffect(() => {
     if (!id) return;
 
@@ -86,7 +90,7 @@ export default function SubscriptionDetailsPage() {
         <div className="p-6 max-w-6xl mx-auto space-y-4">
           <button
             onClick={() => router.back()}
-            className="text-sm text-blue-600 hover:underline"
+            className="text-sm text-blue-600 hover:underline cursor-pointer"
           >
             Back to subscriptions
           </button>

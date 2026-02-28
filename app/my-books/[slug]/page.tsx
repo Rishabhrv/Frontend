@@ -316,7 +316,7 @@ useEffect(() => {
         <button
           key={i}
           onClick={() => viewRef.current?.goTo(result.cfi)}
-          className="text-left w-full text-xs hover:text-gray-300"
+          className="text-left w-full text-xs hover:text-gray-300 cursor-pointer transition"
         >
           <div className="font-semibold cursor-pointer">
             {result.label}

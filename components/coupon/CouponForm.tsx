@@ -272,12 +272,12 @@ const CouponForm = ({ coupon, onClose, onSaved }: any) => {
         </div>
 
         <div className="flex justify-end gap-3 mt-6">
-          <button onClick={onClose} className="border px-4 py-2 rounded">
+          <button onClick={onClose} className="border px-4 py-2 rounded cursor-pointer">
             Cancel
           </button>
           <button
             onClick={submit}
-            className="bg-black text-white px-5 py-2 rounded"
+            className="bg-black text-white px-5 py-2 rounded cursor-pointer transition"
           >
             Save Coupon
           </button>

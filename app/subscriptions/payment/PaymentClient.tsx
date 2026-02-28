@@ -184,7 +184,7 @@ const startPayment = async () => {
               <button
                 key={p}
                 onClick={() => setPlan(p)}
-                className={`py-2 text-sm font-medium transition ${
+                className={`py-2 text-sm font-medium cursor-pointer transition ${
                   plan === p
                     ? "bg-blue-600 text-white"
                     : "bg-white text-gray-700 hover:bg-gray-100"
@@ -284,7 +284,7 @@ const startPayment = async () => {
           <button
             disabled={loading}
             onClick={startPayment}
-            className={`w-full py-3 rounded text-white ${
+            className={`w-full py-3 rounded cursor-pointer text-white ${
               loading ? "bg-gray-400" : "bg-blue-600"
             }`}
           >
