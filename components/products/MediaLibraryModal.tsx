@@ -51,6 +51,7 @@ export default function MediaLibraryModal({
   const [fileName, setFileName] = useState("");
       const [toastOpen, setToastOpen] = useState(false);
       const [toastMsg, setToastMsg] = useState("");
+      const [tempImages, setTempImages] = useState<MediaImage[]>([]);
 
   /* ── Fetch page of images ─────────────────────────────────────────────── */
   const fetchImages = useCallback(async (p = 1) => {
@@ -83,6 +84,7 @@ export default function MediaLibraryModal({
       setSelected(null);
       setSearch("");
       setPage(1);
+      setTempImages([]);
       setTab("library");
       fetchImages(1);
     }
@@ -96,23 +98,41 @@ export default function MediaLibraryModal({
   }, [search]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ── Upload ───────────────────────────────────────────────────────────── */
-  const handleUpload = async (files: FileList | null) => {
-    if (!files || files.length === 0) return;
-    setUploading(true);
-    for (const file of Array.from(files)) {
-      const fd = new FormData();
-      fd.append("image", file);
-      if (productId) {
-        fd.append("productId", String(productId));
-      }
-      try {
-        await fetch(`${API_URL}/api/media/upload?folder=${folder}`, { method: "POST", body: fd });
-      } catch {}
+const handleUpload = async (files: FileList | null) => {
+  if (!files || files.length === 0) return;
+  setUploading(true);
+  const newlyUploaded: MediaImage[] = [];
+
+  for (const file of Array.from(files)) {
+    const fd = new FormData();
+    fd.append("image", file);
+    if (productId) {
+      fd.append("productId", String(productId));
     }
-    setUploading(false);
-    setTab("library");
-    fetchImages(1); // go back to page 1 to see newly uploaded images
-  };
+    try {
+      const res = await fetch(`${API_URL}/api/media/upload?folder=${folder}`, { method: "POST", body: fd });
+      const data = await res.json();
+      if (!productId && data.url) {
+        // ✅ In add mode, track uploaded images locally
+        newlyUploaded.push({
+          id: data.id || data.filename,
+          url: data.url,
+          filename: data.filename,
+        });
+      }
+    } catch {}
+  }
+
+  setUploading(false);
+  setTab("library");
+
+  if (!productId && newlyUploaded.length > 0) {
+    // ✅ Add to temp images — don't call fetchImages (backend returns empty)
+    setTempImages(prev => [...newlyUploaded, ...prev]);
+  } else {
+    fetchImages(1);
+  }
+};
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -147,6 +167,9 @@ export default function MediaLibraryModal({
     if (totalPages > 1) range.push(totalPages);
     return range;
   };
+
+  const displayImages = !productId ? tempImages : images;
+
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -231,7 +254,9 @@ export default function MediaLibraryModal({
                     />
                   </div>
                   <span className="text-xs text-gray-400 ml-auto">
-                    {total > 0 ? `${total} image${total !== 1 ? "s" : ""}` : ""}
+                    {(!productId ? tempImages.length : total) > 0
+                      ? `${!productId ? tempImages.length : total} image${(!productId ? tempImages.length : total) !== 1 ? "s" : ""}`
+                      : ""}
                   </span>
                 </div>
 
@@ -241,7 +266,7 @@ export default function MediaLibraryModal({
                     <div className="flex items-center justify-center h-40">
                       <div className="w-7 h-7 border-[3px] border-blue-500 border-t-transparent rounded-full animate-spin" />
                     </div>
-                  ) : images.length === 0 ? (
+                  ) : displayImages.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-40 text-gray-400">
                       <Upload className="w-8 h-8 mb-2 opacity-40" />
                       <p className="text-sm">
@@ -261,7 +286,7 @@ export default function MediaLibraryModal({
                     </div>
                   ) : (
                     <div className="grid grid-cols-5 sm:grid-cols-7 md:grid-cols-8 gap-1.5">
-                      {images.map((img) => {
+                      {displayImages.map((img) => {
                         const isSel = selected?.id === img.id;
                         return (
                           <button
