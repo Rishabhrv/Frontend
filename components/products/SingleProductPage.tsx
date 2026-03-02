@@ -651,12 +651,7 @@ const isPaperbackOutOfStock =
             <span className="text-gray-500">
               {product.subjects.map((subject, i) => (
                 <span key={subject.id}>
-                  <Link
-                    href={`/subject/${subject.slug}`}
-                    className="hover:underline hover:text-black transition-colors"
-                  >
                     {subject.name}
-                  </Link>
                   {i < product.subjects!.length - 1 && ", "}
                 </span>
               ))}
