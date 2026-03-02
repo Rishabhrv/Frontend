@@ -20,7 +20,7 @@ export default function Sidebar() {
   }, [pathname]);
 
   return (
-    <aside className="hidden w-55 bg-white border-r border-gray-200 lg:block">
+    <aside className="hidden w-55 bg-white border-r border-gray-200 lg:block" >
       {/* LOGO */}
       <div className="flex items-center px-4 py-6 text-xl font-bold">
         AGPH
@@ -80,6 +80,21 @@ export default function Sidebar() {
         >
           <Layers size={18} />
           Category
+        </Link>
+
+        {/* SUBJECT (NO SUBMENU) */}
+        <Link
+          href="/admin/subject/SubjectPage"
+          className={`mt-1 flex items-center gap-3 rounded-xl px-4 py-3 transition
+            ${
+              pathname.startsWith("/admin/subject")
+                ? "bg-blue-50 text-blue-600 font-medium"
+                : "text-gray-700 hover:bg-gray-100"
+            }
+          `}
+        >
+          <Layers size={18} />
+          Subject
         </Link>
 
         {/* AUTHOR (NO SUBMENU) */}

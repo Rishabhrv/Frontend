@@ -13,6 +13,7 @@ import RichTextEditor from "./RichTextEditor";
 import SeoPanel from "./SeoPanel";
 import MediaLibraryModal from "./MediaLibraryModal";
 import Link from "next/link";
+import ProductSubjects from "./Productsubjects";
 
 // ── Types ────────────────────────────────────────────────────────
 type Category = {
@@ -132,6 +133,7 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
   const [mediaModalOpen, setMediaModalOpen] = useState(false);
   const [mainImageAlt, setMainImageAlt] = useState("");
   const [productImages, setProductImages] = useState<ProductImage[]>([]);
+  const [selectedSubjects, setSelectedSubjects] = useState<number[]>([]);
 
   const fetchProductImages = async (id: number) => {
     try {
@@ -270,6 +272,7 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
     formData.append("meta_title", metaTitle);
     formData.append("meta_description", metaDescription);
     formData.append("keywords", keywords);
+    formData.append("subjects", JSON.stringify(selectedSubjects));
     if (productId) formData.append("product_id", String(productId));
     try {
       const res = await fetch(`${API_URL}/api/products/convert-doc`, {
@@ -332,6 +335,7 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
       formData.append("deletedGallery", JSON.stringify(galleryData.deleted));
       galleryData.newFiles.forEach((file: File) => formData.append("gallery", file));
     }
+    formData.append("subjects", JSON.stringify(selectedSubjects));
 
     const url =
       mode === "edit" ? `${API_URL}/api/products/${productId}` : `${API_URL}/api/products`;
@@ -728,6 +732,12 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
             productId={mode === "edit" ? productId : undefined}
             error={errors.gallery}
             onValidChange={() => clearError("gallery")}
+          />
+          <ProductSubjects
+            productId={mode === "edit" ? productId : undefined}
+            mode={mode}
+            selectedSubjects={selectedSubjects}
+            onChange={setSelectedSubjects}
           />
         </div>
       </div>

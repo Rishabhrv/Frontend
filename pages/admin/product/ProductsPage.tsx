@@ -9,7 +9,7 @@ export default function ProductsPage() {
           document.title = "Manage Products | Admin Panel";
         }, []);
   return (
-    <div className="p-6">
+    <div className="p-6" >
 
         <div className="flex">
               <Sidebar />

@@ -12,6 +12,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
 type Attribute = { name: string; value: string };
 type GalleryImage = { image_path: string };
+type Subject = { id: number; name: string; slug: string };
 type Author = {
   id: number;
   name: string;
@@ -42,6 +43,7 @@ type Product = {
   attributes: Attribute[];
   gallery: GalleryImage[];
   categories: Category[];
+  subjects?: Subject[];
 
 };
 
@@ -641,6 +643,26 @@ const isPaperbackOutOfStock =
           </div>
         </div>
       )}
+
+        {/* ================= SUBJECTS ================= */}
+        {product.subjects && product.subjects.length > 0 && (
+          <div className="py-1 text-sm">
+            <span className="font-semibold">Subjects: </span>
+            <span className="text-gray-500">
+              {product.subjects.map((subject, i) => (
+                <span key={subject.id}>
+                  <Link
+                    href={`/subject/${subject.slug}`}
+                    className="hover:underline hover:text-black transition-colors"
+                  >
+                    {subject.name}
+                  </Link>
+                  {i < product.subjects!.length - 1 && ", "}
+                </span>
+              ))}
+            </span>
+          </div>
+        )}
 
       {/* ================= SHIPPING ================= */}
       {(product.weight || product.length) && (
