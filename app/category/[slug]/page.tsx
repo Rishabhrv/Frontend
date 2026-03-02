@@ -43,6 +43,10 @@ export default function CategoryPage() {
   const [selectedAuthor, setSelectedAuthor] = useState<string>("");
   const [page, setPage] = useState(1);
   const LIMIT = 12;
+  const [subjects, setSubjects] = useState<any[]>([]);
+  const [subjectSearch, setSubjectSearch] = useState("");
+  const [selectedSubject, setSelectedSubject] = useState<string>("");
+  const [visibleSubjectCount, setVisibleSubjectCount] = useState(5);
 
 
   
@@ -65,10 +69,18 @@ export default function CategoryPage() {
       .then(res => res.json())
       .then(setAuthors);
   }, [authorSearch]);
+  
+  useEffect(() => {
+  if (!slug) return;
+  fetch(`${API}/api/viewcategory/${slug}/subjects?search=${encodeURIComponent(subjectSearch)}`)
+  .then(res => res.json())
+  .then(setSubjects)
+  .catch(() => setSubjects([]));
+  }, [slug, subjectSearch]);
 
 useEffect(() => {
   setPage(1);
-}, [slug, maxPrice, sort, search, rating, selectedAuthor]);
+}, [slug, maxPrice, sort, search, rating, selectedAuthor,selectedSubject]);
 
 
   /* ================= FETCH PRODUCTS ================= */
@@ -76,9 +88,7 @@ useEffect(() => {
   if (!slug) return;
 
   fetch(
-    `${API}/api/viewcategory/${slug}/products?min=0&max=${maxPrice}&sort=${sort}&search=${encodeURIComponent(
-      search
-    )}&rating=${rating}&author=${selectedAuthor}&page=${page}&limit=${LIMIT}`
+    `${API}/api/viewcategory/${slug}/products?min=0&max=${maxPrice}&sort=${sort}&search=${encodeURIComponent(search)}&rating=${rating}&author=${selectedAuthor}&subject=${selectedSubject}&page=${page}&limit=${LIMIT}`
   )
     .then(res => res.json())
     .then(data => {
@@ -89,8 +99,7 @@ useEffect(() => {
       setProducts([]);
       setTotal(0);
     });
-}, [slug, page, maxPrice, sort, search, rating, selectedAuthor]);
-
+}, [slug, page, maxPrice, sort, search, rating, selectedAuthor, selectedSubject]);
 
 
   /* ================= FETCH CATEGORIES ================= */
@@ -118,6 +127,10 @@ useEffect(() => {
     .then(res => res.json())
     .then(setBestSellers);
 }, [slug]);
+
+useEffect(() => {
+setVisibleSubjectCount(5);
+}, [subjectSearch]);
 
 const groupedCategories = categories.reduce((acc: any, cat: any) => {
   const parent = cat.parent_id ?? 0;
@@ -291,6 +304,53 @@ const visibleAuthors = authorSearch
   )}
 </div>
 
+    <div>
+      <h4 className="font-serif text-base mb-3">Subjects</h4>
+    <input
+    type="text"
+    placeholder="Search subject..."
+    className="w-full border px-2 py-1 mb-5 text-sm rounded-full"
+    value={subjectSearch}
+    onChange={(e) => {
+    setSubjectSearch(e.target.value);
+    setVisibleSubjectCount(5);
+    }}
+    />
+      <ul className="space-y-2 text-sm">
+        {subjects.slice(0, visibleSubjectCount).map((s) => (
+          <li
+            key={s.id}
+            onClick={() => setSelectedSubject(String(s.id))}
+            className={`flex items-center justify-between cursor-pointer
+              ${
+                selectedSubject === String(s.id)
+                  ? "font-semibold text-black"
+                  : "text-gray-600 hover:text-black"
+              }`}
+          >
+            <span>{s.name}</span>
+            <span className="text-xs text-gray-400">({s.product_count})</span>
+          </li>
+        ))}
+      </ul>
+    {subjects.length > visibleSubjectCount && (
+    <button
+    onClick={() => setVisibleSubjectCount(c => c + 5)}
+    className="text-xs mt-3 underline text-gray-500 hover:text-black cursor-pointer transition"
+    >
+    See more
+    </button>
+    )}
+    {selectedSubject && (
+    <button
+    onClick={() => setSelectedSubject("")}
+    className="text-xs mt-3 ml-3 underline text-gray-600 hover:text-black cursor-pointer transition"
+    >
+    Clear subject filter
+    </button>
+    )}
+    </div>
+
 
 
           {/* Best Sellers */}
@@ -330,7 +390,7 @@ const visibleAuthors = authorSearch
             <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
 
               {/* ================= ACTIVE FILTERS ================= */}
-              {(search || rating || selectedAuthor || maxPrice < 2000 || sort !== "latest") && (
+              {(search || rating || selectedAuthor || selectedSubject || maxPrice < 2000 || sort !== "latest") && (
                 <div className="flex flex-wrap items-center gap-2 max-w-[80%]">
                   
                   {search && (
@@ -361,6 +421,12 @@ const visibleAuthors = authorSearch
                       }`}
                       onRemove={() => setSelectedAuthor("")}
                     />
+                  )}
+                  {selectedSubject && (
+                  <FilterChip
+                  label={`Subject: ${subjects.find(s => String(s.id) === selectedSubject)?.name || ""}`}
+                  onRemove={() => setSelectedSubject("")}
+                  />
                   )}
             
                   {sort !== "latest" && (

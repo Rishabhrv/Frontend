@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { notFound } from "next/navigation";
 
 /* ── Types matching DB schema ─────────────────────────────────── */
 type OrderItem = {
@@ -117,8 +116,19 @@ export default function OrderConfirmedPage() {
     </div>
   );
 
+// ✅ After
 if (error || !order) {
-  notFound();
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="text-center">
+        <h2 className="text-2xl font-bold text-stone-700 mb-2">Order Not Found</h2>
+        <p className="text-stone-500 mb-6">{error || "We couldn't find this order."}</p>
+        <Link href="/orders" className="bg-stone-800 text-white px-6 py-3 rounded-xl text-sm">
+          View All Orders
+        </Link>
+      </div>
+    </div>
+  );
 }
 
   const items     = order.items ?? [];
