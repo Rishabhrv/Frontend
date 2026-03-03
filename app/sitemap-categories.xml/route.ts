@@ -13,8 +13,8 @@ export async function GET() {
       <url>
         <loc>${SITE_URL}/category/${c.slug}</loc>
         <lastmod>${new Date().toISOString()}</lastmod>
-        <changefreq>weekly</changefreq>
-        <priority>0.8</priority>
+        <changefreq>daily</changefreq>
+        <priority>0.9</priority>
       </url>
     `)
     .join("");

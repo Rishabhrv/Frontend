@@ -125,7 +125,7 @@ const Footer = () => {
             <ul className="space-y-3 mb-8 ">
               <FooterLink href="/ebooks">E-Books</FooterLink>
               <FooterLink href="/category/academic-books">Categories</FooterLink>
-              <FooterLink href="/new-releases">New Releases</FooterLink>
+              <FooterLink href="/new-release">New Releases</FooterLink>
             </ul>
 
             <ColHeading>Legal</ColHeading>

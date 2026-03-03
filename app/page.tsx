@@ -8,11 +8,47 @@ import AuthorCarousel from "@/components/home/Authorcarousel";
 import HomeReviewSection from "@/components/home/HomeReviewSection";
 import HeroBanner from "@/components/home/HeroBanner";
 import CategoryBookTab from "@/components/home/CategoryBookTab";
+import type { Metadata } from "next";
+
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL;
+
+
+export const metadata: Metadata = {
+  title: "AGPH Books Store | India's Trusted Self-Publishing Since 2022",
+  description:
+    "AGPH Books Store is India’s leading self-publishing company in Bhopal, helping authors publish books with expert services since 2022.",
+  metadataBase: new URL(SITE_URL || "https://ebookapp.agkit.in"),
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    title: "AGPH Books Store | India's Trusted Self-Publishing Since 2022",
+    description:
+      "AGPH Books Store is India’s leading self-publishing company in Bhopal, helping authors publish books with expert services since 2022.",
+    url: `${SITE_URL}/`,
+    siteName: "AGPH Books Store",
+    type: "website",
+    images: [
+      {
+        url: process.env.NEXT_PUBLIC_LOGO_URL!,
+        width: 1200,
+        height: 630,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "AGPH Books Store | India's Trusted Self-Publishing Since 2022",
+    description:
+      "AGPH Books Store is India’s leading self-publishing company in Bhopal, helping authors publish books with expert services since 2022.",
+    images: [process.env.NEXT_PUBLIC_LOGO_URL!],
+  },
+};
 
 
 export default function Home() {
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL;
 const LOGO_URL = process.env.NEXT_PUBLIC_LOGO_URL;
 
 const schema = {
@@ -22,8 +58,9 @@ const schema = {
       "@type": "WebPage",
       "@id": `${SITE_URL}/#webpage`,
       "url": `${SITE_URL}/`,
-      "name": `AGPH Store | India's Trusted Self-Publishing Bookstore Since 2022`,
-      "description": "AGPH Store is India's leading self-publishing company in Bhopal, helping authors publish books with expert services since 2022.",
+      "name": `AGPH Books Store | India's Trusted Self-Publishing Since 2022`,
+      "description": "AGPH Books Store is India’s leading self-publishing company in Bhopal, helping authors publish books with expert services since 2022",
+      "inLanguage": "en-IN",
       "isPartOf": {
         "@id": `${SITE_URL}/#website`
       }
@@ -31,7 +68,7 @@ const schema = {
     {
       "@type": "Organization",
       "@id": `${SITE_URL}/#organization`,
-      "name": "AGPH Store",
+      "name": "AGPH Books Store",
       "url": `${SITE_URL}/`,
       "logo": {
         "@type": "ImageObject",
@@ -47,7 +84,7 @@ const schema = {
       "@type": "WebSite",
       "@id": `${SITE_URL}/#website`,
       "url": `${SITE_URL}/`,
-      "name": "AGPH Store",
+      "name": "AGPH Books Store",
       "publisher": {
         "@id": `${SITE_URL}/#organization`
       },
@@ -87,7 +124,7 @@ const schema = {
         <div className="rounded-lg  p-5 pb-0 pt-10 bg-white w-full">
           <Image
             src="/images/banners/banner3.png"
-            alt="AGPH Store Logo"
+            alt="AGPH Books Store Logo"
             width={90}
             height={68}
             className="block rounded-lg w-full "

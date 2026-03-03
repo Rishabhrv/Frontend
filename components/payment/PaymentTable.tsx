@@ -42,6 +42,7 @@ type Payment = {
   user_id: number;
   name: string;
   email: string;
+  imprints: string[];   // ← ADD
 };
 
 /* Row shape returned by GET /api/admin/:orderId  (one row per order item) */
@@ -409,6 +410,7 @@ export default function AdminPayments() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [detailCache, setDetailCache] = useState<Record<string, any>>({});
   const [detailLoading, setDetailLoading] = useState<string | null>(null);
+  const [imprintFilter, setImprintFilter] = useState<"all" | "agph" | "agclassics">("all");
 
   /* ── Fetch all payments ── */
   useEffect(() => {
@@ -443,19 +445,20 @@ export default function AdminPayments() {
   }, [payments]);
 
   /* ── Filtered payments ── */
-  const filtered = useMemo(() => {
-    const q = search.toLowerCase();
-    return payments.filter((p) => {
-      const matchType = typeFilter === "all" || p.type === typeFilter;
-      const matchUser = userFilter === "all" || Number(p.user_id) === Number(userFilter);
-      const matchSearch =
-        !q ||
-        p.name.toLowerCase().includes(q) ||
-        p.email.toLowerCase().includes(q) ||
-        (p.payment_id || "").toLowerCase().includes(q);
-      return matchType && matchUser && matchSearch;
-    });
-  }, [payments, typeFilter, userFilter, search]);
+const filtered = useMemo(() => {
+  const q = search.toLowerCase();
+  return payments.filter((p) => {
+    const matchType    = typeFilter === "all"    || p.type === typeFilter;
+    const matchUser    = userFilter === "all"    || Number(p.user_id) === Number(userFilter);
+    const matchImprint = imprintFilter === "all" || p.imprints.includes(imprintFilter); // ← ADD
+    const matchSearch  =
+      !q ||
+      p.name.toLowerCase().includes(q) ||
+      p.email.toLowerCase().includes(q) ||
+      (p.payment_id || "").toLowerCase().includes(q);
+    return matchType && matchUser && matchImprint && matchSearch;
+  });
+}, [payments, typeFilter, userFilter, imprintFilter, search]);
 
   /* ── Stats ── */
   const totalRevenue = filtered
@@ -642,6 +645,16 @@ export default function AdminPayments() {
             <option value="order">Orders</option>
             <option value="subscription">Subscriptions</option>
           </select>
+
+<select
+  value={imprintFilter}
+  onChange={(e) => setImprintFilter(e.target.value as any)}
+  className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-200 text-gray-600"
+>
+  <option value="all">All Imprints</option>
+  <option value="agph">AGPH</option>
+  <option value="agclassics">AG Classics</option>
+</select>
 
           {/* User filter */}
           <select

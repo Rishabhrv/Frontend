@@ -23,6 +23,8 @@ type Product = {
   meta_title: string;
   meta_description: string;
   keywords: string;
+  product_type: "ebook" | "physical" | "both";  // already exists, just ensure it's typed
+  imprints: string[]; 
 };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
@@ -194,6 +196,8 @@ export default function ProductsTable() {
   } | null>(null);
 
   const toast = (msg: string) => { setToastMsg(msg); setToastOpen(true); };
+  const [productType, setProductType] = useState("");
+  const [imprint, setImprint] = useState("");
 
   useEffect(() => {
     fetch(`${API_URL}/api/products`)
@@ -207,6 +211,7 @@ export default function ProductsTable() {
           keywords:         p.keywords         || "",
           description:      p.description      || "",
           slug:             p.slug             || "",
+          imprints:         p.imprints         || [],
         })));
         setLoading(false);
       })
@@ -221,15 +226,17 @@ export default function ProductsTable() {
 
   /* ---------------- FILTER + SORT ---------------- */
 
-  const filteredProducts = useMemo(() => {
-    let data = products.filter(p => {
-      if (activeTab !== "all" && p.status !== activeTab) return false;
-      if (search      && !p.name.toLowerCase().includes(search.toLowerCase())) return false;
-      if (category    && !p.categories.includes(category)) return false;
-      if (stockFilter === "instock"    && p.stock <= 0) return false;
-      if (stockFilter === "outofstock" && p.stock >  0) return false;
-      return true;
-    });
+const filteredProducts = useMemo(() => {
+  let data = products.filter(p => {
+    if (activeTab !== "all" && p.status !== activeTab) return false;
+    if (search      && !p.name.toLowerCase().includes(search.toLowerCase())) return false;
+    if (category    && !p.categories.includes(category)) return false;
+    if (stockFilter === "instock"    && p.stock <= 0) return false;
+    if (stockFilter === "outofstock" && p.stock >  0) return false;
+if (productType && p.product_type !== productType) return false;
+if (imprint     && !p.imprints.includes(imprint))  return false;
+    return true;
+  });
 
     const key = sortBy.key;
     if (key) {
@@ -253,7 +260,7 @@ export default function ProductsTable() {
       });
     }
     return data;
-  }, [products, search, category, stockFilter, activeTab, sortBy]);
+  }, [products, search, category, stockFilter, activeTab, sortBy, productType, imprint]);
 
   const totalPages        = Math.ceil(filteredProducts.length / rowsPerPage);
   const paginatedProducts = filteredProducts.slice(
@@ -460,6 +467,27 @@ export default function ProductsTable() {
             <option value="instock">In stock</option>
             <option value="outofstock">Out of stock</option>
           </select>
+
+          <select
+  value={productType}
+  onChange={e => setProductType(e.target.value)}
+  className="rounded border px-2 py-1 text-sm border-gray-300"
+>
+  <option value="">All types</option>
+  <option value="ebook">E-Book</option>
+  <option value="physical">Physical</option>
+  <option value="both">Both</option>
+</select>
+
+<select
+  value={imprint}
+  onChange={e => setImprint(e.target.value)}
+  className="rounded border px-2 py-1 text-sm border-gray-300"
+>
+  <option value="">All imprints</option>
+  <option value="agph">AGPH</option>
+  <option value="agclassics">AG Classics</option>
+</select>
         </div>
 
         <div className="flex items-center gap-2">
