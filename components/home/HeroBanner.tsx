@@ -137,7 +137,7 @@ const ProductCard = ({ product, index, current, total, onSelect }: CardProps) =>
       {/* Bottom info — center card is clickable link ← NEW */}
       <div className="relative z-10">
         <p
-          className="font-black uppercase tracking-widest text-gray-800 text-xs mb-3 mt-5 hover:text-gray-200"
+          className="font-black uppercase tracking-widest text-gray-800 text-xs mb-3 mt-5"
           style={{ fontFamily: "'Bebas Neue', sans-serif" }}
         >
           {isCenter ? (
