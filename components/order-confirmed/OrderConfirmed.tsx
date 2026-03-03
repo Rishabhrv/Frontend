@@ -132,6 +132,8 @@ if (error || !order) {
 }
 
   const items     = order.items ?? [];
+  const isOnlyEbook =
+  items.length > 0 && items.every(item => item.format === "ebook");
   const subtotal  = items.reduce((s, i) => s + Number(i.price) * i.quantity, 0);
   const stepIndex = getStepIndex(order.shipping_status);
 
@@ -223,7 +225,10 @@ if (error || !order) {
           </div>
         </div>
 
-        {/* ── Shipping Timeline ── */}
+        {!isOnlyEbook && (
+  <div className="anim-s4 bg-white card-shadow rounded-2xl p-6 mb-6 border border-stone-100">
+      {/* ── Shipping Timeline ── */}
+        
         <div className="anim-s4 bg-white card-shadow rounded-2xl p-6 mb-6 border border-stone-100">
           <div className="relative flex items-start justify-between">
             {/* track bg */}
@@ -274,6 +279,10 @@ if (error || !order) {
             </p>
           )}
         </div>
+  </div>
+)}
+
+      
 
         {/* ── Main grid ── */}
         <div className="grid md:grid-cols-5 gap-6 mb-6">
@@ -354,7 +363,7 @@ if (error || !order) {
           <div className="md:col-span-2 flex flex-col gap-4">
 
             {/* Address */}
-            {order.address && (
+            {!isOnlyEbook && order.address && (
               <div className="bg-white card-shadow rounded-2xl border border-stone-100 p-5 anim-s4">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="w-8 h-8 rounded-full bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-500">
