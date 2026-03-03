@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Search, Heart, User, ShoppingBag, LogOut, X, Facebook, Instagram, Twitter, Linkedin } from "lucide-react";
+import { Search, Heart, User, ShoppingBag, LogOut, X, Facebook, Instagram, Twitter, Linkedin, Youtube } from "lucide-react";
 import AccountSlider from "./AccountSlider";
 import { usePathname } from "next/navigation";
 
@@ -207,6 +207,24 @@ const fetchCartCount = () => {
             <Linkedin  className="h-4 w-4" />
           </a>
 
+                    <a
+            href="https://www.youtube.com/@agphbooks"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-black"
+          >
+            <Youtube  className="h-4 w-4" />
+          </a>
+
+                    <a
+            href="https://x.com/agphbooks"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-black"
+          >
+            <Twitter   className="h-4 w-4" />
+          </a>
+
           <div>|</div>
 
           {!user ? (
@@ -389,20 +407,22 @@ const fetchCartCount = () => {
             Home
           </Link>
           
-          <Link href="/ebooks" className={`nav-link ${isActive("/ebooks")}`}>
-            E-Books
-          </Link>
+
           
           <Link href="/category/academic-books" className={`nav-link ${isActive("/category/academic-books")}`}>
             Academic Books
+          </Link>
+
+          <Link href="/category/edited-books" className={`nav-link ${isActive("/category/edited-books")}`}>
+            Edited Books
           </Link>
           
           <Link href="/category/kids" className={`nav-link ${isActive("/category/kids")}`}>
             Kids
           </Link>
           
-          <Link href="/category/edited-books" className={`nav-link ${isActive("/category/edited-books")}`}>
-            Edited Books
+          <Link href="/ebooks" className={`nav-link ${isActive("/ebooks")}`}>
+            E-Books
           </Link>
           
           <Link href="/new-release" className={`nav-link ${isActive("/new-release")}`}>

@@ -10,7 +10,7 @@ import BookCard from "@/components/books/BookCard";
 // ─── Config ───────────────────────────────────────────────────────────────────
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 const BOOKS_PER_ROW = 5;
-const ROWS_PER_CAT  = 2;
+const ROWS_PER_CAT  = 5;
 const LIMIT_PER_CAT = BOOKS_PER_ROW * ROWS_PER_CAT; // 10 shown, fetch more to avoid missing books
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -217,7 +217,7 @@ export default function EbooksPage() {
 
               {/* View all link */}
               <Link
-                href={`/ebooks?category=${category.slug}`}
+                href={`/category/${category.slug}`}
                 className="flex items-center gap-1 text-xs font-semibold text-gray-500 hover:text-gray-900 transition-colors"
               >
                 View all <ChevronRight size={13} />

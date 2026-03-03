@@ -5,11 +5,11 @@ import { useState, useEffect } from "react";
 
 const slides = [
   {
-    label: "Capturing Moments, Creating Memories",
+    label: "Trusted Academic Resources for Serious Learners",
     image: "images/login/slide3.jpg",
   },
   {
-    label: "Publish Your Story with AGPH",
+    label: "Publish Your Story with AGPH Books",
     image: "images/login/slide2.jpg",
   },
   {

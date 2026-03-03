@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 // ── Sub-components ──────────────────────────────────────────────
 
@@ -49,30 +50,28 @@ const Footer = () => {
           {/* ── COL 1: About ── */}
           <div className="flex flex-col">
             {/* Logo */}
-            <div className="flex items-center gap-2.5 mb-5">
-              <div
-                className="w-9 h-9 rounded-lg bg-gray-900 flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
-                style={{ fontFamily: "Georgia, serif" }}
-              >
-                A
-              </div>
-              <span className="text-white font-bold text-base tracking-tight" style={{ fontFamily: "Georgia, serif" }}>
-                AGPH Books Store
-              </span>
-            </div>
+                <Link href="/" className="flex items-center">
+                        <Image
+                          src="/images/logo/agph2-200x121.webp"
+                          alt="AGPH Store Logo"
+                          width={140}
+                          height={68}
+                          priority
+                        />
+                      </Link>
+          
 
-            <p className="text-white text-sm leading-relaxed mb-5">
-              India's trusted self-publishing and eBook platform — connecting authors with
-              readers across the world. Write your story. Let the world read it.
+            <p className="text-white text-xs leading-relaxed mb-5 pl-2 text-justify">
+              At  AGPH Books Store, we believe every book carries the power to inspire, educate, and transform. With over 3 years of dedicated experience in the publishing industry, we’ve proudly brought more than 1,500 books to life across diverse genres, supported and guided 2,500+ authors throughout their creative journeys, and reached readers across the globe with over 50,000 copies sold.
             </p>
 
             {/* Tagline badge */}
-            <div className="inline-flex self-start items-center px-3 py-1.5 rounded-full border border-gray-200 bg-gray-50 text-[10px] tracking-[0.2em] uppercase text-gray-500 mb-6">
+            <div className="inline-flex self-start items-center px-3 py-1.5 rounded-full border border-gray-200 bg-gray-50 text-[10px] tracking-[0.2em] uppercase text-gray-500 mb-6 ml-2">
               Read · Publish · Grow
             </div>
 
             {/* Social icons */}
-            <div className="flex items-center gap-2.5 mt-auto">
+            <div className="flex items-center gap-2.5 mt-auto pl-2">
             {[
               {
                 label: "Instagram",
@@ -104,6 +103,24 @@ const Footer = () => {
                   </svg>
                 ),
               },
+              {
+  label: "YouTube",
+  href: "https://www.youtube.com/@agphbooks",
+  icon: (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M23.5 6.2a2.9 2.9 0 00-2-2C19.8 3.7 12 3.7 12 3.7s-7.8 0-9.5.5a2.9 2.9 0 00-2 2A30.7 30.7 0 000 12a30.7 30.7 0 00.5 5.8 2.9 2.9 0 002 2c1.7.5 9.5.5 9.5.5s7.8 0 9.5-.5a2.9 2.9 0 002-2A30.7 30.7 0 0024 12a30.7 30.7 0 00-.5-5.8zM9.8 15.5V8.5l6.4 3.5-6.4 3.5z"/>
+    </svg>
+  ),
+},
+{
+  label: "X",
+  href: "https://x.com/agphbooks",
+  icon: (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M18.9 2H22l-7.4 8.5L23 22h-6.8l-5.3-6.9L4.8 22H2l8-9.2L2 2h6.9l4.8 6.3L18.9 2z"/>
+    </svg>
+  ),
+},
             ].map(({ label, icon, href }) => (
               <a
                 key={label}
@@ -120,7 +137,7 @@ const Footer = () => {
           </div>
 
           {/* ── COL 2: Explore + Legal ── */}
-          <div>
+          <div className="ml-15">
             <ColHeading>Explore</ColHeading>
             <ul className="space-y-3 mb-8 ">
               <FooterLink href="/ebooks">E-Books</FooterLink>
@@ -140,8 +157,10 @@ const Footer = () => {
           <div>
             <ColHeading>More</ColHeading>
             <ul className="space-y-3 mb-8">
-              <FooterLink href="https://agphbooks.com/publish-a-book/">Publish with AGPH</FooterLink>
+              <FooterLink href="https://agphbooks.com/publish-a-book/">Get Published</FooterLink>
               <FooterLink href="https://agphbooks.com/about-us/">About Us</FooterLink>
+              <FooterLink href="https://agphbooks.com/packages/">Packages</FooterLink>
+              <FooterLink href="https://agphbooks.com/blogs/">Blog</FooterLink>
             </ul>
 
           </div>
@@ -151,20 +170,6 @@ const Footer = () => {
             <ColHeading>Get In Touch</ColHeading>
 
             <div className="flex flex-col gap-5">
-
-              {/* Map */}
-              <div className="w-full h-36 rounded-xl overflow-hidden border border-gray-200">
-<iframe
-  title="AGPH Office Location"
-  src="https://www.google.com/maps?q=AGPH+Books+AG+Publishing+House+Bhopal&output=embed"
-  width="100%"
-  height="100%"
-  style={{ border: 0 }}
-  allowFullScreen
-  loading="lazy"
-  referrerPolicy="no-referrer-when-downgrade"
-/>
-              </div>
 
               {/* Address */}
               <a

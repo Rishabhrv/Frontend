@@ -65,9 +65,14 @@ function useAuthors() {
       .then(r => { if (!r.ok) throw new Error(); return r.json(); })
       .then((d: Author[]) => {
         if (alive) {
-          const active = d
-            .filter(a => a.status === "active")
-            .slice(0, MAX_AUTHORS);           // ← limit to 10
+         const active = d
+  .filter(
+    a =>
+      a.status === "active" &&
+      a.profile_image &&
+      a.profile_image.trim() !== ""
+  )
+  .slice(0, MAX_AUTHORS);          // ← limit to 10
           setData(active);
           setLoading(false);
         }
