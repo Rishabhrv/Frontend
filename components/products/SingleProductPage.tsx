@@ -6,6 +6,7 @@ import { Bell, Heart, ShoppingCart, Star, CircleCheck } from "lucide-react";
 import ReviewSection from "@/components/reviews/ReviewSection";
 import CategoryBookSection from "@/components/books/CategoryBookSection";
 import Link from "next/link";
+import NotifyMeButton from "../notification/NotifyMeButton";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
@@ -476,11 +477,7 @@ const isPaperbackOutOfStock =
             
               {/* OUT OF STOCK MESSAGE (paperback only) */}
               {isPaperbackOnly && product.stock === 0 ? (
-                <button
-                  className="px-6 py-2 text-sm font-medium bg-black text-white rounded-md hover:bg-gray-800 transition cursor-pointer flex items-center gap-2"
-                >
-                  <Bell size={16} /> Notify when available
-                </button>
+                <NotifyMeButton productId={product.id} productTitle={product.title} />
               ) : (
                 <>
                   {/* QUANTITY → ONLY FOR PAPERBACK */}

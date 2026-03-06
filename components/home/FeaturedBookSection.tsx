@@ -170,9 +170,10 @@ const FeaturedBookSection = () => {
           <div className="border-t border-gray-100 mb-5" />
 
           {/* Description */}
-          <p className="text-sm text-gray-600 leading-relaxed line-clamp-4 mb-6">
-            {book.description}
-          </p>
+          <div
+            className="text-sm text-gray-600 leading-relaxed line-clamp-4 mb-6"
+            dangerouslySetInnerHTML={{ __html: book.description }}
+          />
 
           {/* Price */}
           <div className="flex items-baseline gap-3 mb-7">

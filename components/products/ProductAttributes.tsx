@@ -23,8 +23,11 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
 const ProductAttributes = forwardRef<any, ProductAttributesProps>(
   ({ mode = "add", productId, error, onValidChange }, ref) => {
-    const [attributes, setAttributes] = useState<Attribute[]>([]);
-    const [availableAttributes, setAvailableAttributes] = useState<string[]>([]);
+const [attributes, setAttributes] = useState<Attribute[]>([
+  { id: 1, name: "ISBN", values: "", open: true, isCustom: false },
+  { id: 2, name: "No. Of Pages", values: "", open: true, isCustom: false },
+]);    const [availableAttributes, setAvailableAttributes] = useState<string[]>([]);
+    
     const [search, setSearch] = useState("");
 
     const filteredAttributes = availableAttributes.filter(
@@ -50,21 +53,25 @@ const ProductAttributes = forwardRef<any, ProductAttributesProps>(
         });
     }, []);
 
-    useEffect(() => {
-      if (mode !== "edit" || !productId) return;
-      fetch(`${API_URL}/api/attributes/${productId}/attributes`)
-        .then((res) => res.json())
-        .then((data) => {
-          const mapped = data.map((attr: any) => ({
-            id: Date.now() + Math.random(),
-            name: attr.name,
-            values: attr.value,
-            open: true,
-            isCustom: false,
-          }));
-          setAttributes(mapped);
-        });
-    }, [mode, productId]);
+useEffect(() => {
+  if (mode !== "edit" || !productId) return;
+  fetch(`${API_URL}/api/attributes/${productId}/attributes`)
+    .then((res) => res.json())
+    .then((data) => {
+      if (data.length > 0) {
+        // Edit mode: use what's saved in DB (no defaults needed)
+        const mapped = data.map((attr: any) => ({
+          id: Date.now() + Math.random(),
+          name: attr.name,
+          values: attr.value,
+          open: true,
+          isCustom: false,
+        }));
+        setAttributes(mapped);
+      }
+      // If no attributes saved yet in edit mode, keep the defaults
+    });
+}, [mode, productId]);
 
     const addNew = () => {
       setAttributes([

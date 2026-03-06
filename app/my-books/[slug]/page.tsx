@@ -56,7 +56,75 @@ export default function EpubReaderPage() {
   const [noteModalOpen, setNoteModalOpen] = useState(false);
   const [noteText, setNoteText] = useState("");
   const [bookReady, setBookReady] = useState(false);
+  const [isBlurred, setIsBlurred] = useState(false);
 
+
+/* ================= BLUR ON FOCUS LOSS ================= */
+useEffect(() => {
+  let blurTimer: ReturnType<typeof setTimeout>;
+
+  const handleBlur = () => {
+    // Wait a tick — if focus moved into the epub child iframe,
+    // document.hasFocus() is still true and we must NOT blur.
+    // Only blur when focus truly left the browser window entirely.
+    blurTimer = setTimeout(() => {
+      if (!document.hasFocus()) {
+        setIsBlurred(true);
+      }
+    }, 100);
+  };
+
+  const handleFocus = () => {
+    clearTimeout(blurTimer);
+    setIsBlurred(false);
+  };
+
+  window.addEventListener("blur", handleBlur);
+  window.addEventListener("focus", handleFocus);
+
+  // Tab switch / minimize
+  const handleVisibility = () => {
+    if (document.visibilityState === "hidden") {
+      setIsBlurred(true);
+    } else {
+      setIsBlurred(false);
+    }
+  };
+  document.addEventListener("visibilitychange", handleVisibility);
+
+  return () => {
+    clearTimeout(blurTimer);
+    window.removeEventListener("blur", handleBlur);
+    window.removeEventListener("focus", handleFocus);
+    document.removeEventListener("visibilitychange", handleVisibility);
+  };
+}, []);
+
+
+/* ================= PREVENT COPY / PASTE ================= */
+useEffect(() => {
+  const prevent = (e: Event) => e.preventDefault();
+
+  document.addEventListener("copy", prevent);
+  document.addEventListener("cut", prevent);
+  document.addEventListener("contextmenu", prevent);
+
+  const handleKeyDown = (e: KeyboardEvent) => {
+    const blocked = ["c", "x", "a", "u", "s", "p"];
+    if ((e.ctrlKey || e.metaKey) && blocked.includes(e.key.toLowerCase())) {
+      e.preventDefault();
+    }
+  };
+
+  document.addEventListener("keydown", handleKeyDown);
+
+  return () => {
+    document.removeEventListener("copy", prevent);
+    document.removeEventListener("cut", prevent);
+    document.removeEventListener("contextmenu", prevent);
+    document.removeEventListener("keydown", handleKeyDown);
+  };
+}, []);
 
 
 useEffect(() => {
@@ -117,6 +185,10 @@ useEffect(() => {
 
       if (destroyed) return;
 
+      // ✅ Fix 1: wait for the custom element to be fully registered
+      // before creating it, so view.open() is guaranteed to exist.
+      await customElements.whenDefined("foliate-view");
+
       const view = document.createElement("foliate-view") as any;
 
       containerRef.current!.innerHTML = "";
@@ -124,73 +196,76 @@ useEffect(() => {
 
       viewRef.current = view;
 
-view.addEventListener("relocate", async (e: any) => {
-  const fraction = Math.round(e.detail.fraction * 100);
-  setProgress(fraction);
+      // ✅ Fix 3: track whether we've applied annotations yet.
+      // addAnnotation requires rendered content — defer it to the
+      // first "relocate" event so the iframe DOM is fully ready.
+      let annotationsApplied = false;
 
-  const cfi = e.detail.cfi;
-  if (!cfi) return;
+      view.addEventListener("relocate", async (e: any) => {
+        const fraction = Math.round(e.detail.fraction * 100);
+        setProgress(fraction);
 
-  // ✅ Save current location
-  setCurrentCfi(cfi);
+        const cfi = e.detail.cfi;
+        if (!cfi) return;
 
-  const token = localStorage.getItem("token");
+        setCurrentCfi(cfi);
 
-  try {
-    await fetch(`${API_URL}/api/my-books/${slug}/progress`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ cfi }),
-    });
-  } catch {}
-});
+        const token = localStorage.getItem("token");
+
+        try {
+          await fetch(`${API_URL}/api/my-books/${slug}/progress`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ cfi }),
+          });
+        } catch {}
+
+        // Apply annotations once, on the first relocate after content is rendered
+        if (!annotationsApplied) {
+          annotationsApplied = true;
+          try {
+            const token = localStorage.getItem("token");
+            const res = await fetch(
+              `${API_URL}/api/my-books/${slug}/bookmarks`,
+              { headers: { Authorization: `Bearer ${token}` } }
+            );
+            const data = await res.json();
+            setBookmarks(data);
+
+            data.forEach((b: any) => {
+              try {
+                view.addAnnotation({ value: b.cfi, label: b.label });
+              } catch {}
+            });
+          } catch {}
+        }
+      });
 
       await view.open(url);
+
       // Load last progress
-try {
-  const token = localStorage.getItem("token");
-  const res = await fetch(`${API_URL}/api/my-books/continue`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch(`${API_URL}/api/my-books/continue`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
-  const list = await res.json();
-  const current = list.find((b: any) => b.slug === slug);
+        const list = await res.json();
+        const current = list.find((b: any) => b.slug === slug);
 
-  if (current?.last_cfi) {
-    await view.goTo(current.last_cfi);
-  } else {
-    view.goTo(0);
-  }
-} catch {
-  view.goTo(0);
-}
+        if (current?.last_cfi) {
+          await view.goTo(current.last_cfi);
+        } else {
+          view.goTo(0);
+        }
+      } catch {
+        view.goTo(0);
+      }
 
-
-      
       setToc(view.book?.toc || []);
-
-// Load bookmarks
-try {
-  const token = localStorage.getItem("token");
-  const res = await fetch(
-    `${API_URL}/api/my-books/${slug}/bookmarks`,
-    { headers: { Authorization: `Bearer ${token}` } }
-  );
-
-  const data = await res.json();
-  setBookmarks(data);
-
-  data.forEach((b: any) => {
-    view.addAnnotation({
-      value: b.cfi,
-      label: b.label,
-    });
-  });
-} catch {}
-
       setLoading(false);
       setBookReady(true);
     };
@@ -221,15 +296,38 @@ useEffect(() => {
     doc.documentElement.style.fontSize = `${fontSize}%`;
     doc.documentElement.style.fontFamily = fontFamily;
 
-    // Force line height globally
+    // Force styles globally inside the iframe/shadow DOM
+    // Also blocks text selection inside the epub content
     const style = doc.createElement("style");
     style.innerHTML = `
       html, body, p, div, span, li, blockquote {
         line-height: ${lineHeight} !important;
       }
+      * {
+        -webkit-user-select: none !important;
+        -moz-user-select: none !important;
+        -ms-user-select: none !important;
+        user-select: none !important;
+      }
     `;
 
     doc.head.appendChild(style);
+
+    // Block copy / cut / contextmenu events inside the iframe document
+    const blockEvent = (e: Event) => e.preventDefault();
+    doc.addEventListener("copy", blockEvent);
+    doc.addEventListener("cut", blockEvent);
+    doc.addEventListener("contextmenu", blockEvent);
+
+    // Block keyboard shortcuts inside the iframe.
+    doc.addEventListener("keydown", (e: KeyboardEvent) => {
+      if (
+        (e.ctrlKey || e.metaKey) &&
+        ["c", "x", "a", "u", "s", "p"].includes(e.key.toLowerCase())
+      ) {
+        e.preventDefault();
+      }
+    });
   });
 };
 
@@ -247,7 +345,7 @@ const handleSearch = async (query: string) => {
 
   if (!viewRef.current || !bookReady || query.trim().length < 3) {
     setSearchResults([]);
-    viewRef.current?.clearSearch?.(); // ← important
+    viewRef.current?.clearSearch?.();
     return;
   }
 
@@ -310,7 +408,6 @@ useEffect(() => {
     view.style.setProperty("--reader-filter", "none");
   }
 
-  // Apply to shadow part
   view.style.setProperty(
     "filter",
     theme === "dark"
@@ -375,9 +472,15 @@ useEffect(() => {
   if (!slug) return null;
 
   return (
-    <div className="fixed z-50 inset-0 flex bg-[#1e1e1e] text-white">
+    <div
+      className="fixed z-50 inset-0 flex bg-[#1e1e1e] text-white"
+      // Prevent text selection on the outer shell
+      style={{
+        userSelect: "none",
+        WebkitUserSelect: "none",
+      }}
+    >
 {/* ===== SIDEBAR ===== */}
-     {/* ===== SIDEBAR ===== */}
 <div className={`${sidebarOpen ? "w-72" : "w-18"} bg-[#141414] border-r border-white/5 transition-all duration-300 ease-in-out flex flex-shrink-0`}>
 
   {/* ICON RAIL */}
@@ -457,6 +560,8 @@ useEffect(() => {
                   }
                 }}
                 placeholder="Search in book…"
+                // Allow typing in the search input — re-enable userSelect for inputs
+                style={{ userSelect: "text", WebkitUserSelect: "text" }}
                 className="w-full bg-white/5 border border-white/8 rounded-lg pl-8 pr-3 py-2 text-xs text-white placeholder-gray-600 outline-none focus:border-white/20 focus:bg-white/8 transition-all"
               />
             </div>
@@ -734,6 +839,34 @@ useEffect(() => {
 
     <div className="relative p-[3px]">
 
+          {/* ── BLUR OVERLAY on focus loss ── */}
+          {isBlurred && (
+            <div
+              className="absolute inset-0 z-50 flex flex-col items-center justify-center rounded"
+              style={{
+                backdropFilter: "blur(18px)",
+                WebkitBackdropFilter: "blur(18px)",
+                background: "rgba(0,0,0,0.45)",
+              }}
+            >
+              <svg
+                className="w-10 h-10 text-white/60 mb-3"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={1.5}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+              </svg>
+              <p className="text-white/80 text-sm font-medium tracking-wide">
+                Content hidden
+              </p>
+              <p className="text-white/40 text-xs mt-1">
+                Return to this window to continue reading
+              </p>
+            </div>
+          )}
+
           <button
             className={`cursor-pointer transition absolute top-0 right-4 z-40 ${
               isBookmarked
@@ -763,9 +896,17 @@ useEffect(() => {
 {pageMode === "double" && (
   <div className="pointer-events-none absolute top-4 bottom-4 left-1/2 -translate-x-1/2 w-px bg-gray-300 z-30" />
 )}
+          {/* Reader container — user-select blocked here too */}
           <div
             ref={containerRef}
-            className={` w-[900px] h-[90vh] shadow-2xl ${ theme === "dark" ? "bg-black" : "bg-white" }`}
+            className={`w-[900px] h-[90vh] shadow-2xl ${ theme === "dark" ? "bg-black" : "bg-white" }`}
+            style={{
+              userSelect: "none",
+              WebkitUserSelect: "none",
+              MozUserSelect: "none",
+              filter: isBlurred ? "blur(18px)" : "none",
+              transition: "filter 0.2s ease",
+            }}
           />
 
           </div>
@@ -813,12 +954,13 @@ useEffect(() => {
       {/* Divider */}
       <div className="mx-6 mt-5 h-px bg-gray-100" />
 
-      {/* Textarea */}
+      {/* Textarea — re-enable userSelect so users can type notes */}
       <div className="px-6 pt-5">
         <textarea
           value={noteText}
           onChange={(e) => setNoteText(e.target.value)}
           placeholder="Write your note here..."
+          style={{ userSelect: "text", WebkitUserSelect: "text" }}
           className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-300 leading-relaxed resize-none outline-none focus:border-gray-400 focus:bg-white transition-colors"
           rows={5}
         />

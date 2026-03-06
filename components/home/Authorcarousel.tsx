@@ -9,6 +9,7 @@ import {
   memo,
 } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { ChevronLeft, ChevronRight, BookOpen, User } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
@@ -258,12 +259,14 @@ const AuthorCard = memo(function AuthorCard({
           }}
         >
           {showImg ? (
-            <img
-              src={`${API_URL}${author.profile_image}`}
-              alt={author.name}
-              className="h-full w-full object-cover"
-              onError={() => setImgBroken(true)}
-            />
+          <Image
+            src={`${API_URL}${author.profile_image}`}
+            alt={author.name}
+            fill
+            unoptimized
+            className="object-cover"
+            onError={() => setImgBroken(true)}
+          />
           ) : (
             <span
               className="font-bold tracking-tight"
@@ -373,7 +376,7 @@ export default function AuthorCarousel() {
       `}</style>
 
       <section
-        className="relative overflow-hidden py-16"
+        className="relative overflow-hidden py-10"
         style={{ fontFamily: "'Barlow', sans-serif" }}
         aria-label="Featured authors"
       >

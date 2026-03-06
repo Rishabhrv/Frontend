@@ -2,28 +2,26 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { Heart, ShoppingCart, CircleCheck, BookOpen, Loader2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Heart, ShoppingCart, CircleCheck, BookOpen } from "lucide-react";
 
-// ─── Config ───────────────────────────────────────────────────────────────────
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
-// ─── Types ────────────────────────────────────────────────────────────────────
 type Category = {
   id: number;
   name: string;
   slug: string;
   parent_id: number | null;
   status: string;
-  imprint: "agph"; // ← NEW
+  imprint: "agph";
 };
 
 type Book = {
   id: number;
   title: string;
   slug: string;
-  image: string;        // resolved by component
-  main_image: string;   // raw from API
+  image: string;
+  main_image: string;
   product_type: "ebook" | "physical" | "both";
   stock: number;
   price: number;
@@ -35,7 +33,6 @@ type Book = {
   author?: string;
 };
 
-// ─── Resolve image URL ────────────────────────────────────────────────────────
 function resolveImg(path: string | null | undefined): string {
   if (!path) return "/placeholder-book.png";
   if (path.startsWith("http")) return path;
@@ -79,7 +76,7 @@ const BookCard = ({ book }: { book: Book }) => {
     if (!token) { window.dispatchEvent(new Event("open-account-slider")); return; }
     const format =
       book.product_type === "ebook" ? "ebook"
-      : book.product_type === "physical" ? "paperback"
+      : book.product_type === "both" ? "ebook"
       : book.stock > 0 ? "paperback" : "ebook";
     try {
       const res = await fetch(`${API_URL}/api/cart/add`, {
@@ -87,7 +84,6 @@ const BookCard = ({ book }: { book: Book }) => {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ product_id: book.id, format, quantity: 1 }),
       });
-      const data = await res.json();
       if (!res.ok) return;
       window.dispatchEvent(new Event("cart-change"));
       setAddedToCart(true);
@@ -95,22 +91,19 @@ const BookCard = ({ book }: { book: Book }) => {
     } catch {}
   };
 
-  const isEbookOnly     = book.product_type === "ebook";
-  const displaySell     = book.ebook_sell_price ?? book.sell_price;
-  const displayMrp      = book.ebook_price ?? book.price;
-  const showDiscount    = displayMrp && displaySell && displayMrp > displaySell;
-  const discountPct     = showDiscount ? Math.round(((displayMrp! - displaySell!) / displayMrp!) * 100) : 0;
-  const isOutOfStock    = book.product_type === "physical" && book.stock === 0;
-  const isDisabled      = addedToCart || isOutOfStock;
-  const imgSrc          = resolveImg(book.main_image ?? book.image);
+  const isEbookOnly  = book.product_type === "ebook";
+  const displaySell  = book.ebook_sell_price ?? book.sell_price;
+  const displayMrp   = book.ebook_price ?? book.price;
+  const showDiscount = displayMrp && displaySell && displayMrp > displaySell;
+  const discountPct  = showDiscount ? Math.round(((displayMrp! - displaySell!) / displayMrp!) * 100) : 0;
+  const isOutOfStock = book.product_type === "physical" && book.stock === 0;
+  const isDisabled   = addedToCart || isOutOfStock;
+  const imgSrc       = resolveImg(book.main_image ?? book.image);
 
   return (
     <div className="group bg-white rounded-xl overflow-hidden border border-gray-100 hover:border-amber-200 hover:shadow-md transition-all duration-300 flex flex-col">
-
-      {/* Cover */}
       <Link href={`/product/${book.slug}`} className="block">
-        <div className="relative flex items-center justify-center overflow-hidden" style={{ minHeight: 200 }}>
-
+        <div className="relative flex items-center justify-center overflow-hidden" style={{ minHeight: 170 }}>
           <button
             onClick={toggleWishlist}
             className="absolute right-2.5 top-2.5 z-10 rounded-full bg-white/90 backdrop-blur-sm p-1.5 shadow transition-transform hover:scale-110 cursor-pointer"
@@ -139,16 +132,15 @@ const BookCard = ({ book }: { book: Book }) => {
           <Image
             src={imgSrc}
             alt={book.title}
-            width={120}
-            height={170}
-            className="object-contain drop-shadow-md group-hover:scale-105 transition-transform duration-300 py-5"
-            style={{ maxHeight: 200 }}
+            width={110}
+            height={160}
+            className="object-contain drop-shadow-md group-hover:scale-105 transition-transform duration-300 py-4"
+            style={{ maxHeight: 180 }}
             unoptimized
           />
         </div>
 
-        {/* Text */}
-        <div className="px-3 pt-3 pb-2">
+        <div className="px-3 pt-2.5 pb-2">
           {book.category && (
             <p className="text-[10px] italic text-amber-600/80 truncate mb-0.5">{book.category}</p>
           )}
@@ -163,7 +155,6 @@ const BookCard = ({ book }: { book: Book }) => {
         </div>
       </Link>
 
-      {/* Cart button */}
       <div className="px-3 pb-3 pt-1 mt-auto">
         <button
           onClick={addToCart}
@@ -173,7 +164,7 @@ const BookCard = ({ book }: { book: Book }) => {
             : addedToCart  ? "bg-emerald-500 text-white"
             : "bg-gray-900 text-white hover:bg-amber-700 cursor-pointer"}`}
         >
-          {isOutOfStock  ? "Out of Stock"
+          {isOutOfStock ? "Out of Stock"
           : addedToCart  ? <><CircleCheck size={12} /> Added</>
           : <><ShoppingCart size={12} /> Add to Cart</>}
         </button>
@@ -182,10 +173,10 @@ const BookCard = ({ book }: { book: Book }) => {
   );
 };
 
-// ─── Skeleton card ────────────────────────────────────────────────────────────
+// ─── Skeleton ─────────────────────────────────────────────────────────────────
 const SkeletonCard = () => (
   <div className="bg-white rounded-xl border border-gray-100 overflow-hidden animate-pulse">
-    <div className="bg-gray-100" style={{ height: 200 }} />
+    <div className="bg-gray-100" style={{ height: 170 }} />
     <div className="p-3 space-y-2">
       <div className="h-2 bg-gray-100 rounded w-1/2" />
       <div className="h-3 bg-gray-100 rounded w-3/4" />
@@ -195,30 +186,30 @@ const SkeletonCard = () => (
   </div>
 );
 
-// ─── Main Section ─────────────────────────────────────────────────────────────
+// ─── Main ─────────────────────────────────────────────────────────────────────
 export default function CategoryBookSection() {
-  const [categories, setCategories]         = useState<Category[]>([]);
-  const [activeSlug, setActiveSlug]         = useState<string>("");
-  const [books, setBooks]                   = useState<Book[]>([]);
-  const [loadingCats, setLoadingCats]       = useState(true);
-  const [loadingBooks, setLoadingBooks]     = useState(false);
+  const [categories, setCategories]     = useState<Category[]>([]);
+  const [activeSlug, setActiveSlug]     = useState<string>("");
+  const [books, setBooks]               = useState<Book[]>([]);
+  const [loadingCats, setLoadingCats]   = useState(true);
+  const [loadingBooks, setLoadingBooks] = useState(false);
 
-  // ── Load categories ───────────────────────────────────────────────────────
+  const tabsRef   = useRef<HTMLDivElement>(null);
+  const activeRef = useRef<HTMLButtonElement>(null);
+
+  // ── Load categories ──
   useEffect(() => {
-    // Fetch all active categories, then filter to only those with ebooks
     fetch(`${API_URL}/api/categories`)
       .then((r) => r.json())
       .then(async (data: Category[]) => {
         const active = data.filter((c) => c.status === "active" && c.imprint === "agph");
-        // Check each category in parallel for ebook presence
         const checks = await Promise.all(
           active.map((cat) =>
             fetch(`${API_URL}/api/categories/${cat.slug}/products`)
               .then((r) => r.json())
               .then((books: Book[]) => ({
                 cat,
-                // Only count ebook or both — backend currently ignores ?product_type
-                hasEbooks: books.some((b: Book) => b.product_type === 'ebook' || b.product_type === 'both'),
+                hasEbooks: books.some((b) => b.product_type === "ebook" || b.product_type === "both"),
               }))
               .catch(() => ({ cat, hasEbooks: false }))
           )
@@ -231,41 +222,89 @@ export default function CategoryBookSection() {
       .finally(() => setLoadingCats(false));
   }, []);
 
-  // ── Load books when tab changes ───────────────────────────────────────────
+  // Scroll active pill into view on mobile/tablet
+  useEffect(() => {
+    activeRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+  }, [activeSlug]);
+
+  // ── Load books ──
   useEffect(() => {
     if (!activeSlug) return;
     setLoadingBooks(true);
     setBooks([]);
     fetch(`${API_URL}/api/categories/${activeSlug}/products?limit=10&product_type=ebook`)
       .then((r) => r.json())
-      .then((data: Book[]) => setBooks(data.filter((b) => b.product_type === 'ebook' || b.product_type === 'both').slice(0, 10)))
+      .then((data: Book[]) =>
+        setBooks(data.filter((b) => b.product_type === "ebook" || b.product_type === "both").slice(0, 10))
+      )
       .catch(console.error)
       .finally(() => setLoadingBooks(false));
   }, [activeSlug]);
 
-  return (
-    <section className="w-full py-12 px-4 md:px-8 lg:px-12 bg-gray-100">
+  // ── Shared pill tab renderer ──
+  const renderTabs = (className = "") => (
+    <div
+      ref={tabsRef}
+      className={`flex gap-2 overflow-x-auto pb-1 ${className}`}
+      style={{ scrollbarWidth: "none" }}
+    >
+      {loadingCats
+        ? [...Array(5)].map((_, i) => (
+            <div key={i} className="h-8 w-24 bg-gray-200 rounded-full animate-pulse flex-shrink-0" />
+          ))
+        : categories.map((cat) => {
+            const isActive = cat.slug === activeSlug;
+            return (
+              <button
+                key={cat.id}
+                ref={isActive ? activeRef : null}
+                onClick={() => setActiveSlug(cat.slug)}
+                className={`flex-shrink-0 px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-200 border
+                  ${isActive
+                    ? "bg-gray-800 text-white border-gray-800 shadow-sm"
+                    : "bg-white text-gray-600 border-gray-200 hover:border-amber-300 hover:text-amber-700"
+                  }`}
+              >
+                {cat.name}
+              </button>
+            );
+          })}
+    </div>
+  );
 
-      {/* Section header */}
-      <div className="mb-8">
-        <p className="text-xs font-semibold uppercase tracking-widest text-gray-600 mb-1">Browse by Category</p>
+  const activeName = categories.find((c) => c.slug === activeSlug)?.name ?? "";
+
+  return (
+    <section className="w-full py-10 px-4 md:px-8 lg:px-12 bg-gray-100">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&display=swap');
+        [data-hide-scroll]::-webkit-scrollbar { display: none; }
+      `}</style>
+
+      {/* Header */}
+      <div className="mb-5">
+        <p className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-1">Browse by Category</p>
         <h2
-          className="text-3xl md:text-4xl font-black text-gray-900 leading-tight"
+          className="text-2xl sm:text-3xl md:text-4xl font-black text-gray-900 leading-tight"
           style={{ fontFamily: "'Playfair Display', serif" }}
         >
           Find Your Next E-Book Read
         </h2>
       </div>
 
+      {/* Mobile + Tablet: horizontal scrollable pill tabs */}
+      <div className="lg:hidden mb-5" data-hide-scroll>
+        {renderTabs()}
+      </div>
+
       <div className="flex gap-6 items-start">
 
-        {/* ── LEFT: Category tabs ── */}
-        <aside className="flex-shrink-0 w-44 sticky top-24">
+        {/* Desktop sidebar */}
+        <aside className="hidden lg:block flex-shrink-0 w-44 sticky top-24">
           <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
             <div className="px-4 py-3 border-b border-gray-50">
               <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Categories</p>
             </div>
-
             {loadingCats ? (
               <div className="p-4 space-y-2">
                 {[...Array(6)].map((_, i) => (
@@ -280,9 +319,9 @@ export default function CategoryBookSection() {
                     <button
                       key={cat.id}
                       onClick={() => setActiveSlug(cat.slug)}
-                      className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 
+                      className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200
                         ${isActive
-                          ? "bg-gray-700 text-white shadow-sm shadow-amber-200"
+                          ? "bg-gray-700 text-white shadow-sm"
                           : "text-gray-600 hover:bg-amber-50 hover:text-amber-800"
                         }`}
                     >
@@ -295,37 +334,28 @@ export default function CategoryBookSection() {
           </div>
         </aside>
 
-        {/* ── RIGHT: Book grid ── */}
+        {/* Book grid */}
         <div className="flex-1 min-w-0">
+          {activeName && (
+            <p className="text-sm font-bold text-gray-700 mb-4">{activeName}</p>
+          )}
 
-          {/* Active category label */}
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-bold text-gray-700">
-              {categories.find((c) => c.slug === activeSlug)?.name ?? ""}
-            </h3>
-          </div>
-
-          {/* Loading skeletons */}
           {loadingBooks && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
               {[...Array(10)].map((_, i) => <SkeletonCard key={i} />)}
             </div>
           )}
 
-          {/* Books grid */}
           {!loadingBooks && books.length > 0 && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4">
-              {books.map((book) => (
-                <BookCard key={book.id} book={book} />
-              ))}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
+              {books.map((book) => <BookCard key={book.id} book={book} />)}
             </div>
           )}
 
-          {/* Empty state */}
           {!loadingBooks && books.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-20 text-center">
-              <div className="w-16 h-16 rounded-full bg-amber-50 flex items-center justify-center mb-4">
-                <BookOpen size={28} className="text-amber-400" />
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="w-14 h-14 rounded-full bg-amber-50 flex items-center justify-center mb-3">
+                <BookOpen size={24} className="text-amber-400" />
               </div>
               <p className="text-sm font-semibold text-gray-500">No books in this category yet</p>
               <p className="text-xs text-gray-400 mt-1">Check back soon for new arrivals</p>
@@ -333,9 +363,6 @@ export default function CategoryBookSection() {
           )}
         </div>
       </div>
-
-      {/* Font */}
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&display=swap');`}</style>
     </section>
   );
 }

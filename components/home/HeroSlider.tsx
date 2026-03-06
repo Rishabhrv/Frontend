@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL!;
 
@@ -14,6 +15,7 @@ interface Product {
   sell_price: number;
   categories: string[];
 }
+
 interface Category {
   id: number;
   name: string;
@@ -26,39 +28,62 @@ function resolveImage(img: string | null): string | null {
   return `${API_BASE}${img.startsWith("/") ? "" : "/"}${img}`;
 }
 
-// Exact arc config from the reference image:
-// center card is tallest & highest, outer cards tilt outward and descend
-const CARDS = [
-  { rotate: -22, y:  108, scale: 0.82, z: 1, w: 160, h: 228 },
+type CardCfg = {
+  rotate: number;
+  y: number;
+  scale: number;
+  z: number;
+  w: number;
+  h: number;
+};
+
+// ── Arc configs per breakpoint ────────────────────────────────────────────────
+const DESKTOP_CARDS: readonly CardCfg[] = [
+  { rotate: -22, y: 108, scale: 0.82, z: 1, w: 160, h: 228 },
   { rotate: -15, y:  52, scale: 0.87, z: 2, w: 170, h: 240 },
   { rotate:  -7, y:  20, scale: 0.94, z: 3, w: 178, h: 252 },
   { rotate:   0, y:   0, scale: 1.00, z: 6, w: 188, h: 268 }, // center
   { rotate:   7, y:  20, scale: 0.94, z: 3, w: 178, h: 252 },
   { rotate:  15, y:  52, scale: 0.87, z: 2, w: 170, h: 240 },
-  { rotate:  22, y:  118, scale: 0.82, z: 1, w: 160, h: 228 },
-] as const;
+  { rotate:  22, y: 118, scale: 0.82, z: 1, w: 160, h: 228 },
+];
+
+const TABLET_CARDS: readonly CardCfg[] = [
+  { rotate: -20, y:  72, scale: 0.82, z: 1, w: 140, h: 198 },
+  { rotate: -10, y:  26, scale: 0.91, z: 2, w: 156, h: 221 },
+  { rotate:   0, y:   0, scale: 1.00, z: 4, w: 172, h: 244 }, // center
+  { rotate:  10, y:  26, scale: 0.91, z: 2, w: 156, h: 221 },
+  { rotate:  20, y:  72, scale: 0.82, z: 1, w: 140, h: 198 },
+];
+
+const MOBILE_CARDS: readonly CardCfg[] = [
+  { rotate: -17, y:  54, scale: 0.83, z: 1, w: 108, h: 153 },
+  { rotate:   0, y:   0, scale: 1.00, z: 3, w: 144, h: 204 }, // center
+  { rotate:  17, y:  54, scale: 0.83, z: 1, w: 108, h: 153 },
+];
 
 // ── Single book card ──────────────────────────────────────────────────────────
 function BookCard({
   book,
+  cfg,
   idx,
   visible,
 }: {
   book: Product;
+  cfg: CardCfg;
   idx: number;
   visible: boolean;
 }) {
   const [hov, setHov] = useState(false);
-  const cfg    = CARDS[idx];
   const imgSrc = resolveImage(book.image);
-  const price  = (book.sell_price || book.price).toLocaleString("en-IN");
+  const price = (book.sell_price || book.price).toLocaleString("en-IN");
 
   return (
     <div
       className="relative flex-shrink-0 cursor-pointer"
       style={{
-        width:   cfg.w,
-        zIndex:  hov ? 20 : cfg.z,
+        width: cfg.w,
+        zIndex: hov ? 20 : cfg.z,
         opacity: 0,
         animation: visible
           ? `cardRise 0.85s cubic-bezier(0.22,1,0.36,1) ${idx * 80}ms forwards`
@@ -95,26 +120,27 @@ function BookCard({
           href={`/product/${book.slug}`}
           className="block relative overflow-hidden"
           style={{
-            width:        cfg.w,
-            height:       cfg.h,
+            width: cfg.w,
+            height: cfg.h,
             borderRadius: 10,
-            boxShadow:    hov
+            boxShadow: hov
               ? "0 30px 60px rgba(0,0,0,0.22), 0 8px 20px rgba(0,0,0,0.1)"
               : "0 10px 30px rgba(0,0,0,0.14), 0 3px 8px rgba(0,0,0,0.07)",
             transition: "box-shadow 0.4s ease",
           }}
         >
-          {/* Book cover image */}
           {imgSrc ? (
-            <img
-              src={imgSrc}
-              alt={book.name}
-              className="w-full h-full object-cover block"
-              style={{
-                filter: hov ? "brightness(1.06) saturate(1.05)" : "brightness(1)",
-                transition: "filter 0.35s",
-              }}
-            />
+          <Image
+            src={imgSrc}
+            alt={book.name}
+            fill
+            unoptimized
+            className="object-cover block"
+            style={{
+              filter: hov ? "brightness(1.06) saturate(1.05)" : "brightness(1)",
+              transition: "filter 0.35s",
+            }}
+          />
           ) : (
             <div
               className="w-full h-full flex items-center justify-center p-3"
@@ -181,14 +207,13 @@ function BookCard({
 }
 
 // ── Shimmer placeholder ───────────────────────────────────────────────────────
-function ShimmerCard({ idx }: { idx: number }) {
-  const cfg = CARDS[idx];
+function ShimmerCard({ cfg, idx }: { cfg: CardCfg; idx: number }) {
   return (
     <div
       className="flex-shrink-0"
       style={{
-        width:    cfg.w,
-        height:   cfg.h,
+        width: cfg.w,
+        height: cfg.h,
         borderRadius: 18,
         transform: `rotate(${cfg.rotate}deg) translateY(${cfg.y}px) scale(${cfg.scale})`,
         transformOrigin: "bottom center",
@@ -202,21 +227,46 @@ function ShimmerCard({ idx }: { idx: number }) {
   );
 }
 
+
+
 // ── Hero ──────────────────────────────────────────────────────────────────────
 export default function BookstoreHero() {
-  const [books,   setBooks]   = useState<Product[]>([]);
+  const [books, setBooks] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [visible, setVisible] = useState(false);
 
+  // Responsive breakpoint detection
+  const [screenSize, setScreenSize] = useState<"mobile" | "tablet" | "desktop">("desktop");
+
+  // Carousel state — centerIdx = index within `books` array that sits in the center slot
+  const [centerIdx, setCenterIdx] = useState(3);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [animDir, setAnimDir] = useState(0); // -1 left, 1 right
+
+  const touchStartX = useRef(0);
+  const transitionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ── Screen size watcher ──
+  useEffect(() => {
+    const check = () => {
+      const w = window.innerWidth;
+      setScreenSize(w < 640 ? "mobile" : w < 1024 ? "tablet" : "desktop");
+    };
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  // ── Fetch books ──
   useEffect(() => {
     (async () => {
       try {
-        const catRes  = await fetch(`${API_BASE}/api/categories`);
+        const catRes = await fetch(`${API_BASE}/api/categories`);
         const catData: Category[] = await catRes.json();
-        const agph = new Set(catData.filter(c => c.imprint === "agph").map(c => c.name));
-        const pRes  = await fetch(`${API_BASE}/api/products?limit=20`);
+        const agph = new Set(catData.filter((c) => c.imprint === "agph").map((c) => c.name));
+        const pRes = await fetch(`${API_BASE}/api/products?limit=20`);
         const pData: Product[] = await pRes.json();
-        setBooks(pData.filter(p => p.categories.some(c => agph.has(c))).slice(0, 7));
+        setBooks(pData.filter((p) => p.categories.some((c) => agph.has(c))).slice(0, 7));
       } catch (e) {
         console.error(e);
       } finally {
@@ -226,9 +276,83 @@ export default function BookstoreHero() {
     })();
   }, []);
 
+  // ── Derived carousel values ──
+  const isCarousel = screenSize !== "desktop";
+  const half = screenSize === "mobile" ? 1 : 2; // cards on each side of center
+  const ACTIVE_CARDS =
+    screenSize === "mobile"
+      ? MOBILE_CARDS
+      : screenSize === "tablet"
+      ? TABLET_CARDS
+      : DESKTOP_CARDS;
+
+  // Clamp so we always have `half` cards on each side
+  const minCenter = half;
+  const maxCenter = Math.max(half, books.length - 1 - half);
+  const clampedCenter = Math.max(minCenter, Math.min(maxCenter, centerIdx));
+
+  const visibleBooks = isCarousel
+    ? books.slice(clampedCenter - half, clampedCenter + half + 1)
+    : books.slice(0, 7);
+
+  // ── Auto-slide ──
+  const autoTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  function navigate(dir: 1 | -1) {
+    if (isTransitioning) return;
+    setAnimDir(dir);
+    setIsTransitioning(true);
+    if (transitionTimer.current) clearTimeout(transitionTimer.current);
+    transitionTimer.current = setTimeout(() => {
+      setCenterIdx((c) => {
+        const next = c + dir;
+        // bounce: reverse at edges by wrapping back
+        if (next > maxCenter) return minCenter;
+        if (next < minCenter) return maxCenter;
+        return next;
+      });
+      setIsTransitioning(false);
+    }, 230);
+  }
+
+  useEffect(() => {
+    if (!isCarousel || loading || books.length === 0) return;
+    autoTimer.current = setInterval(() => navigate(1), 2800);
+    return () => { if (autoTimer.current) clearInterval(autoTimer.current); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isCarousel, loading, books.length, isTransitioning]);
+
+  // ── Touch / swipe ──
+  function handleTouchStart(e: React.TouchEvent) {
+    touchStartX.current = e.touches[0].clientX;
+  }
+  function handleTouchEnd(e: React.TouchEvent) {
+    const diff = touchStartX.current - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 44) navigate(diff > 0 ? 1 : -1);
+  }
+
+  // ── Render fan cards ──
+  const displayCards = loading ? ACTIVE_CARDS : ACTIVE_CARDS;
+  const fanContent = loading
+    ? displayCards.map((cfg, i) => <ShimmerCard key={i} cfg={cfg} idx={i} />)
+    : visibleBooks.map((book, i) => (
+        <BookCard
+          // key includes clampedCenter so cards remount (and re-animate) after each slide
+          key={`${book.id}-${clampedCenter}`}
+          book={book}
+          cfg={ACTIVE_CARDS[i] ?? ACTIVE_CARDS[Math.floor(ACTIVE_CARDS.length / 2)]}
+          idx={i}
+          visible={visible}
+        />
+      ));
+
+  // ── Gap & padding per breakpoint ──
+  const fanGap = screenSize === "mobile" ? 8 : 14;
+  const fanPadH = screenSize === "mobile" ? 16 : 60;
+
   return (
     <section
-      className="relative w-full min-h-screen flex flex-col items-center justify-center overflow-hidden select-none"
+      className="relative w-full  flex flex-col items-center justify-center overflow-hidden select-none"
       style={{ background: "#e8e8e8" }}
     >
       <style>{`
@@ -246,14 +370,9 @@ export default function BookstoreHero() {
           0%   { background-position: -400px 0; }
           100% { background-position:  400px 0; }
         }
-        @keyframes ripple {
-          0%   { box-shadow: 0 0 0 0 rgba(249,115,22,0.45); }
-          70%  { box-shadow: 0 0 0 12px rgba(249,115,22,0);  }
-          100% { box-shadow: 0 0 0 0 rgba(249,115,22,0);     }
-        }
       `}</style>
 
-      {/* Subtle radial glow in center */}
+      {/* Radial glow */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
@@ -262,7 +381,7 @@ export default function BookstoreHero() {
         }}
       />
 
-      {/* Very faint dot grid */}
+      {/* Dot grid */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
@@ -273,82 +392,90 @@ export default function BookstoreHero() {
       />
 
       {/* ── Book fan ── */}
-      <div
-        className="relative z-10 flex items-end justify-center"
-        style={{ gap: 14, paddingTop: 82, paddingBottom: 0, paddingLeft: 60, paddingRight: 60 }}
-      >
-        {loading
-          ? [0, 1, 2, 3, 4, 5, 6].map(i => <ShimmerCard key={i} idx={i} />)
-          : books.slice(0, 7).map((book, i) => (
-              <BookCard key={book.id} book={book} idx={i} visible={visible} />
-            ))
-        }
+      <div className="relative z-10 w-full flex flex-col items-center">
+        {/* Fan container — fades + slides during carousel transition */}
+        <div
+          className="flex items-end justify-center"
+          style={{
+            gap: fanGap,
+            paddingTop: screenSize === "mobile" ? 30 : 82,
+            paddingLeft: fanPadH,
+            paddingRight: fanPadH,
+            paddingBottom: 0,
+            // Carousel slide transition
+            transition: "opacity 0.22s ease, transform 0.22s ease",
+            opacity: isTransitioning ? 0 : 1,
+            transform: isTransitioning
+              ? `translateX(${animDir === 1 ? -36 : 36}px)`
+              : "translateX(0)",
+          }}
+          onTouchStart={isCarousel ? handleTouchStart : undefined}
+          onTouchEnd={isCarousel ? handleTouchEnd : undefined}
+        >
+          {fanContent}
+        </div>
+
+
       </div>
 
       {/* ── Text block ── */}
       <div
-        className="relative z-10 flex flex-col items-center text-center mt-30 pb-20 px-6"
+        className="relative z-10 flex flex-col items-center text-center pb-20 px-6"
         style={{
+          marginTop: screenSize === "mobile" ? 60 : 32,
           opacity: 0,
           animation: visible ? "textFade 0.75s ease 0.48s forwards" : "none",
         }}
       >
-      <h1
-  className="text-gray-900 font-black leading-tight tracking-tight"
-  style={{
-    fontFamily: "'Playfair Display', serif",
-    fontSize:   "clamp(2rem, 4.5vw, 3.0rem)",
-    marginBottom: 10,
-  }}
->
-  Trusted Academic Publications
-</h1>
+        <h1
+          className="text-gray-900 mt-5 font-black leading-tight tracking-tight"
+          style={{
+            fontFamily: "'Playfair Display', serif",
+            fontSize: "clamp(1.5rem, 4.5vw, 3.0rem)",
+            marginBottom: 10,
+          }}
+        >
+          Trusted Academic Publications
+        </h1>
 
-<p
-  className="text-gray-500 w-170 leading-relaxed"
-  style={{
-    fontFamily: "'DM Sans', sans-serif",
-    fontSize:   "clamp(0.875rem, 1.4vw, 1rem)",
-    fontWeight: 300,
-    marginBottom: 28,
-  }}
->
-  Curated academic resources designed to support students, researchers, and
-  professionals with trusted, syllabus-aligned publications.
-</p>
+        <p
+          className="text-gray-500 leading-relaxed"
+          style={{
+            fontFamily: "'DM Sans', sans-serif",
+            fontSize: "clamp(0.875rem, 1.4vw, 1rem)",
+            fontWeight: 300,
+            marginBottom: 28,
+            maxWidth: screenSize === "mobile" ? "min(88vw, 340px)" : "680px",
+          }}
+        >
+          Curated academic resources designed to support students, researchers, and
+          professionals with trusted, syllabus-aligned publications.
+        </p>
 
-{/* CTA — professional gray pill */}
-<Link href="/category/academic-books">
-  <button
-    className="flex cursor-pointer items-center gap-2.5 text-white font-semibold rounded-full transition-all duration-200 hover:-translate-y-0.5 hover:brightness-110 active:scale-95"
-    style={{
-      fontFamily:   "'DM Sans', sans-serif",
-      fontSize:     14,
-      letterSpacing:"0.03em",
-      padding:      "11px 26px",
-      background:   "linear-gradient(135deg, #4b5563, #1f2937)", // gray gradient
-      boxShadow:    "0 6px 20px rgba(0,0,0,0.25)",
-    }}
-  >
-    {/* Book icon in subtle lighter gray circle */}
-    <span
-      className="flex items-center justify-center rounded-full"
-      style={{
-        width: 30,
-        height: 30,
-        background: "rgba(255,255,255,0.15)"
-      }}
-    >
-      <svg
-        viewBox="0 0 24 24"
-        className="w-4 h-4 fill-white"
-      >
-        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15zm2.5-2.5H18v3H6.5A.5.5 0 0 1 6 19.5a.5.5 0 0 1 .5-.5zM8 7h8v1.5H8V7zm0 3.5h6V12H8v-1.5z" />
-      </svg>
-    </span>
-    Explore
-  </button>
-</Link>
+        {/* CTA */}
+        <Link href="/category/academic-books">
+          <button
+            className="flex cursor-pointer items-center gap-2.5 text-white font-semibold rounded-full transition-all duration-200 hover:-translate-y-0.5 hover:brightness-110 active:scale-95"
+            style={{
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: 14,
+              letterSpacing: "0.03em",
+              padding: "11px 26px",
+              background: "linear-gradient(135deg, #4b5563, #1f2937)",
+              boxShadow: "0 6px 20px rgba(0,0,0,0.25)",
+            }}
+          >
+            <span
+              className="flex items-center justify-center rounded-full"
+              style={{ width: 30, height: 30, background: "rgba(255,255,255,0.15)" }}
+            >
+              <svg viewBox="0 0 24 24" className="w-4 h-4 fill-white">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15zm2.5-2.5H18v3H6.5A.5.5 0 0 1 6 19.5a.5.5 0 0 1 .5-.5zM8 7h8v1.5H8V7zm0 3.5h6V12H8v-1.5z" />
+              </svg>
+            </span>
+            Explore
+          </button>
+        </Link>
       </div>
     </section>
   );
