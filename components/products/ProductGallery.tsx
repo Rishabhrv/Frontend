@@ -62,15 +62,20 @@ const ProductGallery = forwardRef<any, Props>(({ productId, mode, error, onValid
   const [deletedImages, setDeletedImages] = useState<(string | number)[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
 
-  useImperativeHandle(ref, () => ({
-    getGalleryData: () => ({
-      existing: images
-        .filter((i) => i.isExisting)
-        .map((img, index) => ({ id: img.id, sort_order: index })),
-      newFiles: images.filter((i) => !i.isExisting && i.file).map((i) => i.file),
-      deleted: deletedImages,
-    }),
-  }));
+useImperativeHandle(ref, () => ({
+  getGalleryData: () => ({
+    existing: images
+      .filter((i) => i.isExisting)
+      .map((img, index) => ({ id: img.id, sort_order: index })),
+    newFiles: images
+      .filter((i) => !i.isExisting && i.file)
+      .map((i) => i.file),
+    newUrls: images                                    // ← ADD
+      .filter((i) => !i.isExisting && !i.file && (i as any).url)
+      .map((i) => (i as any).url),
+    deleted: deletedImages,
+  }),
+}));
 
   const removeImage = (id: string | number) => {
     const img = images.find((i) => i.id === id);
@@ -88,8 +93,10 @@ const ProductGallery = forwardRef<any, Props>(({ productId, mode, error, onValid
     });
   };
 
-  const handleMediaSelect = async (media: MediaImage) => {
-    if (!productId) return;
+// Replace handleMediaSelect
+const handleMediaSelect = async (media: MediaImage) => {
+  if (productId) {
+    // edit mode — fetch fresh from DB
     const res = await fetch(`${API_URL}/api/products/${productId}/gallery`);
     const data = await res.json();
     setImages(
@@ -99,8 +106,21 @@ const ProductGallery = forwardRef<any, Props>(({ productId, mode, error, onValid
         isExisting: true,
       }))
     );
-    onValidChange?.(); // ← clear error when image added
-  };
+  } else {
+    // add mode — just push into local state
+    setImages((prev) => [
+      ...prev,
+      {
+        id: media.id,
+        preview: `${API_URL}${media.url}`,
+        isExisting: false,
+        // no file — we'll send the URL as a reference
+        url: media.url,
+      } as any,
+    ]);
+  }
+  onValidChange?.();
+};
 
   useEffect(() => {
     if (!productId) return;

@@ -17,12 +17,13 @@ export interface ShippingZone {
 
 const REGION_OPTIONS = [
   "Everywhere",
+
+  // States
   "Andhra Pradesh",
   "Arunachal Pradesh",
   "Assam",
   "Bihar",
   "Chhattisgarh",
-  "Delhi",
   "Goa",
   "Gujarat",
   "Haryana",
@@ -32,14 +33,30 @@ const REGION_OPTIONS = [
   "Kerala",
   "Madhya Pradesh",
   "Maharashtra",
+  "Manipur",
+  "Meghalaya",
+  "Mizoram",
+  "Nagaland",
   "Odisha",
   "Punjab",
   "Rajasthan",
+  "Sikkim",
   "Tamil Nadu",
   "Telangana",
+  "Tripura",
   "Uttar Pradesh",
   "Uttarakhand",
   "West Bengal",
+
+  // Union Territories
+  "Andaman and Nicobar Islands",
+  "Chandigarh",
+  "Dadra and Nagar Haveli and Daman and Diu",
+  "Delhi",
+  "Jammu and Kashmir",
+  "Ladakh",
+  "Lakshadweep",
+  "Puducherry"
 ];
 
 const ShippingZonesPage: React.FC = () => {

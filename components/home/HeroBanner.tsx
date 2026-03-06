@@ -1,17 +1,16 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 
-// ─── Config ───────────────────────────────────────────────────────────────────
 const API_BASE = process.env.NEXT_PUBLIC_API_URL!;
-const AUTO_INTERVAL_MS = 2500; // slide every 2.5 s
+const AUTO_INTERVAL_MS = 2500;
 
-// ─── Types ───────────────────────────────────────────────────────────────────
 interface Product {
   id: number;
   name: string;
-  slug: string; // ← NEW
+  slug: string;
   image: string | null;
   sku: string;
   stock: number;
@@ -22,21 +21,10 @@ interface Product {
   categories: string[];
 }
 
-interface Category { // ← NEW
+interface Category {
   name: string;
   imprint: "agph";
 }
-
-// ─── Constants ────────────────────────────────────────────────────────────────
-const CARD_COLORS = [
-  "bg-gray-300","bg-gray-300","bg-gray-300","bg-gray-300",
-  "bg-gray-300","bg-gray-300","bg-gray-300","bg-gray-300",
-];
-
-const CARD_SHADOWS = [
-  "shadow-gray-300","shadow-gray-300","shadow-gray-300","shadow-gray-300",
-  "shadow-gray-300","shadow-gray-300","shadow-gray-300","shadow-gray-300",
-];
 
 const FALLBACK_PRODUCTS: Product[] = [
   { id: 1, name: "Luxora",    slug: "luxora",    price: 2200, sell_price: 1980, image: "https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=400&q=80", sku: "LUX-01", stock: 10, status: "active", date: "", categories: ["Handbags"] },
@@ -48,22 +36,59 @@ const FALLBACK_PRODUCTS: Product[] = [
   { id: 7, name: "Solenne",   slug: "solenne",   price: 3900, sell_price: 3500, image: "https://images.unsplash.com/photo-1575032617751-6ddec2089882?w=400&q=80", sku: "SOL-07", stock:  4, status: "active", date: "", categories: ["Luxury"]  },
 ];
 
-// ─── Position config — 7 visible slots ───────────────────────────────────────
-type PosKey =
-  | "far-far-left" | "far-left" | "left" | "center"
-  | "right" | "far-right" | "far-far-right"
-  | "hidden-l" | "hidden-r";
+// ─── Responsive position configs ─────────────────────────────────────────────
+type PosKey = "far-far-left" | "far-left" | "left" | "center" | "right" | "far-right" | "far-far-right" | "hidden-l" | "hidden-r";
 
-const posStyles: Record<PosKey, string> = {
-  "far-far-left":  "-translate-x-[490px] scale-[0.62] rotate-[-10deg] opacity-50 z-[1]  brightness-75",
-  "far-left":      "-translate-x-[330px] scale-[0.74] rotate-[-6deg]  opacity-65 z-[2]  brightness-85",
-  "left":          "-translate-x-[185px] scale-[0.87] rotate-[-3deg]  opacity-82 z-[3]  brightness-95",
-  "center":        "translate-x-0        scale-[1]    rotate-0        opacity-100 z-[6] brightness-100",
-  "right":         "translate-x-[185px]  scale-[0.87] rotate-[3deg]   opacity-82 z-[3]  brightness-95",
-  "far-right":     "translate-x-[330px]  scale-[0.74] rotate-[6deg]   opacity-65 z-[2]  brightness-85",
-  "far-far-right": "translate-x-[490px]  scale-[0.62] rotate-[10deg]  opacity-50 z-[1]  brightness-75",
-  "hidden-l":      "-translate-x-[660px] scale-[0.5]  opacity-0       z-[0]  pointer-events-none",
-  "hidden-r":      "translate-x-[660px]  scale-[0.5]  opacity-0       z-[0]  pointer-events-none",
+// Desktop: 7 visible slots
+const posDesktop: Record<PosKey, React.CSSProperties & { className: string }> = {
+  "far-far-left":  { className: "opacity-50 z-[1]",  transform: "translateX(-490px) scale(0.62) rotate(-10deg)", filter: "brightness(0.75)" },
+  "far-left":      { className: "opacity-65 z-[2]",  transform: "translateX(-330px) scale(0.74) rotate(-6deg)",  filter: "brightness(0.85)" },
+  "left":          { className: "opacity-[0.82] z-[3]", transform: "translateX(-185px) scale(0.87) rotate(-3deg)", filter: "brightness(0.95)" },
+  "center":        { className: "opacity-100 z-[6]", transform: "translateX(0) scale(1) rotate(0deg)",           filter: "brightness(1)" },
+  "right":         { className: "opacity-[0.82] z-[3]", transform: "translateX(185px) scale(0.87) rotate(3deg)",  filter: "brightness(0.95)" },
+  "far-right":     { className: "opacity-65 z-[2]",  transform: "translateX(330px) scale(0.74) rotate(6deg)",   filter: "brightness(0.85)" },
+  "far-far-right": { className: "opacity-50 z-[1]",  transform: "translateX(490px) scale(0.62) rotate(10deg)",  filter: "brightness(0.75)" },
+  "hidden-l":      { className: "opacity-0 z-[0] pointer-events-none", transform: "translateX(-660px) scale(0.5)" },
+  "hidden-r":      { className: "opacity-0 z-[0] pointer-events-none", transform: "translateX(660px) scale(0.5)" },
+};
+
+// Tablet: 5 visible slots (hide far-far variants)
+const posTablet: Record<PosKey, React.CSSProperties & { className: string }> = {
+  "far-far-left":  { className: "opacity-0 z-[0] pointer-events-none", transform: "translateX(-440px) scale(0.55)" },
+  "far-left":      { className: "opacity-60 z-[2]", transform: "translateX(-290px) scale(0.72) rotate(-7deg)", filter: "brightness(0.8)" },
+  "left":          { className: "opacity-[0.82] z-[3]", transform: "translateX(-162px) scale(0.86) rotate(-3.5deg)", filter: "brightness(0.92)" },
+  "center":        { className: "opacity-100 z-[6]", transform: "translateX(0) scale(1) rotate(0deg)", filter: "brightness(1)" },
+  "right":         { className: "opacity-[0.82] z-[3]", transform: "translateX(162px) scale(0.86) rotate(3.5deg)",  filter: "brightness(0.92)" },
+  "far-right":     { className: "opacity-60 z-[2]", transform: "translateX(290px) scale(0.72) rotate(7deg)",   filter: "brightness(0.8)" },
+  "far-far-right": { className: "opacity-0 z-[0] pointer-events-none", transform: "translateX(440px) scale(0.55)" },
+  "hidden-l":      { className: "opacity-0 z-[0] pointer-events-none", transform: "translateX(-560px) scale(0.4)" },
+  "hidden-r":      { className: "opacity-0 z-[0] pointer-events-none", transform: "translateX(560px) scale(0.4)" },
+};
+
+// Mobile: 3 visible slots (only left, center, right)
+const posMobile: Record<PosKey, React.CSSProperties & { className: string }> = {
+  "far-far-left":  { className: "opacity-0 z-[0] pointer-events-none", transform: "translateX(-360px) scale(0.45)" },
+  "far-left":      { className: "opacity-0 z-[0] pointer-events-none", transform: "translateX(-360px) scale(0.45)" },
+  "left":          { className: "opacity-70 z-[3]", transform: "translateX(-112px) scale(0.76) rotate(-5deg)", filter: "brightness(0.82)" },
+  "center":        { className: "opacity-100 z-[6]", transform: "translateX(0) scale(1) rotate(0deg)", filter: "brightness(1)" },
+  "right":         { className: "opacity-70 z-[3]", transform: "translateX(112px) scale(0.76) rotate(5deg)",  filter: "brightness(0.82)" },
+  "far-right":     { className: "opacity-0 z-[0] pointer-events-none", transform: "translateX(360px) scale(0.45)" },
+  "far-far-right": { className: "opacity-0 z-[0] pointer-events-none", transform: "translateX(360px) scale(0.45)" },
+  "hidden-l":      { className: "opacity-0 z-[0] pointer-events-none", transform: "translateX(-360px) scale(0.4)" },
+  "hidden-r":      { className: "opacity-0 z-[0] pointer-events-none", transform: "translateX(360px) scale(0.4)" },
+};
+
+// Card dimensions per breakpoint
+const cardSize = {
+  mobile:  { w: 180, h: 270 },
+  tablet:  { w: 220, h: 330 },
+  desktop: { w: 260, h: 380 },
+};
+
+const wrapperHeight = {
+  mobile:  380,
+  tablet:  440,
+  desktop: 480,
 };
 
 function getPos(index: number, current: number, total: number): PosKey {
@@ -87,15 +112,18 @@ interface CardProps {
   current: number;
   total: number;
   onSelect: (index: number) => void;
+  screen: "mobile" | "tablet" | "desktop";
 }
 
-const ProductCard = ({ product, index, current, total, onSelect }: CardProps) => {
-  const pos      = getPos(index, current, total);
-  const color    = CARD_COLORS[index % CARD_COLORS.length];
-  const shadow   = CARD_SHADOWS[index % CARD_SHADOWS.length];
-  const isCenter = pos === "center";
+const ProductCard = ({ product, index, current, total, onSelect, screen }: CardProps) => {
+  const posKey = getPos(index, current, total);
+  const isCenter = posKey === "center";
   const displayPrice = product.sell_price || product.price;
   const [imgError, setImgError] = useState(false);
+
+  const posMap = screen === "mobile" ? posMobile : screen === "tablet" ? posTablet : posDesktop;
+  const pos = posMap[posKey];
+  const { w, h } = cardSize[screen];
 
   const imageUrl = product.image
     ? product.image.startsWith("http")
@@ -106,38 +134,44 @@ const ProductCard = ({ product, index, current, total, onSelect }: CardProps) =>
   return (
     <div
       onClick={() => { if (!isCenter) onSelect(index); }}
-      className={`
-        absolute w-[260px] h-[380px] rounded-[22px] p-5 flex flex-col justify-end
-        cursor-pointer select-none overflow-hidden
-        shadow-2xl ${shadow} ${color}
-        transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]
-        ${posStyles[pos]}
-        ${isCenter ? "ring-4 ring-white/30" : ""}
-      `}
-      style={{ position: "absolute" }}
+      className={`absolute rounded-[22px] p-4 flex flex-col justify-end cursor-pointer select-none overflow-hidden shadow-2xl bg-gray-300 ${pos.className}`}
+      style={{
+        width: w,
+        height: h,
+        position: "absolute",
+        transform: pos.transform,
+        filter: (pos as any).filter,
+        transition: "transform 500ms cubic-bezier(0.34,1.56,0.64,1), opacity 500ms ease, filter 500ms ease",
+        ...(isCenter ? { boxShadow: "0 0 0 3px rgba(255,255,255,0.35), 0 20px 60px rgba(0,0,0,0.2)" } : {}),
+      }}
     >
       {/* Product image */}
-      <div className="absolute inset-0 bottom-[88px] flex items-center justify-center">
+      <div className="absolute inset-0 bottom-[72px] flex items-center justify-center">
         {imageUrl && !imgError ? (
-          <img
-            src={imageUrl}
-            alt={product.name}
-            onError={() => setImgError(true)}
-            className={`w-3/4 h-3/4 object-contain drop-shadow-2xl transition-transform duration-300 ${isCenter ? "hover:scale-105 hover:-translate-y-2" : ""}`}
-          />
+        <Image
+          src={imageUrl}
+          alt={product.name}
+          width={400}
+          height={400}
+          unoptimized
+          onError={() => setImgError(true)}
+          className={`w-3/4 h-3/4 object-contain drop-shadow-2xl transition-transform duration-300 ${
+            isCenter ? "hover:scale-105 hover:-translate-y-2" : ""
+          }`}
+        />
         ) : (
           <div className="w-3/4 h-3/4 flex items-center justify-center opacity-40">
-            <svg viewBox="0 0 24 24" className="w-24 h-24 fill-white">
+            <svg viewBox="0 0 24 24" className="w-16 h-16 fill-white">
               <path d="M20 7h-3.5l-1-2h-7l-1 2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2zm-8 10a5 5 0 1 1 0-10 5 5 0 0 1 0 10z" />
             </svg>
           </div>
         )}
       </div>
 
-      {/* Bottom info — center card is clickable link ← NEW */}
+      {/* Bottom info */}
       <div className="relative z-10">
         <p
-          className="font-black uppercase tracking-widest text-gray-800 text-xs mb-3 mt-5"
+          className="font-black uppercase tracking-widest text-gray-800 text-xs mb-2 mt-4 line-clamp-2 leading-snug"
           style={{ fontFamily: "'Bebas Neue', sans-serif" }}
         >
           {isCenter ? (
@@ -154,40 +188,43 @@ const ProductCard = ({ product, index, current, total, onSelect }: CardProps) =>
   );
 };
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+// ─── Main ─────────────────────────────────────────────────────────────────────
 export default function ProductCarousel() {
   const [products, setProducts] = useState<Product[]>([]);
   const [current, setCurrent]   = useState(0);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState<string | null>(null);
-  const intervalRef             = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [screen, setScreen]     = useState<"mobile" | "tablet" | "desktop">("desktop");
 
-  // ── Fetch products filtered by agph imprint ── ← CHANGED
+  const intervalRef  = useRef<ReturnType<typeof setInterval> | null>(null);
+  const touchStartX  = useRef(0);
+
+  // ── Breakpoint detection ──
+  useEffect(() => {
+    const check = () => {
+      const w = window.innerWidth;
+      setScreen(w < 640 ? "mobile" : w < 1024 ? "tablet" : "desktop");
+    };
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  // ── Fetch products ──
   useEffect(() => {
     (async () => {
       try {
-        // 1️⃣ Get agph category names
         const catRes = await fetch(`${API_BASE}/api/categories`);
         const catData: Category[] = await catRes.json();
-        const agphNames = new Set(
-          catData
-            .filter((c) => c.imprint === "agph")
-            .map((c) => c.name)
-        );
+        const agphNames = new Set(catData.filter((c) => c.imprint === "agph").map((c) => c.name));
 
-        // 2️⃣ Fetch products
         const res = await fetch(`${API_BASE}/api/products?limit=10`);
-        if (!res.ok) throw new Error(`Server responded with ${res.status}`);
+        if (!res.ok) throw new Error(`${res.status}`);
         const data: Product[] = await res.json();
-
-        // 3️⃣ Keep only products belonging to an agph category
-        const filtered = data
-          .filter((p) => p.categories.some((cat) => agphNames.has(cat)))
-          .slice(0, 10);
-
+        const filtered = data.filter((p) => p.categories.some((c) => agphNames.has(c))).slice(0, 10);
         setProducts(filtered.length ? filtered : FALLBACK_PRODUCTS);
       } catch (err) {
-        console.error("Failed to fetch products:", err);
+        console.error(err);
         setError("Could not reach the server — showing demo data.");
         setProducts(FALLBACK_PRODUCTS);
       } finally {
@@ -196,54 +233,60 @@ export default function ProductCarousel() {
     })();
   }, []);
 
-  // ── Auto-advance ──────────────────────────────────────────────────────────
-  useEffect(() => {
-    if (products.length === 0) return;
+  // ── Auto-advance ──
+  const startInterval = (len: number) => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
     intervalRef.current = setInterval(() => {
-      setCurrent(prev => (prev + 1) % products.length);
+      setCurrent((prev) => (prev + 1) % len);
     }, AUTO_INTERVAL_MS);
+  };
+
+  useEffect(() => {
+    if (!products.length) return;
+    startInterval(products.length);
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [products.length]);
 
-  // Reset timer when user manually picks a card
   const handleSelect = (index: number) => {
-    if (intervalRef.current) clearInterval(intervalRef.current);
     setCurrent(index);
-    intervalRef.current = setInterval(() => {
-      setCurrent(prev => (prev + 1) % products.length);
-    }, AUTO_INTERVAL_MS);
+    startInterval(products.length);
   };
 
-  // Touch swipe (keep for mobile)
-  const touchStartX = useRef(0);
+  // ── Swipe ──
   const handleTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.touches[0].clientX; };
   const handleTouchEnd   = (e: React.TouchEvent) => {
     const dx = e.changedTouches[0].clientX - touchStartX.current;
-    if (Math.abs(dx) > 50) handleSelect((current + (dx < 0 ? 1 : -1) + products.length) % products.length);
+    if (Math.abs(dx) > 44)
+      handleSelect((current + (dx < 0 ? 1 : -1) + products.length) % products.length);
   };
+
+  const { w, h } = cardSize[screen];
 
   return (
     <div
-      className="pt-15  bg-gray-100 flex flex-col items-center justify-center overflow-hidden"
+      className="pt-10 sm:pt-14 bg-gray-100 flex flex-col items-center justify-center overflow-hidden"
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
-      {/* Error banner */}
       {error && (
         <p className="mb-4 text-xs text-amber-700 bg-amber-100 border border-amber-200 px-4 py-2 rounded-full">
           ⚠️ {error}
         </p>
       )}
-        <h2
-          className="text-3xl md:text-4xl font-black text-gray-900 leading-tight"
-          style={{ fontFamily: "'Playfair Display', serif" }}
-        >
-          Take a Quick Look
-        </h2>
+
+      <h2
+        className="text-2xl sm:text-3xl md:text-4xl font-black text-gray-900 leading-tight text-center px-4"
+        style={{ fontFamily: "'Playfair Display', serif" }}
+      >
+        Take a Quick Look
+      </h2>
 
       {/* Carousel */}
-      <div className="relative w-full h-[480px] flex items-center justify-center">
-        <div className="relative w-[260px] h-[380px]">
+      <div
+        className="relative w-full flex items-center justify-center"
+        style={{ height: wrapperHeight[screen] }}
+      >
+        <div className="relative" style={{ width: w, height: h }}>
           {loading ? (
             <div className="w-full h-full flex items-center justify-center">
               <div className="w-10 h-10 border-[3px] border-black/15 border-t-black/50 rounded-full animate-spin" />
@@ -257,13 +300,13 @@ export default function ProductCarousel() {
                 current={current}
                 total={products.length}
                 onSelect={handleSelect}
+                screen={screen}
               />
             ))
           )}
         </div>
       </div>
 
-      {/* Font */}
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');`}</style>
     </div>
   );

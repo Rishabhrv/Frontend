@@ -209,9 +209,26 @@ export default function OrderDetailsPage() {
                 )}
 
                 {item.format === "ebook" && (
-                  <span className="inline-block mt-1 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">
-                    E-Book will be available in your my books.
-                  </span>
+<div className="flex flex-col sm:flex-row sm:items-center gap-2">
+  
+  <span className="inline-block text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">
+    E-Book will be available in your my books.
+  </span>
+
+  <button
+    onClick={() =>
+      setReviewItem({
+        product_id: item.product_id,
+        title: item.title,
+      })
+    }
+    className="text-xs text-white px-4 py-1.5 rounded-sm bg-black hover:bg-gray-800 cursor-pointer"
+  >
+    Write a review
+  </button>
+
+</div>
+     
                 )}
               </div>
 

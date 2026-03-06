@@ -24,11 +24,12 @@ type Book = {
 type BookCardProps = {
   book: Book;
   visibleCount: number;
+  forceFormat?: "ebook" | "paperback"; // ← new prop
 };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
-const BookCard = ({ book, visibleCount }: BookCardProps) => {
+const BookCard = ({ book, visibleCount, forceFormat }: BookCardProps) => {
   const [liked, setLiked] = useState(false);
   const [addedToCart, setAddedToCart] = useState(false);
 
@@ -62,6 +63,7 @@ const BookCard = ({ book, visibleCount }: BookCardProps) => {
   };
 
   const getCartFormat = () => {
+    if (forceFormat) return forceFormat; // ← honour override first
     if (book.product_type === "ebook") return "ebook";
     if (book.product_type === "physical") return "paperback";
     return book.stock > 0 ? "paperback" : "ebook";
@@ -134,7 +136,7 @@ const BookCard = ({ book, visibleCount }: BookCardProps) => {
               alt={book.title}
               width={140}
               height={200}
-              className="object-contain drop-shadow-md group-hover:scale-105 transition-transform  duration-300 py-6"
+              className="object-contain drop-shadow-md group-hover:scale-105 transition-transform duration-300 py-6"
               style={{ maxHeight: 250 }}
               unoptimized
             />
@@ -142,24 +144,20 @@ const BookCard = ({ book, visibleCount }: BookCardProps) => {
 
           {/* ── TEXT BLOCK ── */}
           <div className="px-4 pt-3 pb-2">
-            {/* Category — italic gray, like the reference image */}
             <p className="text-[11px] italic text-gray-400 truncate mb-0.5">
               {book.category ?? (isEbookOnly ? "Digital Edition" : "Paperback")}
             </p>
 
-            {/* Title */}
             <h3 className="text-xs font-semibold text-gray-900 leading-snug line-clamp-2 mb-1">
               {book.title}
             </h3>
 
-            {/* Author — bold dark, like reference image */}
             {book.author && (
               <p className="text-xs font-bold text-gray-800 truncate mb-1">
                 {book.author}
               </p>
             )}
 
-            {/* Price */}
             <div className="flex items-baseline gap-2 mt-1">
               <span className="text-sm font-semibold text-gray-900">
                 ₹{displaySellPrice}

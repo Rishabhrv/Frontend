@@ -134,6 +134,7 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
   const [mainImageAlt, setMainImageAlt] = useState("");
   const [productImages, setProductImages] = useState<ProductImage[]>([]);
   const [selectedSubjects, setSelectedSubjects] = useState<number[]>([]);
+  const [mainImageUrl, setMainImageUrl] = useState<string | null>(null); 
 
   const fetchProductImages = async (id: number) => {
     try {
@@ -151,12 +152,12 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
       .then((res) => res.json())
       .then((data) => {
         setTitle(data.title);
-        setDescription(data.description);
-        setPrice(data.price);
-        setSellPrice(data.sell_price);
-        setStock(data.stock);
+        setDescription(data.description || "");
+        setPrice(data.price || "");
+        setSellPrice(data.sell_price || "");
+        setStock(data.stock || "");
         setSlug(data.slug || "");
-        setSku(data.sku);
+        setSku(data.sku || "");
         setStatus(data.status);
         setProductType(data.product_type);
         setWeight(data.weight || "");
@@ -172,8 +173,8 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
           setExistingEbook(`${API_URL}${data.ebook_path}`);
           setExistingEbookType(data.ebook_type);
         }
-        setEbookPrice(data.ebook_price);
-        setEbookSellPrice(data.ebook_sell_price);
+        setEbookPrice(data.ebook_price ?? "");
+        setEbookSellPrice(data.ebook_sell_price ?? "");
       });
     fetchProductImages(productId);
   }, [mode, productId]);
@@ -188,7 +189,7 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
 
     if (status === "published") {
       if (!description) newErrors.description = "Description is required";
-      if (mode === "add" && !productImage) newErrors.image = "Product image is required";
+      if (mode === "add" && !productImage && !mainImageUrl) newErrors.image = "Product image is required";
       if (!sku.trim()) newErrors.sku = "SKU is required";
       if (selectedCategories.length === 0)
         newErrors.categories = "At least one category is required";
@@ -302,7 +303,11 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
     const authors = authorRef.current?.getAuthors() || [];
     const formData = new FormData();
 
-    if (productImage) formData.append("image", productImage);
+    if (productImage) {
+      formData.append("image", productImage);
+    } else if (mainImageUrl) {
+      formData.append("image_url", mainImageUrl);  // ← ADD (backend needs to handle this)
+    }
     formData.append("title", title);
     formData.append("description", description);
     formData.append("price", price);
@@ -329,12 +334,15 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
     formData.append("meta_title", metaTitle);
     formData.append("meta_description", metaDescription);
     formData.append("keywords", keywords);
-
-    if (galleryData) {
-      formData.append("existingGallery", JSON.stringify(galleryData.existing));
-      formData.append("deletedGallery", JSON.stringify(galleryData.deleted));
-      galleryData.newFiles.forEach((file: File) => formData.append("gallery", file));
-    }
+if (galleryData) {
+  formData.append("existingGallery", JSON.stringify(galleryData.existing));
+  formData.append("deletedGallery", JSON.stringify(galleryData.deleted));
+  galleryData.newFiles.forEach((file: File) => formData.append("gallery", file));
+  // ← ADD: send media URLs chosen in add mode
+  if (galleryData.newUrls?.length) {
+    formData.append("galleryUrls", JSON.stringify(galleryData.newUrls));
+  }
+}
     formData.append("subjects", JSON.stringify(selectedSubjects));
 
     const url =
@@ -353,6 +361,7 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
       title: "Success",
       message: mode === "edit" ? "Product updated successfully" : "Product added successfully",
     });
+
   };
 
   useEffect(() => {
@@ -649,7 +658,7 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
               {errors.image && <p className="text-red-500 text-xs mt-1">{errors.image}</p>}
               {preview && (
                 <button type="button"
-                  onClick={() => { setPreview(null); setProductImage(null); setMainImageAlt(""); }}
+                  onClick={() => { setPreview(null); setProductImage(null); setMainImageAlt(""); setMainImageUrl(null); }}
                   className="mt-2 text-xs text-red-500 hover:underline w-full text-center cursor-pointer">
                   Remove image
                 </button>
@@ -742,19 +751,29 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
         </div>
       </div>
 
-      <PopupModal
-        open={popup.open}
-        type={popup.type}
-        title={popup.title}
-        message={popup.message}
-        onClose={() => setPopup({ ...popup, open: false })}
-      />
+<PopupModal
+  open={popup.open}
+  type={popup.type}
+  title={popup.title}
+  message={popup.message}
+  onClose={() => {
+    setPopup({ ...popup, open: false });
+    if (popup.type === "success") {
+      if (mode === "edit") {
+        router.refresh();
+      } else {
+        router.push(`/admin/product/EditProduct?id=${productId}`);
+      }
+    }
+  }}
+/>
       <AlertPopup open={toastOpen} message={toastMsg} onClose={() => setToastOpen(false)} />
       <MediaLibraryModal
         open={mediaModalOpen}
         onClose={() => setMediaModalOpen(false)}
         onSelect={(media) => {
           setPreview(`${process.env.NEXT_PUBLIC_API_URL}${media.url}`);
+          setMainImageUrl(media.url);
           setProductImage(null);
           clearError("image");
         }}

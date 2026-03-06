@@ -203,8 +203,15 @@ const ShippingZoneForm: React.FC<Props> = ({
                 </div>
         </div>
 
+        {shippingMethods.weight && (
+  <WeightBasedRulesTable
+    rules={weightRules}
+    setRules={setWeightRules}
+  />
+)}
+
         {/* Save */}
-        <div>
+        <div className="flex justify-end">
           <button
             onClick={onSave}
             disabled={loading}
@@ -215,12 +222,7 @@ const ShippingZoneForm: React.FC<Props> = ({
         </div>
       </div>
 
-{shippingMethods.weight && (
-  <WeightBasedRulesTable
-    rules={weightRules}
-    setRules={setWeightRules}
-  />
-)}
+
 
 
 

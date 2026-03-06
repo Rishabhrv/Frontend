@@ -34,13 +34,33 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 const CategoryBookSection = ({
   title,
   categorySlug,
-  visibleCount = 6,
+  visibleCount: desktopVisible = 6,
 }: Props) => {
   const [books, setBooks] = useState<Book[]>([]);
   const [start, setStart] = useState(0);
-  const [isAgph, setIsAgph] = useState<boolean | null>(null); // null = loading
+  const [isAgph, setIsAgph] = useState<boolean | null>(null);
 
-  // ── 1️⃣ Check if this category's imprint is agph ──────────────────────────
+  // ── Responsive visibleCount ──────────────────────────────────────────────
+  const [visibleCount, setVisibleCount] = useState(desktopVisible);
+
+  useEffect(() => {
+    const update = () => {
+      const w = window.innerWidth;
+      if (w < 640) setVisibleCount(2);
+      else if (w < 1024) setVisibleCount(4);
+      else setVisibleCount(desktopVisible);
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, [desktopVisible]);
+
+  // ── Reset start when visibleCount changes to avoid out-of-bounds ────────
+  useEffect(() => {
+    setStart(0);
+  }, [visibleCount]);
+
+  // ── 1️⃣ Check imprint ────────────────────────────────────────────────────
   useEffect(() => {
     fetch(`${API_URL}/api/categories`)
       .then((res) => res.json())
@@ -51,56 +71,49 @@ const CategoryBookSection = ({
       .catch(() => setIsAgph(false));
   }, [categorySlug]);
 
-  // ── 2️⃣ Fetch books only if imprint is confirmed agph ─────────────────────
+  // ── 2️⃣ Fetch books ──────────────────────────────────────────────────────
   useEffect(() => {
     if (!isAgph) return;
-
     fetch(`${API_URL}/api/categories/${categorySlug}/products`)
       .then((res) => res.json())
       .then((data) => setBooks(data.slice(0, 12)));
   }, [isAgph, categorySlug]);
 
-  // ── 3️⃣ Auto-slide ────────────────────────────────────────────────────────
+  // ── 3️⃣ Auto-slide ───────────────────────────────────────────────────────
   useEffect(() => {
     if (books.length <= visibleCount) return;
-
     const interval = setInterval(() => {
       setStart((prev) =>
         prev + 1 > books.length - visibleCount ? 0 : prev + 1
       );
     }, 3000);
-
     return () => clearInterval(interval);
   }, [books, visibleCount]);
 
-  // ── Not agph or still loading or no books → render nothing ───────────────
   if (!isAgph || !books.length) return null;
 
   return (
     <section className="mt-10 px-5">
       {/* HEADER */}
-        <div className="flex items-center justify-between mb-4">
-          <Link
-            href={`/category/${categorySlug}`}
-            className="group text-red-600 cursor-pointer font-semibold flex items-center"
+      <div className="flex items-center justify-between mb-4">
+        <Link
+          href={`/category/${categorySlug}`}
+          className="group text-red-600 cursor-pointer font-semibold flex items-center"
+        >
+          <h2
+            className="text-2xl sm:text-3xl md:text-4xl font-black text-gray-900 leading-tight pl-2 flex items-center"
+            style={{ fontFamily: "'Playfair Display', serif" }}
           >
-            <h2
-              className="text-3xl md:text-4xl font-black text-gray-900 leading-tight pl-2 flex items-center "
-              style={{ fontFamily: "'Playfair Display', serif" }}
-            >
-              {title}
-        
-              <ChevronRight
-                className="h-11 w-11 translate-x-[-4px] transition-all duration-300 group-hover:pl-2 group-hover:translate-x-0"
-              />
-            </h2>
-          </Link>
-        </div>
+            {title}
+            <ChevronRight className="h-8 w-8 sm:h-11 sm:w-11 translate-x-[-4px] transition-all duration-300 group-hover:pl-2 group-hover:translate-x-0" />
+          </h2>
+        </Link>
+      </div>
 
       {/* SLIDER */}
       <div className="relative overflow-hidden">
         <div
-          className="flex transition-transform duration-1200 ease-in-out"
+          className="flex transition-transform duration-700 ease-in-out"
           style={{
             transform: `translateX(-${start * (100 / visibleCount)}%)`,
           }}

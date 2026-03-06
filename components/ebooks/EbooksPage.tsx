@@ -231,6 +231,7 @@ export default function EbooksPage() {
                   key={book.id}
                   book={book}
                   visibleCount={BOOKS_PER_ROW}
+                  forceFormat="ebook" 
                 />
               ))}
             </div>

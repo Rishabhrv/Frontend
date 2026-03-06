@@ -3,7 +3,20 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Search, Heart, User, ShoppingBag, LogOut, X, Facebook, Instagram, Twitter, Linkedin, Youtube } from "lucide-react";
+import {
+  Search,
+  Heart,
+  User,
+  ShoppingBag,
+  LogOut,
+  X,
+  Facebook,
+  Instagram,
+  Twitter,
+  Linkedin,
+  Youtube,
+  Menu,
+} from "lucide-react";
 import AccountSlider from "./AccountSlider";
 import { usePathname } from "next/navigation";
 
@@ -15,424 +28,271 @@ type UserType = {
   email: string;
 };
 
+const NAV_LINKS = [
+  { href: "/", label: "Home" },
+  { href: "/category/academic-books", label: "Academic Books" },
+  { href: "/category/edited-books", label: "Edited Books" },
+  { href: "/category/kids", label: "Kids" },
+  { href: "/ebooks", label: "E-Books" },
+  { href: "/new-release", label: "New Release" },
+  { href: "https://agphbooks.com/contact-us/", label: "Contact Us", external: true },
+];
+
 const Header = () => {
   const [user, setUser] = useState<UserType | null>(null);
   const [sliderOpen, setSliderOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<{
-  products: any[];
-  authors: any[];
-  }>({
+  const [results, setResults] = useState<{ products: any[]; authors: any[] }>({
     products: [],
     authors: [],
   });
   const [showSearch, setShowSearch] = useState(false);
   const [cartCount, setCartCount] = useState(0);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname() ?? "";
+
   const isActive = (path: string) => {
     if (path === "/") {
-      return pathname === "/"
-        ? "text-green-600 font-semibold"
-        : "hover:text-green-600";
+      return pathname === "/" ? "text-green-600 font-semibold" : "hover:text-green-600";
     }
-  
     return pathname.startsWith(path)
       ? "text-green-600 font-semibold"
       : "hover:text-green-600";
   };
 
-    // 🔥 ADD THIS HERE
   useEffect(() => {
     const openSlider = () => setSliderOpen(true);
-
     window.addEventListener("open-account-slider", openSlider);
-
-    return () => {
-      window.removeEventListener("open-account-slider", openSlider);
-    };
+    return () => window.removeEventListener("open-account-slider", openSlider);
   }, []);
-
 
   useEffect(() => {
     if (query.length < 2) {
       setResults({ products: [], authors: [] });
       return;
     }
-  
     const delay = setTimeout(() => {
       fetch(`${API_URL}/api/search?q=${query}`)
-  .then((res) => {
-    if (!res.ok) throw new Error("Search failed");
-    return res.json();
-  })
-  .then((data) =>
-    setResults({
-      products: data.products || [],
-      authors: data.authors || [],
-    })
-  )
-  .catch(() =>
-    setResults({ products: [], authors: [] })
-  );
-
+        .then((res) => {
+          if (!res.ok) throw new Error("Search failed");
+          return res.json();
+        })
+        .then((data) =>
+          setResults({ products: data.products || [], authors: data.authors || [] })
+        )
+        .catch(() => setResults({ products: [], authors: [] }));
     }, 300);
-  
     return () => clearTimeout(delay);
   }, [query]);
 
-
-
-  /* CHECK LOGIN */
   const fetchUser = () => {
-  const token = localStorage.getItem("token");
-  if (!token) {
-    setUser(null);
-    return;
-  }
-
-  fetch(`${API_URL}/api/auth/me`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  })
-    .then((res) => res.json())
-    .then((data) => {
-      if (!data.msg) setUser(data);
-      else setUser(null);
-    })
-    .catch(() => {
-      localStorage.removeItem("token");
-      setUser(null);
-    });
-};
-
-useEffect(() => {
-  fetchUser();
-  fetchCartCount();
-
-  // 🔥 listen for login/logout
-  window.addEventListener("auth-change", fetchUser);
-  window.addEventListener("auth-change", fetchCartCount);
-
-  // 🔥 listen for cart updates
-  window.addEventListener("cart-change", fetchCartCount);
-
-  return () => {
-    window.removeEventListener("auth-change", fetchUser);
-    window.removeEventListener("auth-change", fetchCartCount);
-    window.removeEventListener("cart-change", fetchCartCount);
+    const token = localStorage.getItem("token");
+    if (!token) { setUser(null); return; }
+    fetch(`${API_URL}/api/auth/me`, { headers: { Authorization: `Bearer ${token}` } })
+      .then((res) => res.json())
+      .then((data) => { if (!data.msg) setUser(data); else setUser(null); })
+      .catch(() => { localStorage.removeItem("token"); setUser(null); });
   };
-}, []);
 
+  const fetchCartCount = () => {
+    const token = localStorage.getItem("token");
+    if (!token) { setCartCount(0); return; }
+    fetch(`${API_URL}/api/cart/count`, { headers: { Authorization: `Bearer ${token}` } })
+      .then((res) => res.json())
+      .then((data) => setCartCount(data.count || 0))
+      .catch(() => setCartCount(0));
+  };
 
+  useEffect(() => {
+    fetchUser();
+    fetchCartCount();
+    window.addEventListener("auth-change", fetchUser);
+    window.addEventListener("auth-change", fetchCartCount);
+    window.addEventListener("cart-change", fetchCartCount);
+    return () => {
+      window.removeEventListener("auth-change", fetchUser);
+      window.removeEventListener("auth-change", fetchCartCount);
+      window.removeEventListener("cart-change", fetchCartCount);
+    };
+  }, []);
 
   const logout = () => {
-  localStorage.removeItem("token");
-  setUser(null);
+    localStorage.removeItem("token");
+    setUser(null);
+    window.dispatchEvent(new Event("auth-change"));
+    window.location.href = "/";
+  };
 
-  // 🔥 notify all components
-  window.dispatchEvent(new Event("auth-change"));
-
-  window.location.href = "/";
-};
-
-const highlightMatch = (text: string, query: string) => {
-  if (!query) return text;
-
-  const regex = new RegExp(`(${query})`, "gi");
-
-  return text.split(regex).map((part, i) =>
-    part.toLowerCase() === query.toLowerCase() ? (
-      <span
-        key={i}
-        className="text-blue-500 rounded"
-      >
-        {part}
-      </span>
-    ) : (
-      part
-    )
-  );
-};
-
-
-const fetchCartCount = () => {
-  const token = localStorage.getItem("token");
-  if (!token) {
-    setCartCount(0);
-    return;
-  }
-
-  fetch(`${API_URL}/api/cart/count`, {
-    headers: { Authorization: `Bearer ${token}` },
-  })
-    .then((res) => res.json())
-    .then((data) => setCartCount(data.count || 0))
-    .catch(() => setCartCount(0));
-};
-
+  const highlightMatch = (text: string, query: string) => {
+    if (!query) return text;
+    const regex = new RegExp(`(${query})`, "gi");
+    return text.split(regex).map((part, i) =>
+      part.toLowerCase() === query.toLowerCase() ? (
+        <span key={i} className="text-blue-500 rounded">{part}</span>
+      ) : (part)
+    );
+  };
 
   return (
     <header className="w-full bg-white border-b border-gray-200">
 
       {/* ================= TOP BAR ================= */}
       <div className="bg-gray-100 text-xs">
-        <div className="mx-auto max-w-7xl px-4 py-3 flex justify-end gap-4 text-gray-700">
+        {/*
+          ALL screen sizes: social icons on LEFT, auth links on RIGHT
+          — justify-between splits them to opposite ends
+        */}
+        <div className="mx-auto max-w-7xl px-4 py-2 flex items-center justify-between gap-3 text-gray-700 flex-wrap">
 
-          {/* SOCIAL ICONS */}
-          <a
-            href="https://www.facebook.com/agphbooks/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-black"
-          >
-            <Facebook className="h-4 w-4" />
-          </a>
-      
-          <a
-            href="https://www.instagram.com/agphbooks/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-black"
-          >
-            <Instagram className="h-4 w-4" />
-          </a>
-      
-          <a
-            href="https://in.linkedin.com/company/agphbooks"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-black"
-          >
-            <Linkedin  className="h-4 w-4" />
-          </a>
+          {/* Social icons — visible on ALL screen sizes */}
+          <div className="flex items-center gap-3">
+            <a href="https://www.facebook.com/agphbooks/" target="_blank" rel="noopener noreferrer" className="hover:text-black"><Facebook className="h-4 w-4" /></a>
+            <a href="https://www.instagram.com/agphbooks/" target="_blank" rel="noopener noreferrer" className="hover:text-black"><Instagram className="h-4 w-4" /></a>
+            <a href="https://in.linkedin.com/company/agphbooks" target="_blank" rel="noopener noreferrer" className="hover:text-black"><Linkedin className="h-4 w-4" /></a>
+            <a href="https://www.youtube.com/@agphbooks" target="_blank" rel="noopener noreferrer" className="hover:text-black"><Youtube className="h-4 w-4" /></a>
+            <a href="https://x.com/agphbooks" target="_blank" rel="noopener noreferrer" className="hover:text-black"><Twitter className="h-4 w-4" /></a>
+          </div>
 
-                    <a
-            href="https://www.youtube.com/@agphbooks"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-black"
-          >
-            <Youtube  className="h-4 w-4" />
-          </a>
-
-                    <a
-            href="https://x.com/agphbooks"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-black"
-          >
-            <Twitter   className="h-4 w-4" />
-          </a>
-
-          <div>|</div>
-
-          {!user ? (
-            <Link href="/login" className="hover:underline">
-              Sign In
-            </Link>
-          ) : (
-            <>
-            <div className="flex items-center gap-3">
-              <span className="font-medium">
-                Hi, {user.name.split(" ")[0]}
-              </span>
-              <button
-                onClick={logout}
-                className="flex items-center gap-1 text-red-600 hover:underline cursor-pointer"
-              >
-                <LogOut className="h-3 w-3" />
-                Logout
-              </button>
-            </div>
-            
-          <Link href="/account/orders" className="hover:underline">
-            Order Status
-          </Link>
-          <Link href="/my-books" className="hover:underline">
-            My Books
-          </Link>
-            
-            
-            </>
-            
-          )}
-
-
-
+          {/* Auth links — visible on ALL screen sizes, pinned to the right */}
+          <div className="flex items-center gap-3">
+            {!user ? (
+              <Link href="/login" className="hover:underline">Sign In</Link>
+            ) : (
+              <>
+                <span className="font-medium ">Hi, {user.name.split(" ")[0]}</span>
+                <button onClick={logout} className="flex items-center gap-1 text-red-600 hover:underline cursor-pointer">
+                  <LogOut className="h-3 w-3" />
+                  <span className="hidden sm:inline">Logout</span>
+                </button>
+                <Link href="/account/orders" className="hover:underline hidden sm:inline">Order Status</Link>
+                <Link href="/my-books" className="hover:underline hidden sm:inline">My Books</Link>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
       {/* ================= MAIN HEADER ================= */}
-      <div className="mx-auto max-w-7xl px-4 py-5 flex items-center gap-6">
+      <div className="mx-auto max-w-7xl px-4 py-4 flex items-center gap-3">
 
-        {/* LOGO */}
-        <Link href="/" className="flex items-center">
+        {/* Hamburger — mobile only, left side */}
+        <button
+          className="md:hidden flex items-center justify-center p-1 text-gray-700 hover:text-black shrink-0"
+          onClick={() => setMobileMenuOpen((v) => !v)}
+          aria-label="Toggle menu"
+        >
+          {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+        </button>
+
+        {/*
+          LOGO
+          — Mobile: flex-1 + flex justify-center → centered between hamburger and icons
+          — Desktop (md+): normal flow (no flex-1, no centering)
+        */}
+        <Link
+          href="/"
+          className="flex items-center shrink-0 ml-10 md:ml-0 flex-1 justify-center md:flex-none md:justify-start"
+        >
           <Image
             src="/images/logo/AGPH-Logo-Black-600x290.webp"
             alt="AGPH Store Logo"
-            width={140}
-            height={68}
+            width={110}
+            height={54}
             priority
+            className="w-[110px] md:w-[140px] h-auto"
           />
         </Link>
 
-        {/* SEARCH */}
-        <div className="flex-1 relative">
-  <input
-    type="text"
-    value={query}
-    onChange={(e) => {
-      setQuery(e.target.value);
-      setShowSearch(true);
-    }}
-    placeholder="Search books, authors, ebooks"
-    className="w-full rounded-full border border-gray-300 py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-1 focus:ring-black"
-  />
-
-  <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-500" />
-
-  {query && (
-    <X
-      onClick={() => {
-        setQuery("");
-        setShowSearch(false);
-      }}
-      className="absolute right-3 top-2.5 h-4 w-4 text-gray-500 cursor-pointer"
-    />
-  )}
-
-  {/* ================= SEARCH DROPDOWN ================= */}
-  {showSearch &&
-  ((results.products?.length ?? 0) > 0 ||
-    (results.authors?.length ?? 0) > 0) && (
-    <div className="absolute top-full mt-2 w-full bg-white border border-gray-300 rounded-lg shadow-xl max-h-[420px] overflow-y-auto z-50">
-
-      {/* AUTHORS */}
-      {results.authors.length > 0 && (
-        <div className="p-3">
-          <p className="text-xs font-semibold text-gray-500 mb-2">
-            Authors
-          </p>
-
-          {results.authors?.map((a: any) => (
-            <Link
-              key={a.id}
-              href={`/author/${a.id}`}
-              onClick={() => setShowSearch(false)}
-              className="flex items-center gap-3 p-2 rounded hover:bg-gray-100"
-            >
-              {/* <img
-                src={
-                  a.profile_image
-                    ? `${API_URL}${a.profile_image}`
-                    : "/images/avatar.png"
-                }
-                className="h-12 w-12 rounded-full object-cover border border-gray-300 shadow-sm"
-                loading="eager"
-              /> */}
-
-              <span className="text-sm font-medium">
-                {highlightMatch(a.name, query)}
-              </span>
-            </Link>
-          ))}
+        {/* SEARCH — hidden on mobile (shown below), visible on md+ */}
+        <div className="flex-1 relative hidden md:block">
+          <SearchBox
+            query={query}
+            setQuery={setQuery}
+            showSearch={showSearch}
+            setShowSearch={setShowSearch}
+            results={results}
+            highlightMatch={highlightMatch}
+          />
         </div>
-      )}
 
-      {/* PRODUCTS */}
-      {results.products.length > 0 && (
-        <div className="p-3">
-          <p className="text-xs font-semibold text-gray-500 mb-2">
-            Products
-          </p>
-
-          {results.products?.map((p: any) => (
-            <Link
-              key={p.id}
-              href={`/product/${p.slug}`}
-              onClick={() => setShowSearch(false)}
-              className="flex items-center gap-3 p-2 rounded hover:bg-gray-100"
-            >
-              <img
-                src={`${API_URL}${p.main_image}`}
-                className="h-15 w-12  border border-gray-200 rounded"
-              />
-
-              <div className="leading-tight">
-                <p className="text-sm font-medium">
-                  {highlightMatch(p.title, query)}
-                </p>
-
-                <p className="text-xs text-gray-500">
-                  {p.author}
-                </p>
-              </div>
-            </Link>
-          ))}
-        </div>
-      )}
-    </div>
-  )}
-</div>
-
-
-        {/* ICONS */}
-        <div className="flex items-center gap-4 text-gray-700">
-          <Link href="/wishlist">
+        {/* ICONS — right side, always visible */}
+        <div className="flex items-center gap-3 sm:gap-4 text-gray-700 shrink-0 md:ml-0">
+          <Link href="/wishlist" aria-label="Wishlist">
             <Heart className="h-5 w-5 cursor-pointer hover:text-black" />
           </Link>
-
-          <User
-            className="h-5 w-5 cursor-pointer hover:text-black"
-            onClick={() => setSliderOpen(true)}
-          />
-          <Link href="/cart" className="relative">
+          <button aria-label="Account" onClick={() => setSliderOpen(true)}>
+            <User className="h-5 w-5 cursor-pointer hover:text-black" />
+          </button>
+          <Link href="/cart" className="relative" aria-label="Cart">
             <ShoppingBag className="h-5 w-5 cursor-pointer hover:text-black" />
-          
             {cartCount > 0 && (
               <span className="absolute -top-2 -right-2 bg-red-600 text-white text-[10px] min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center">
                 {cartCount}
               </span>
             )}
           </Link>
-
         </div>
       </div>
 
-      {/* ================= CATEGORY NAV ================= */}
-      <nav>
-        <div className="mx-auto  px-9 py-5 flex gap-10 text-sm font-medium text-gray-800 align-middle justify-center">
-          <Link href="/" className={`nav-link ${isActive("/")}`}>
-            Home
-          </Link>
-          
+      {/* SEARCH — mobile only, below logo row */}
+      <div className="md:hidden px-4 pb-3">
+        <SearchBox
+          query={query}
+          setQuery={setQuery}
+          showSearch={showSearch}
+          setShowSearch={setShowSearch}
+          results={results}
+          highlightMatch={highlightMatch}
+        />
+      </div>
 
-          
-          <Link href="/category/academic-books" className={`nav-link ${isActive("/category/academic-books")}`}>
-            Academic Books
-          </Link>
-
-          <Link href="/category/edited-books" className={`nav-link ${isActive("/category/edited-books")}`}>
-            Edited Books
-          </Link>
-          
-          <Link href="/category/kids" className={`nav-link ${isActive("/category/kids")}`}>
-            Kids
-          </Link>
-          
-          <Link href="/ebooks" className={`nav-link ${isActive("/ebooks")}`}>
-            E-Books
-          </Link>
-          
-          <Link href="/new-release" className={`nav-link ${isActive("/new-release")}`}>
-            New Release
-          </Link>
-          <Link href="https://agphbooks.com/contact-us/" className="nav-link">
-            Contact Us
-          </Link>
+      {/* ================= CATEGORY NAV — desktop ================= */}
+      <nav className="hidden md:block border-t border-gray-100 mx-15">
+        <div className="mx-auto max-w-7xl px-4 py-3 flex gap-6 lg:gap-10 text-sm font-medium text-gray-800 justify-center overflow-x-auto">
+          {NAV_LINKS.map(({ href, label, external }) => (
+            <Link
+              key={href}
+              href={href}
+              target={external ? "_blank" : undefined}
+              rel={external ? "noopener noreferrer" : undefined}
+              className={`nav-link whitespace-nowrap ${!external ? isActive(href) : "hover:text-green-600"}`}
+            >
+              {label}
+            </Link>
+          ))}
         </div>
       </nav>
+
+      {/* ================= MOBILE MENU DRAWER ================= */}
+      {mobileMenuOpen && (
+        <div className="md:hidden border-t border-gray-200 bg-white shadow-lg">
+          <nav className="flex flex-col px-4 py-2">
+            {NAV_LINKS.map(({ href, label, external }) => (
+              <Link
+                key={href}
+                href={href}
+                target={external ? "_blank" : undefined}
+                rel={external ? "noopener noreferrer" : undefined}
+                onClick={() => setMobileMenuOpen(false)}
+                className={`py-3 text-sm font-medium border-b border-gray-100 last:border-0 ${!external ? isActive(href) : "hover:text-green-600"}`}
+              >
+                {label}
+              </Link>
+            ))}
+
+            {user && (
+              <div className="flex gap-4 py-3 text-xs text-gray-600 sm:hidden">
+                <span className="font-medium">Hi, {user.name.split(" ")[0]}</span>
+                <Link href="/account/orders" onClick={() => setMobileMenuOpen(false)} className="hover:underline">Order Status</Link>
+                <Link href="/my-books" onClick={() => setMobileMenuOpen(false)} className="hover:underline">My Books</Link>
+                <button onClick={() => { logout(); setMobileMenuOpen(false); }} className="flex items-center gap-1 text-red-600 hover:underline">
+                  <LogOut className="h-3 w-3" /> Logout
+                </button>
+              </div>
+            )}
+          </nav>
+        </div>
+      )}
 
       <AccountSlider
         open={sliderOpen}
@@ -440,8 +300,67 @@ const fetchCartCount = () => {
         user={user}
         onLogout={logout}
       />
-
     </header>
+  );
+};
+
+/* ===== Extracted SearchBox component to avoid duplication ===== */
+type SearchBoxProps = {
+  query: string;
+  setQuery: (v: string) => void;
+  showSearch: boolean;
+  setShowSearch: (v: boolean) => void;
+  results: { products: any[]; authors: any[] };
+  highlightMatch: (text: string, query: string) => any;
+};
+
+const SearchBox = ({ query, setQuery, showSearch, setShowSearch, results, highlightMatch }: SearchBoxProps) => {
+  const API_URL = process.env.NEXT_PUBLIC_API_URL!;
+  return (
+    <div className="relative w-full">
+      <input
+        type="text"
+        value={query}
+        onChange={(e) => { setQuery(e.target.value); setShowSearch(true); }}
+        placeholder="Search books, authors, ebooks"
+        className="w-full rounded-full border border-gray-300 py-2 pl-10 pr-9 text-sm focus:outline-none focus:ring-1 focus:ring-black"
+      />
+      <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-500" />
+      {query && (
+        <X onClick={() => { setQuery(""); setShowSearch(false); }} className="absolute right-3 top-2.5 h-4 w-4 text-gray-500 cursor-pointer" />
+      )}
+
+      {showSearch && ((results.products?.length ?? 0) > 0 || (results.authors?.length ?? 0) > 0) && (
+        <div className="absolute top-full mt-2 w-full bg-white border border-gray-300 rounded-lg shadow-xl max-h-[420px] overflow-y-auto z-50">
+          {results.authors.length > 0 && (
+            <div className="p-3">
+              <p className="text-xs font-semibold text-gray-500 mb-2">Authors</p>
+              {results.authors.map((a: any) => (
+                <Link key={a.id} href={`/author/${a.slug}`} onClick={() => setShowSearch(false)}
+                  className="flex items-center gap-3 p-2 rounded hover:bg-gray-100">
+                  <span className="text-sm font-medium">{highlightMatch(a.name, query)}</span>
+                </Link>
+              ))}
+            </div>
+          )}
+          {results.products.length > 0 && (
+            <div className="p-3">
+              <p className="text-xs font-semibold text-gray-500 mb-2">Products</p>
+              {results.products.map((p: any) => (
+                <Link key={p.id} href={`/product/${p.slug}`} onClick={() => setShowSearch(false)}
+                  className="flex items-center gap-3 p-2 rounded hover:bg-gray-100">
+                  <img src={`${API_URL}${p.main_image}`} className="h-12 w-10 border border-gray-200 rounded object-cover" alt={p.title} />
+                  <div className="leading-tight">
+                    <p className="text-sm font-medium">{highlightMatch(p.title, query)}</p>
+                    <p className="text-xs text-gray-500">{p.author}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 };
 

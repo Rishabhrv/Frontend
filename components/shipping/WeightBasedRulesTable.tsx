@@ -222,45 +222,6 @@ const WeightBasedRulesTable: React.FC<Props> = ({ rules, setRules }) => {
     )}
   </div>
 
-  {/* PROGRESSIVE */}
-  <div
-    className={`p-4 cursor-pointer ${
-      tempRule.type === "progressive" ? "bg-blue-50" : ""
-    }`}
-    onClick={() =>
-      setTempRule({ ...tempRule, type: "progressive" })
-    }
-  >
-    <div className="font-medium">Progressive</div>
-    <div className="text-xs text-gray-500">
-      e.g. ₹1.50 every 0.5 kg
-    </div>
-
-    {tempRule.type === "progressive" && (
-      <div className="flex items-end gap-2">
-  <TextField
-    variant="standard"
-    type="number"
-    value={tempRule.perKgCost ?? ""}
-    onChange={(e) =>
-      setTempRule({
-        ...tempRule,
-        perKgCost: Number(e.target.value),
-      })
-    }
-    InputProps={{
-      startAdornment: (
-        <InputAdornment position="start">₹</InputAdornment>
-      ),
-    }}
-  />
-  <span className="text-xs text-gray-500 mb-1">
-    every kg
-  </span>
-</div>
-
-    )}
-  </div>
 
   {/* FLAT + PROGRESSIVE */}
   <div
