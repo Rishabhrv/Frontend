@@ -1,32 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
-  Search,
-  Heart,
-  User,
-  ShoppingBag,
-  LogOut,
-  X,
-  Facebook,
-  Instagram,
-  Twitter,
-  Linkedin,
-  Youtube,
-  Menu,
+  Search, Heart, User, ShoppingBag, LogOut, X,
+  Facebook, Instagram, Twitter, Linkedin, Youtube, Menu,
 } from "lucide-react";
 import AccountSlider from "./AccountSlider";
 import { usePathname } from "next/navigation";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
-type UserType = {
-  id: number;
-  name: string;
-  email: string;
-};
+type UserType = { id: number; name: string; email: string };
 
 const NAV_LINKS = [
   { href: "/", label: "Home" },
@@ -42,22 +28,24 @@ const Header = () => {
   const [user, setUser] = useState<UserType | null>(null);
   const [sliderOpen, setSliderOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<{ products: any[]; authors: any[] }>({
-    products: [],
-    authors: [],
-  });
+  const [results, setResults] = useState<{ products: any[]; authors: any[] }>({ products: [], authors: [] });
   const [showSearch, setShowSearch] = useState(false);
   const [cartCount, setCartCount] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname() ?? "";
+  const headerRef = useRef<HTMLElement>(null);
+
+  /* ── scroll detection ── */
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 80);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   const isActive = (path: string) => {
-    if (path === "/") {
-      return pathname === "/" ? "text-green-600 font-semibold" : "hover:text-green-600";
-    }
-    return pathname.startsWith(path)
-      ? "text-green-600 font-semibold"
-      : "hover:text-green-600";
+    if (path === "/") return pathname === "/" ? "text-green-600 font-semibold" : "hover:text-green-600";
+    return pathname.startsWith(path) ? "text-green-600 font-semibold" : "hover:text-green-600";
   };
 
   useEffect(() => {
@@ -67,19 +55,11 @@ const Header = () => {
   }, []);
 
   useEffect(() => {
-    if (query.length < 2) {
-      setResults({ products: [], authors: [] });
-      return;
-    }
+    if (query.length < 2) { setResults({ products: [], authors: [] }); return; }
     const delay = setTimeout(() => {
       fetch(`${API_URL}/api/search?q=${query}`)
-        .then((res) => {
-          if (!res.ok) throw new Error("Search failed");
-          return res.json();
-        })
-        .then((data) =>
-          setResults({ products: data.products || [], authors: data.authors || [] })
-        )
+        .then(res => { if (!res.ok) throw new Error("Search failed"); return res.json(); })
+        .then(data => setResults({ products: data.products || [], authors: data.authors || [] }))
         .catch(() => setResults({ products: [], authors: [] }));
     }, 300);
     return () => clearTimeout(delay);
@@ -89,8 +69,8 @@ const Header = () => {
     const token = localStorage.getItem("token");
     if (!token) { setUser(null); return; }
     fetch(`${API_URL}/api/auth/me`, { headers: { Authorization: `Bearer ${token}` } })
-      .then((res) => res.json())
-      .then((data) => { if (!data.msg) setUser(data); else setUser(null); })
+      .then(res => res.json())
+      .then(data => { if (!data.msg) setUser(data); else setUser(null); })
       .catch(() => { localStorage.removeItem("token"); setUser(null); });
   };
 
@@ -98,14 +78,13 @@ const Header = () => {
     const token = localStorage.getItem("token");
     if (!token) { setCartCount(0); return; }
     fetch(`${API_URL}/api/cart/count`, { headers: { Authorization: `Bearer ${token}` } })
-      .then((res) => res.json())
-      .then((data) => setCartCount(data.count || 0))
+      .then(res => res.json())
+      .then(data => setCartCount(data.count || 0))
       .catch(() => setCartCount(0));
   };
 
   useEffect(() => {
-    fetchUser();
-    fetchCartCount();
+    fetchUser(); fetchCartCount();
     window.addEventListener("auth-change", fetchUser);
     window.addEventListener("auth-change", fetchCartCount);
     window.addEventListener("cart-change", fetchCartCount);
@@ -127,172 +106,188 @@ const Header = () => {
     if (!query) return text;
     const regex = new RegExp(`(${query})`, "gi");
     return text.split(regex).map((part, i) =>
-      part.toLowerCase() === query.toLowerCase() ? (
-        <span key={i} className="text-blue-500 rounded">{part}</span>
-      ) : (part)
+      part.toLowerCase() === query.toLowerCase()
+        ? <span key={i} className="text-blue-500 rounded">{part}</span>
+        : part
     );
   };
 
+  const sharedSearchProps = { query, setQuery, showSearch, setShowSearch, results, highlightMatch };
+
   return (
-    <header className="w-full bg-white border-b border-gray-200">
+    <>
+      {/* ═══════════════════════════════════════
+          MAIN HEADER — always in document flow
+      ═══════════════════════════════════════ */}
+      <header ref={headerRef} className="w-full bg-white border-b border-gray-200 relative">
 
-      {/* ================= TOP BAR ================= */}
-      <div className="bg-gray-100 text-xs">
-        {/*
-          ALL screen sizes: social icons on LEFT, auth links on RIGHT
-          — justify-between splits them to opposite ends
-        */}
-        <div className="mx-auto max-w-7xl px-4 py-2 flex items-center justify-between gap-3 text-gray-700 flex-wrap">
-
-          {/* Social icons — visible on ALL screen sizes */}
-          <div className="flex items-center gap-3">
-            <a href="https://www.facebook.com/agphbooks/" target="_blank" rel="noopener noreferrer" className="hover:text-black"><Facebook className="h-4 w-4" /></a>
-            <a href="https://www.instagram.com/agphbooks/" target="_blank" rel="noopener noreferrer" className="hover:text-black"><Instagram className="h-4 w-4" /></a>
-            <a href="https://in.linkedin.com/company/agphbooks" target="_blank" rel="noopener noreferrer" className="hover:text-black"><Linkedin className="h-4 w-4" /></a>
-            <a href="https://www.youtube.com/@agphbooks" target="_blank" rel="noopener noreferrer" className="hover:text-black"><Youtube className="h-4 w-4" /></a>
-            <a href="https://x.com/agphbooks" target="_blank" rel="noopener noreferrer" className="hover:text-black"><Twitter className="h-4 w-4" /></a>
-          </div>
-
-          {/* Auth links — visible on ALL screen sizes, pinned to the right */}
-          <div className="flex items-center gap-3">
-            {!user ? (
-              <Link href="/login" className="hover:underline">Sign In</Link>
-            ) : (
-              <>
-                <span className="font-medium ">Hi, {user.name.split(" ")[0]}</span>
-                <button onClick={logout} className="flex items-center gap-1 text-red-600 hover:underline cursor-pointer">
-                  <LogOut className="h-3 w-3" />
-                  <span className="hidden sm:inline">Logout</span>
-                </button>
-                <Link href="/account/orders" className="hover:underline hidden sm:inline">Order Status</Link>
-                <Link href="/my-books" className="hover:underline hidden sm:inline">My Books</Link>
-              </>
-            )}
+        {/* TOP BAR */}
+        <div className="bg-gray-100 text-xs">
+          <div className="mx-auto max-w-7xl px-4 py-2 flex items-center justify-between gap-3 text-gray-700 flex-wrap">
+            <div className="flex items-center gap-3">
+              <a href="https://www.facebook.com/agphbooks/" target="_blank" rel="noopener noreferrer" className="hover:text-black"><Facebook className="h-4 w-4" /></a>
+              <a href="https://www.instagram.com/agphbooks/" target="_blank" rel="noopener noreferrer" className="hover:text-black"><Instagram className="h-4 w-4" /></a>
+              <a href="https://in.linkedin.com/company/agphbooks" target="_blank" rel="noopener noreferrer" className="hover:text-black"><Linkedin className="h-4 w-4" /></a>
+              <a href="https://www.youtube.com/@agphbooks" target="_blank" rel="noopener noreferrer" className="hover:text-black"><Youtube className="h-4 w-4" /></a>
+              <a href="https://x.com/agphbooks" target="_blank" rel="noopener noreferrer" className="hover:text-black">
+                <svg className="h-3 w-3" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M18.9 2H22l-7.4 8.5L23 22h-6.8l-5.3-6.9L4.8 22H2l8-9.2L2 2h6.9l4.8 6.3L18.9 2z" />
+                </svg>
+              </a>
+            </div>
+            <div className="flex items-center gap-3">
+              {!user ? (
+                <Link href="/login" className="hover:underline">Sign In</Link>
+              ) : (
+                <>
+                  <span className="font-medium">Hi, {user.name.split(" ")[0]}</span>
+                  <button onClick={logout} className="flex items-center gap-1 text-red-600 hover:underline cursor-pointer">
+                    <LogOut className="h-3 w-3" />
+                    <span className="hidden sm:inline">Logout</span>
+                  </button>
+                  <Link href="/account/orders" className="hover:underline hidden sm:inline">Order Status</Link>
+                  <Link href="/my-books" className="hover:underline hidden sm:inline">My Books</Link>
+                </>
+              )}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* ================= MAIN HEADER ================= */}
-      <div className="mx-auto max-w-7xl px-4 py-4 flex items-center gap-3">
-
-        {/* Hamburger — mobile only, left side */}
-        <button
-          className="md:hidden flex items-center justify-center p-1 text-gray-700 hover:text-black shrink-0"
-          onClick={() => setMobileMenuOpen((v) => !v)}
-          aria-label="Toggle menu"
-        >
-          {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-        </button>
-
-        {/*
-          LOGO
-          — Mobile: flex-1 + flex justify-center → centered between hamburger and icons
-          — Desktop (md+): normal flow (no flex-1, no centering)
-        */}
-        <Link
-          href="/"
-          className="flex items-center shrink-0 ml-10 md:ml-0 flex-1 justify-center md:flex-none md:justify-start"
-        >
-          <Image
-            src="/images/logo/AGPH-Logo-Black-600x290.webp"
-            alt="AGPH Store Logo"
-            width={110}
-            height={54}
-            priority
-            className="w-[110px] md:w-[140px] h-auto"
-          />
-        </Link>
-
-        {/* SEARCH — hidden on mobile (shown below), visible on md+ */}
-        <div className="flex-1 relative hidden md:block">
-          <SearchBox
-            query={query}
-            setQuery={setQuery}
-            showSearch={showSearch}
-            setShowSearch={setShowSearch}
-            results={results}
-            highlightMatch={highlightMatch}
-          />
-        </div>
-
-        {/* ICONS — right side, always visible */}
-        <div className="flex items-center gap-3 sm:gap-4 text-gray-700 shrink-0 md:ml-0">
-          <Link href="/wishlist" aria-label="Wishlist">
-            <Heart className="h-5 w-5 cursor-pointer hover:text-black" />
-          </Link>
-          <button aria-label="Account" onClick={() => setSliderOpen(true)}>
-            <User className="h-5 w-5 cursor-pointer hover:text-black" />
+        {/* LOGO + SEARCH + ICONS */}
+        <div className="mx-auto max-w-7xl px-4 py-4 flex items-center gap-3">
+          <button
+            className="md:hidden flex items-center justify-center p-1 text-gray-700 hover:text-black shrink-0"
+            onClick={() => setMobileMenuOpen(v => !v)}
+            aria-label="Toggle menu"
+          >
+            {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>
-          <Link href="/cart" className="relative" aria-label="Cart">
-            <ShoppingBag className="h-5 w-5 cursor-pointer hover:text-black" />
-            {cartCount > 0 && (
-              <span className="absolute -top-2 -right-2 bg-red-600 text-white text-[10px] min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center">
-                {cartCount}
-              </span>
-            )}
+
+          <Link href="/" className="flex items-center shrink-0 ml-10 md:ml-0 flex-1 justify-center md:flex-none md:justify-start">
+            <Image
+              src="/images/logo/AGPH-Logo-Black-600x290.webp"
+              alt="AGPH Store Logo"
+              width={110} height={54} priority
+              className="w-[110px] md:w-[140px] h-auto"
+            />
           </Link>
-        </div>
-      </div>
 
-      {/* SEARCH — mobile only, below logo row */}
-      <div className="md:hidden px-4 pb-3">
-        <SearchBox
-          query={query}
-          setQuery={setQuery}
-          showSearch={showSearch}
-          setShowSearch={setShowSearch}
-          results={results}
-          highlightMatch={highlightMatch}
-        />
-      </div>
+          <div className="flex-1 relative hidden md:block">
+            <SearchBox {...sharedSearchProps} />
+          </div>
 
-      {/* ================= CATEGORY NAV — desktop ================= */}
-      <nav className="hidden md:block border-t border-gray-100 mx-15">
-        <div className="mx-auto max-w-7xl px-4 py-3 flex gap-6 lg:gap-10 text-sm font-medium text-gray-800 justify-center overflow-x-auto">
-          {NAV_LINKS.map(({ href, label, external }) => (
-            <Link
-              key={href}
-              href={href}
-              target={external ? "_blank" : undefined}
-              rel={external ? "noopener noreferrer" : undefined}
-              className={`nav-link whitespace-nowrap ${!external ? isActive(href) : "hover:text-green-600"}`}
-            >
-              {label}
+          <div className="flex items-center gap-3 sm:gap-4 text-gray-700 shrink-0">
+            <Link href="/wishlist" aria-label="Wishlist"><Heart className="h-5 w-5 cursor-pointer hover:text-black" /></Link>
+            <button aria-label="Account" onClick={() => setSliderOpen(true)}><User className="h-5 w-5 cursor-pointer hover:text-black" /></button>
+            <Link href="/cart" className="relative" aria-label="Cart">
+              <ShoppingBag className="h-5 w-5 cursor-pointer hover:text-black" />
+              {cartCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-600 text-white text-[10px] min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center">
+                  {cartCount}
+                </span>
+              )}
             </Link>
-          ))}
+          </div>
         </div>
-      </nav>
 
-      {/* ================= MOBILE MENU DRAWER ================= */}
-      {mobileMenuOpen && (
-        <div className="md:hidden border-t border-gray-200 bg-white shadow-lg">
-          <nav className="flex flex-col px-4 py-2">
+        {/* MOBILE SEARCH */}
+        <div className="md:hidden px-4 pb-3">
+          <SearchBox {...sharedSearchProps} />
+        </div>
+
+        {/* DESKTOP NAV */}
+        <nav className="hidden md:block border-t border-gray-100">
+          <div className="mx-auto max-w-7xl px-4 py-3 flex gap-6 lg:gap-10 text-sm font-medium text-gray-800 justify-center overflow-x-auto">
             {NAV_LINKS.map(({ href, label, external }) => (
               <Link
-                key={href}
-                href={href}
+                key={href} href={href}
                 target={external ? "_blank" : undefined}
                 rel={external ? "noopener noreferrer" : undefined}
-                onClick={() => setMobileMenuOpen(false)}
-                className={`py-3 text-sm font-medium border-b border-gray-100 last:border-0 ${!external ? isActive(href) : "hover:text-green-600"}`}
+                className={`nav-link whitespace-nowrap ${!external ? isActive(href) : "hover:text-green-600"}`}
               >
                 {label}
               </Link>
             ))}
+          </div>
+        </nav>
 
-            {user && (
-              <div className="flex gap-4 py-3 text-xs text-gray-600 sm:hidden">
-                <span className="font-medium">Hi, {user.name.split(" ")[0]}</span>
-                <Link href="/account/orders" onClick={() => setMobileMenuOpen(false)} className="hover:underline">Order Status</Link>
-                <Link href="/my-books" onClick={() => setMobileMenuOpen(false)} className="hover:underline">My Books</Link>
-                <button onClick={() => { logout(); setMobileMenuOpen(false); }} className="flex items-center gap-1 text-red-600 hover:underline">
-                  <LogOut className="h-3 w-3" /> Logout
-                </button>
-              </div>
-            )}
-          </nav>
+        {/* MOBILE DRAWER */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-gray-200 bg-white shadow-sm absolute left-0 right-0 z-50">
+            <nav className="flex flex-col px-4 py-2">
+              {NAV_LINKS.map(({ href, label, external }) => (
+                <Link
+                  key={href} href={href}
+                  target={external ? "_blank" : undefined}
+                  rel={external ? "noopener noreferrer" : undefined}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`py-3 text-sm font-medium border-b border-gray-100 last:border-0 ${!external ? isActive(href) : "hover:text-green-600"}`}
+                >
+                  {label}
+                </Link>
+              ))}
+              {user && (
+                <div className="flex gap-4 py-3 text-xs text-gray-600 sm:hidden">
+                  <span className="font-medium">Hi, {user.name.split(" ")[0]}</span>
+                  <Link href="/account/orders" onClick={() => setMobileMenuOpen(false)} className="hover:underline">Order Status</Link>
+                  <Link href="/my-books" onClick={() => setMobileMenuOpen(false)} className="hover:underline">My Books</Link>
+                  <button onClick={() => { logout(); setMobileMenuOpen(false); }} className="flex items-center gap-1 text-red-600 hover:underline">
+                    <LogOut className="h-3 w-3" /> Logout
+                  </button>
+                </div>
+              )}
+            </nav>
+          </div>
+        )}
+      </header>
+
+      {/* ═══════════════════════════════════════
+          COMPACT STICKY BAR — appears on scroll
+          Shows: logo + search + cart icon
+      ═══════════════════════════════════════ */}
+      <div
+        className={`
+          fixed top-0 left-0 right-0 z-[60] bg-white border-b border-gray-200 shadow-sm
+          transition-all duration-300 ease-in-out
+          ${scrolled ? "translate-y-0 opacity-100 pointer-events-auto" : "-translate-y-full opacity-0 pointer-events-none"}
+        `}
+      >
+        <div className="mx-auto max-w-7xl px-4 py-2.5 flex items-center gap-3">
+
+          {/* Logo — desktop only, takes minimal space */}
+          <Link href="/" className="hidden md:flex shrink-0 items-center mr-2">
+            <Image
+              src="/images/logo/AGPH-Logo-Black-600x290.webp"
+              alt="AGPH Store Logo"
+              width={100} height={54}
+              className="w-[110px] h-auto"
+            />
+          </Link>
+
+          {/* Search — full width */}
+          <div className="flex-1 relative">
+            <SearchBox {...sharedSearchProps} />
+          </div>
+
+          {/* Cart + Account icons */}
+          <div className="flex items-center gap-3 text-gray-700 shrink-0">
+            <Link href="/wishlist" aria-label="Wishlist" className="hidden sm:block">
+              <Heart className="h-5 w-5 hover:text-black" />
+            </Link>
+            <button aria-label="Account" onClick={() => setSliderOpen(true)}>
+              <User className="h-5 w-5 hover:text-black" />
+            </button>
+            <Link href="/cart" className="relative" aria-label="Cart">
+              <ShoppingBag className="h-5 w-5 hover:text-black" />
+              {cartCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-600 text-white text-[10px] min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center">
+                  {cartCount}
+                </span>
+              )}
+            </Link>
+          </div>
         </div>
-      )}
+      </div>
 
       <AccountSlider
         open={sliderOpen}
@@ -300,11 +295,11 @@ const Header = () => {
         user={user}
         onLogout={logout}
       />
-    </header>
+    </>
   );
 };
 
-/* ===== Extracted SearchBox component to avoid duplication ===== */
+/* ── SearchBox ── */
 type SearchBoxProps = {
   query: string;
   setQuery: (v: string) => void;
@@ -321,13 +316,16 @@ const SearchBox = ({ query, setQuery, showSearch, setShowSearch, results, highli
       <input
         type="text"
         value={query}
-        onChange={(e) => { setQuery(e.target.value); setShowSearch(true); }}
+        onChange={e => { setQuery(e.target.value); setShowSearch(true); }}
         placeholder="Search books, authors, ebooks"
         className="w-full rounded-full border border-gray-300 py-2 pl-10 pr-9 text-sm focus:outline-none focus:ring-1 focus:ring-black"
       />
       <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-500" />
       {query && (
-        <X onClick={() => { setQuery(""); setShowSearch(false); }} className="absolute right-3 top-2.5 h-4 w-4 text-gray-500 cursor-pointer" />
+        <X
+          onClick={() => { setQuery(""); setShowSearch(false); }}
+          className="absolute right-3 top-2.5 h-4 w-4 text-gray-500 cursor-pointer"
+        />
       )}
 
       {showSearch && ((results.products?.length ?? 0) > 0 || (results.authors?.length ?? 0) > 0) && (

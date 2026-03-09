@@ -3,7 +3,7 @@ import Link from "next/link";
 const CreateAccountSection = () => {
   return (
     <section className="mt-5 bg-[#f8f8f8]">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 py-10 sm:py-16 grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10 items-center">
+      <div className="mx-auto max-w-7xl px-7 sm:px-6 py-10 sm:py-16 grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10 items-center">
 
         {/* LEFT CONTENT */}
         <div>

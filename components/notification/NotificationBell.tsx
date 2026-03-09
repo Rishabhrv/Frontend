@@ -216,7 +216,7 @@ export default function NotificationBell() {
               {unread > 0 && (
                 <button
                   onClick={markAllRead}
-                  className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-medium text-indigo-600 hover:bg-indigo-50 transition"
+                  className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-medium text-indigo-600 hover:bg-indigo-50 transition cursor-pointer"
                 >
                   <Check size={12} />
                   Mark all read
@@ -224,7 +224,7 @@ export default function NotificationBell() {
               )}
               <button
                 onClick={() => setOpen(false)}
-                className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition"
+                className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition cursor-pointer"
               >
                 <X size={14} />
               </button>
@@ -237,7 +237,7 @@ export default function NotificationBell() {
               <button
                 key={f.key}
                 onClick={() => setActiveFilter(f.key)}
-                className={`px-3 py-1.5 text-[11px] font-medium rounded-t-lg transition border-b-2 -mb-px ${
+                className={`px-3 py-1.5 text-[11px] font-medium rounded-t-lg cursor-pointer transition border-b-2 -mb-px ${
                   activeFilter === f.key
                     ? "border-orange-500 text-orange-600 bg-orange-50"
                     : "border-transparent text-gray-500 hover:text-gray-700"
