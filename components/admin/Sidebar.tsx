@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { Box, Layers, ChevronDown, LibraryBig, Users, ShoppingCart, Truck, BadgeCheck,BadgeIndianRupee, BadgePercent, UserStar } from "lucide-react";
+import { Box, Layers, ChevronDown, LibraryBig, Users, ShoppingCart, Truck, BadgeCheck,BadgeIndianRupee, BadgePercent, UserStar, AlignVerticalDistributeStart } from "lucide-react";
 
 export default function Sidebar() {
   const pathname = usePathname() ?? "";
@@ -93,7 +93,7 @@ export default function Sidebar() {
             }
           `}
         >
-          <Layers size={18} />
+          <AlignVerticalDistributeStart size={18} />
           Subject
         </Link>
 

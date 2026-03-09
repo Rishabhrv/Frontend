@@ -84,46 +84,34 @@ const Footer = () => {
   ];
 
   return (
+    // ← mb-16 REMOVED — FooterWithAccordion handles spacing above mobile nav
     <footer className="bg-gradient-to-br from-[#070d1c] to-[#01040f] border-t border-gray-200">
 
       {/* Top accent */}
-      <div className="h-[3px] w-full" style={{ background: "linear-gradient(90deg, #e5e7eb 0%, #111 40%, #111 60%, #e5e7eb 100%)" }} />
-
+      <div 
+        className="h-[1px] sm:h-[3px] w-full"
+        style={{ background: "linear-gradient(90deg, #e5e7eb 0%, #111 40%, #111 60%, #e5e7eb 100%)" }}
+      />
       <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-16 pt-12 pb-8">
 
         {/* 4-col grid */}
         <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-10 mb-12">
 
-          {/* COL 1: About — full width on mobile */}
+          {/* COL 1: About */}
           <div className="col-span-2 sm:col-span-2 lg:col-span-1 flex flex-col">
             <Link href="/" className="flex items-center mb-4">
-              <Image
-                src="/images/logo/agph2-200x121.webp"
-                alt="AGPH Store Logo"
-                width={130}
-                height={63}
-                priority
-              />
+              <Image src="/images/logo/agph2-200x121.webp" alt="AGPH Store Logo" width={130} height={63} priority />
             </Link>
-
             <p className="text-white text-xs leading-relaxed mb-4 text-justify">
               At AGPH Books Store, we believe every book carries the power to inspire, educate, and transform. With over 3 years of dedicated experience in the publishing industry, we've proudly brought more than 1,500 books to life across diverse genres, supported 2,500+ authors, and reached readers across the globe with over 50,000 copies sold.
             </p>
-
             <div className="inline-flex self-start items-center px-3 py-1.5 rounded-full border border-gray-200 bg-gray-50 text-[10px] tracking-[0.2em] uppercase text-gray-500 mb-5">
               Read · Publish · Grow
             </div>
-
             <div className="flex items-center gap-2 mt-auto flex-wrap">
               {socials.map(({ label, icon, href }) => (
-                <a
-                  key={label}
-                  href={href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={label}
-                  className="w-8 h-8 rounded-full flex items-center justify-center border border-gray-200 text-gray-400 hover:border-gray-900 hover:text-gray-900 hover:bg-gray-50 transition-all duration-200"
-                >
+                <a key={label} href={href} target="_blank" rel="noopener noreferrer" aria-label={label}
+                  className="w-8 h-8 rounded-full flex items-center justify-center border border-gray-200 text-gray-400 hover:border-gray-900 hover:text-gray-900 hover:bg-gray-50 transition-all duration-200">
                   {icon}
                 </a>
               ))}
@@ -138,7 +126,6 @@ const Footer = () => {
               <FooterLink href="/category/academic-books">Categories</FooterLink>
               <FooterLink href="/new-release">New Releases</FooterLink>
             </ul>
-
             <ColHeading>Legal</ColHeading>
             <ul className="space-y-3">
               <FooterLink href="/privacy-policy">Privacy Policy</FooterLink>
@@ -158,53 +145,36 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* COL 4: Contact — full width on mobile */}
+          {/* COL 4: Contact */}
           <div className="col-span-2 sm:col-span-2 lg:col-span-1">
             <ColHeading>Get In Touch</ColHeading>
-
             <div className="flex flex-col gap-5">
-
-              {/* Address */}
-              <a
-                href="https://www.google.com/maps/place/AGPH+Books"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-start gap-3 group"
-              >
+              <a href="https://www.google.com/maps/place/AGPH+Books" target="_blank" rel="noopener noreferrer" className="flex items-start gap-3 group">
                 <IconBox>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" />
-                    <circle cx="12" cy="10" r="3" />
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" />
                   </svg>
                 </IconBox>
                 <div>
                   <p className="text-[10px] uppercase tracking-widest text-gray-400 mb-0.5">Address</p>
                   <p className="text-white text-xs leading-relaxed group-hover:text-gray-300 transition-colors text-justify">
-                    57-First Floor, Susheela Bhawan, Priyadarshini Phase-3,
-                    near Meenakshi Planet City, Shri Rameshwaram
-                    Bagmugaliya, Bhopal – 462047, MP
+                    57-First Floor, Susheela Bhawan, Priyadarshini Phase-3, near Meenakshi Planet City, Shri Rameshwaram Bagmugaliya, Bhopal – 462047, MP
                   </p>
                   <p className="text-gray-400 text-[10px] mt-0.5">GSTIN: 23ABZFA2547E1ZD</p>
                 </div>
               </a>
 
-              {/* Phone */}
               <div className="flex items-start gap-3">
                 <IconBox><PhoneIcon /></IconBox>
                 <div>
                   <p className="text-[10px] uppercase tracking-widest text-gray-400 mb-1.5">Phone</p>
                   <div className="flex flex-col gap-1">
-                    <a href="tel:+919981933372" className="text-white text-xs font-medium hover:text-gray-300 hover:underline underline-offset-2 transition-colors w-fit">
-                      +91-9981933372
-                    </a>
-                    <a href="tel:+919981933344" className="text-white text-xs font-medium hover:text-gray-300 hover:underline underline-offset-2 transition-colors w-fit">
-                      +91-9981933344
-                    </a>
+                    <a href="tel:+919981933372" className="text-white text-xs font-medium hover:text-gray-300 hover:underline underline-offset-2 transition-colors w-fit">+91-9981933372</a>
+                    <a href="tel:+919981933344" className="text-white text-xs font-medium hover:text-gray-300 hover:underline underline-offset-2 transition-colors w-fit">+91-9981933344</a>
                   </div>
                 </div>
               </div>
 
-              {/* Email */}
               <a href="mailto:editor@agphbooks.com" className="flex items-start gap-3 group">
                 <IconBox>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -214,15 +184,11 @@ const Footer = () => {
                 </IconBox>
                 <div>
                   <p className="text-[10px] uppercase tracking-widest text-gray-400 mb-0.5">Email</p>
-                  <p className="text-white text-xs font-medium group-hover:text-gray-300 group-hover:underline underline-offset-2 transition-colors">
-                    editor@agphbooks.com
-                  </p>
+                  <p className="text-white text-xs font-medium group-hover:text-gray-300 group-hover:underline underline-offset-2 transition-colors">editor@agphbooks.com</p>
                 </div>
               </a>
-
             </div>
           </div>
-
         </div>
 
         {/* Divider */}
@@ -230,14 +196,10 @@ const Footer = () => {
 
         {/* Bottom bar */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
-          <p className="text-xs text-gray-400">
-            © {new Date().getFullYear()} AGPH Books Store. All rights reserved.
-          </p>
+          <p className="text-xs text-gray-400">© {new Date().getFullYear()} AGPH Books Store. All rights reserved.</p>
           <div className="flex items-center gap-1.5 text-xs text-gray-400">
-            <span>Read</span>
-            <span className="text-gray-600 font-bold">·</span>
-            <span>Publish</span>
-            <span className="text-gray-600 font-bold">·</span>
+            <span>Read</span><span className="text-gray-600 font-bold">·</span>
+            <span>Publish</span><span className="text-gray-600 font-bold">·</span>
             <span>Grow</span>
           </div>
         </div>

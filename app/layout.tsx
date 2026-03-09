@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
+import MobileBottomNav from "@/components/layout/MobileBottomNav";
+import FooterWithAccordion from "@/components/layout/Footerwithaccordion";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,7 +17,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "AGPH Books Store",
-  description: "AGPH Store is India's leading self-publishing company in Bhopal, helping authors publish books with expert services since 2022.",
+  description:
+    "AGPH Store is India's leading self-publishing company in Bhopal, helping authors publish books with expert services since 2022.",
 };
 
 export default function RootLayout({
@@ -26,7 +28,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
@@ -34,12 +35,15 @@ export default function RootLayout({
         <Header />
 
         {/* MAIN CONTENT */}
-        <main className="">
+        <main className="pb-16 md:pb-0">
           {children}
         </main>
 
-        {/* FOOTER */}
-        <Footer />
+        {/* FOOTER — accordion on mobile, full on desktop */}
+        <FooterWithAccordion />
+
+        {/* MOBILE BOTTOM NAV */}
+        <MobileBottomNav />
       </body>
     </html>
   );

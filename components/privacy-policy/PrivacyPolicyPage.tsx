@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { Shield, Mail, Cookie, Lock, Eye, Share2, Globe, Baby, RefreshCw, Phone } from "lucide-react";
+import { Shield, Mail, Cookie, Lock, Eye, Share2, Globe, Baby, RefreshCw, ChevronDown } from "lucide-react";
 
 const sections = [
   {
@@ -109,15 +109,14 @@ const sections = [
 
 export default function PrivacyPolicyPage() {
   const [activeSection, setActiveSection] = useState("information-we-collect");
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
   useEffect(() => {
     observerRef.current = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setActiveSection(entry.target.id);
-          }
+          if (entry.isIntersecting) setActiveSection(entry.target.id);
         });
       },
       { rootMargin: "-30% 0px -60% 0px" }
@@ -133,37 +132,35 @@ export default function PrivacyPolicyPage() {
 
   const scrollTo = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setMobileNavOpen(false);
   };
+
+  const activeTitle = sections.find(s => s.id === activeSection)?.title ?? "Contents";
 
   return (
     <div className="min-h-screen bg-white">
 
-      {/* ════════════════════════════════
-          HERO BAND
-      ════════════════════════════════ */}
+      {/* ════════ HERO ════════ */}
       <div className="bg-gray-950 text-white">
-        <div className="max-w-6xl mx-auto px-6 py-20 md:py-28">
-          <div className="flex items-center gap-3 mb-5">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-14 sm:py-20 md:py-28">
+          <div className="flex items-center gap-3 mb-4 sm:mb-5">
             <Shield className="w-4 h-4 text-gray-400" strokeWidth={1.5} />
-            <span
-              className="text-[10px] uppercase tracking-[0.4em] text-gray-400"
-              style={{ fontFamily: "system-ui, sans-serif" }}
-            >
+            <span className="text-[10px] uppercase tracking-[0.4em] text-gray-400" style={{ fontFamily: "system-ui, sans-serif" }}>
               Legal · Privacy
             </span>
           </div>
 
           <h1
-            className="text-5xl md:text-7xl font-black text-white leading-[0.95] tracking-tight mb-8"
+            className="text-4xl sm:text-5xl md:text-7xl font-black text-white leading-[0.95] tracking-tight mb-6 sm:mb-8"
             style={{ fontFamily: "Georgia, serif" }}
           >
-            Privacy 
-            <span className="text-gray-500"> Policy</span>
+            Privacy{" "}
+            <span className="text-gray-500">Policy</span>
           </h1>
 
-          <div className="flex flex-col sm:flex-row sm:items-center gap-6 mt-10">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 mt-6 sm:mt-10">
             <div
-              className="flex items-center gap-2 text-[11px] text-gray-500 border border-gray-800 rounded-full px-4 py-2"
+              className="self-start flex items-center gap-2 text-[11px] text-gray-500 border border-gray-800 rounded-full px-4 py-2"
               style={{ fontFamily: "system-ui, sans-serif" }}
             >
               <span className="w-1.5 h-1.5 rounded-full bg-gray-600 inline-block" />
@@ -180,13 +177,53 @@ export default function PrivacyPolicyPage() {
         </div>
       </div>
 
-      {/* ════════════════════════════════
-          TWO-COLUMN LAYOUT
-      ════════════════════════════════ */}
-      <div className="max-w-6xl mx-auto px-6">
-        <div className="flex gap-16 py-16">
+      {/* ════════ MOBILE: sticky section picker ════════ */}
+      <div className="lg:hidden sticky top-0 z-30 bg-white border-b border-gray-200 shadow-sm">
+        <button
+          onClick={() => setMobileNavOpen(v => !v)}
+          className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-gray-800 cursor-pointer"
+          style={{ fontFamily: "system-ui, sans-serif" }}
+        >
+          <span className="flex items-center gap-2">
+            <span className="text-[10px] text-gray-400 tabular-nums">
+              {sections.find(s => s.id === activeSection)?.number}
+            </span>
+            <span className="truncate max-w-[260px]">{activeTitle}</span>
+          </span>
+          <ChevronDown
+            size={16}
+            className={`text-gray-400 transition-transform shrink-0 ${mobileNavOpen ? "rotate-180" : ""}`}
+          />
+        </button>
 
-          {/* ── LEFT: Sticky Nav ── */}
+        {mobileNavOpen && (
+          <div className="border-t border-gray-100 bg-white max-h-72 overflow-y-auto">
+            {sections.map(s => (
+              <button
+                key={s.id}
+                onClick={() => scrollTo(s.id)}
+                className={`w-full text-left flex items-center gap-3 px-4 py-2.5 text-[13px] transition-colors cursor-pointer ${
+                  activeSection === s.id
+                    ? "bg-gray-950 text-white font-medium"
+                    : "text-gray-600 hover:bg-gray-50"
+                }`}
+                style={{ fontFamily: "system-ui, sans-serif" }}
+              >
+                <span className={`text-[10px] tabular-nums shrink-0 ${activeSection === s.id ? "text-gray-400" : "text-gray-300"}`}>
+                  {s.number}
+                </span>
+                {s.title}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ════════ BODY ════════ */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6">
+        <div className="flex gap-12 xl:gap-16 py-10 sm:py-16">
+
+          {/* ── Desktop Sidebar ── */}
           <aside className="hidden lg:block w-56 shrink-0">
             <div className="sticky top-8">
               <p
@@ -207,11 +244,7 @@ export default function PrivacyPolicyPage() {
                     }`}
                     style={{ fontFamily: "system-ui, sans-serif" }}
                   >
-                    <span
-                      className={`text-[9px] tabular-nums shrink-0 ${
-                        activeSection === s.id ? "text-gray-400" : "text-gray-300"
-                      }`}
-                    >
+                    <span className={`text-[9px] tabular-nums shrink-0 ${activeSection === s.id ? "text-gray-400" : "text-gray-300"}`}>
                       {s.number}
                     </span>
                     <span className="leading-tight">{s.title}</span>
@@ -219,12 +252,8 @@ export default function PrivacyPolicyPage() {
                 ))}
               </nav>
 
-              {/* Bottom CTA in sidebar */}
               <div className="mt-10 p-4 bg-gray-50 rounded-xl border border-gray-100">
-                <p
-                  className="text-[11px] text-gray-500 mb-3 leading-relaxed"
-                  style={{ fontFamily: "system-ui, sans-serif" }}
-                >
+                <p className="text-[11px] text-gray-500 mb-3 leading-relaxed" style={{ fontFamily: "system-ui, sans-serif" }}>
                   Questions about your privacy?
                 </p>
                 <Link
@@ -239,7 +268,7 @@ export default function PrivacyPolicyPage() {
             </div>
           </aside>
 
-          {/* ── RIGHT: Content ── */}
+          {/* ── Main Content ── */}
           <main className="flex-1 min-w-0">
             <div className="divide-y divide-gray-100">
               {sections.map((section) => {
@@ -248,12 +277,12 @@ export default function PrivacyPolicyPage() {
                   <section
                     key={section.id}
                     id={section.id}
-                    className="py-9 scroll-mt-8 first:pt-0"
+                    className="py-8 sm:py-9 scroll-mt-16 lg:scroll-mt-8 first:pt-0"
                   >
                     {/* Section header */}
-                    <div className="flex items-start gap-4 mb-6">
-                      <div className="mt-1 w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
-                        <Icon className="w-4 h-4 text-gray-500" strokeWidth={1.5} />
+                    <div className="flex items-start gap-3 sm:gap-4 mb-5 sm:mb-6">
+                      <div className="mt-0.5 w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
+                        <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-500" strokeWidth={1.5} />
                       </div>
                       <div>
                         <span
@@ -263,7 +292,7 @@ export default function PrivacyPolicyPage() {
                           Section {section.number}
                         </span>
                         <h2
-                          className="text-xl font-bold text-gray-900 leading-snug"
+                          className="text-lg sm:text-xl font-bold text-gray-900 leading-snug"
                           style={{ fontFamily: "Georgia, serif" }}
                         >
                           {section.title}
@@ -271,92 +300,96 @@ export default function PrivacyPolicyPage() {
                       </div>
                     </div>
 
-                    {/* Body text */}
-                    {section.content && (
-                      <p
-                        className="text-gray-500 text-[14px] leading-[1.9] mb-5 pl-13"
-                        style={{ fontFamily: "system-ui, sans-serif", paddingLeft: "52px" }}
-                      >
-                        {section.content}
-                      </p>
-                    )}
+                    {/* Indent wrapper — 44px on mobile (icon+gap), 52px on sm+ */}
+                    <div className="pl-11 sm:pl-[52px]">
 
-                    {/* Subsections */}
-                    {section.subsections && (
-                      <div
-                        className="space-y-4 mb-5"
-                        style={{ paddingLeft: "52px" }}
-                      >
-                        {section.subsections.map((sub) => (
-                          <div
-                            key={sub.label}
-                            className="bg-gray-50 rounded-xl p-5 border border-gray-100"
-                          >
-                            <p
-                              className="text-[11px] font-semibold text-gray-700 uppercase tracking-wider mb-2"
+                      {section.content && (
+                        <p
+                          className="text-gray-500 text-[14px] leading-[1.9] mb-5"
+                          style={{ fontFamily: "system-ui, sans-serif" }}
+                        >
+                          {section.content}
+                        </p>
+                      )}
+
+                      {section.subsections && (
+                        <div className="space-y-3 sm:space-y-4 mb-5">
+                          {section.subsections.map((sub) => (
+                            <div key={sub.label} className="bg-gray-50 rounded-xl p-4 sm:p-5 border border-gray-100">
+                              <p
+                                className="text-[11px] font-semibold text-gray-700 uppercase tracking-wider mb-2"
+                                style={{ fontFamily: "system-ui, sans-serif" }}
+                              >
+                                {sub.label}
+                              </p>
+                              <p
+                                className="text-gray-500 text-[14px] leading-[1.85]"
+                                style={{ fontFamily: "system-ui, sans-serif" }}
+                              >
+                                {sub.text}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {section.list && (
+                        <ul className="space-y-2.5">
+                          {section.list.map((item, i) => (
+                            <li
+                              key={i}
+                              className="flex items-start gap-3 text-[14px] text-gray-500 leading-[1.75]"
                               style={{ fontFamily: "system-ui, sans-serif" }}
                             >
-                              {sub.label}
-                            </p>
-                            <p
-                              className="text-gray-500 text-[14px] leading-[1.85]"
-                              style={{ fontFamily: "system-ui, sans-serif" }}
-                            >
-                              {sub.text}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                              <span className="mt-[9px] w-1 h-1 rounded-full bg-gray-400 shrink-0" />
+                              {item}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
 
-                    {/* List */}
-                    {section.list && (
-                      <ul
-                        className="space-y-2.5"
-                        style={{ paddingLeft: "52px" }}
-                      >
-                        {section.list.map((item, i) => (
-                          <li
-                            key={i}
-                            className="flex items-start gap-3 text-[14px] text-gray-500 leading-[1.75]"
+                      {section.cta && (
+                        <div className="mt-6 flex flex-col sm:flex-row gap-3">
+                          <Link
+                            href="https://agphbooks.com/contact-us/"
+                            className="inline-flex items-center justify-center gap-2 bg-gray-950 text-white text-[12px] font-medium uppercase tracking-[0.15em] px-6 py-3 rounded-lg hover:bg-gray-800 transition-colors duration-200"
                             style={{ fontFamily: "system-ui, sans-serif" }}
                           >
-                            <span className="mt-[9px] w-1 h-1 rounded-full bg-gray-400 shrink-0" />
-                            {item}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
+                            <Mail className="w-3.5 h-3.5" />
+                            Contact Us
+                          </Link>
+                          <Link
+                            href="/"
+                            className="inline-flex items-center justify-center gap-2 border border-gray-200 text-gray-600 text-[12px] font-medium uppercase tracking-[0.15em] px-6 py-3 rounded-lg hover:border-gray-400 hover:text-gray-900 transition-colors duration-200"
+                            style={{ fontFamily: "system-ui, sans-serif" }}
+                          >
+                            Back to Home
+                          </Link>
+                        </div>
+                      )}
 
-                    {/* Contact CTA */}
-                    {section.cta && (
-                      <div
-                        className="mt-6 flex flex-col sm:flex-row gap-3"
-                        style={{ paddingLeft: "52px" }}
-                      >
-                        <Link
-                          href="https://agphbooks.com/contact-us/"
-                          className="inline-flex items-center justify-center gap-2 bg-gray-950 text-white text-[12px] font-medium uppercase tracking-[0.15em] px-6 py-3 rounded-lg hover:bg-gray-800 transition-colors duration-200"
-                          style={{ fontFamily: "system-ui, sans-serif" }}
-                        >
-                          <Mail className="w-3.5 h-3.5" />
-                          Contact Us
-                        </Link>
-                        <Link
-                          href="/"
-                          className="inline-flex items-center justify-center gap-2 border border-gray-200 text-gray-600 text-[12px] font-medium uppercase tracking-[0.15em] px-6 py-3 rounded-lg hover:border-gray-400 hover:text-gray-900 transition-colors duration-200"
-                          style={{ fontFamily: "system-ui, sans-serif" }}
-                        >
-                          Back to Home
-                        </Link>
-                      </div>
-                    )}
+                    </div>
                   </section>
                 );
               })}
             </div>
 
+            {/* Mobile bottom CTA */}
+            <div className="lg:hidden mt-8 mb-4 p-4 bg-gray-50 rounded-xl border border-gray-100 flex items-center justify-between">
+              <p className="text-[12px] text-gray-500" style={{ fontFamily: "system-ui, sans-serif" }}>
+                Questions about your privacy?
+              </p>
+              <Link
+                href="https://agphbooks.com/contact-us/"
+                className="inline-flex items-center gap-1.5 text-[12px] font-medium text-gray-900 hover:text-gray-600 transition-colors"
+                style={{ fontFamily: "system-ui, sans-serif" }}
+              >
+                <Mail className="w-3 h-3" />
+                Contact us →
+              </Link>
+            </div>
           </main>
+
         </div>
       </div>
     </div>

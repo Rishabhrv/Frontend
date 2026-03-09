@@ -175,7 +175,7 @@ const ProductCard = ({ product, index, current, total, onSelect, screen }: CardP
           style={{ fontFamily: "'Bebas Neue', sans-serif" }}
         >
           {isCenter ? (
-            <Link href={`/product/${product.slug}`}>{product.name}</Link>
+            <Link href={`/product/${product.slug}`} tabIndex={-1} >{product.name}</Link>
           ) : (
             product.name
           )}

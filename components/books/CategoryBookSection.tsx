@@ -39,6 +39,7 @@ const CategoryBookSection = ({
   const [books, setBooks] = useState<Book[]>([]);
   const [start, setStart] = useState(0);
   const [isAgph, setIsAgph] = useState<boolean | null>(null);
+  const [paused, setPaused] = useState(false);
 
   // ── Responsive visibleCount ──────────────────────────────────────────────
   const [visibleCount, setVisibleCount] = useState(desktopVisible);
@@ -81,14 +82,15 @@ const CategoryBookSection = ({
 
   // ── 3️⃣ Auto-slide ───────────────────────────────────────────────────────
   useEffect(() => {
-    if (books.length <= visibleCount) return;
-    const interval = setInterval(() => {
-      setStart((prev) =>
-        prev + 1 > books.length - visibleCount ? 0 : prev + 1
-      );
-    }, 3000);
-    return () => clearInterval(interval);
-  }, [books, visibleCount]);
+  if (books.length <= visibleCount) return;
+  if (paused) return;                    // ← stop when hovered
+  const interval = setInterval(() => {
+    setStart((prev) =>
+      prev + 1 > books.length - visibleCount ? 0 : prev + 1
+    );
+  }, 3000);
+  return () => clearInterval(interval);
+}, [books, visibleCount, paused]);
 
   if (!isAgph || !books.length) return null;
 
@@ -111,7 +113,10 @@ const CategoryBookSection = ({
       </div>
 
       {/* SLIDER */}
-      <div className="relative overflow-hidden">
+      <div className="relative overflow-hidden"
+        onMouseEnter={() => setPaused(true)}   // ← pause
+        onMouseLeave={() => setPaused(false)}
+      >
         <div
           className="flex transition-transform duration-700 ease-in-out"
           style={{
