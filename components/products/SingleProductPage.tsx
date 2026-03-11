@@ -57,7 +57,6 @@ function ShareButton({ title }: { title: string }) {
 
   const url = typeof window !== "undefined" ? window.location.href : "";
 
-  /* close on outside click */
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
@@ -78,7 +77,7 @@ function ShareButton({ title }: { title: string }) {
       color: "#25D366",
       icon: (
         <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
-          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
         </svg>
       ),
       href: `https://wa.me/?text=${encodeURIComponent(title + " " + url)}`,
@@ -88,7 +87,7 @@ function ShareButton({ title }: { title: string }) {
       color: "#1877F2",
       icon: (
         <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
-          <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+          <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
         </svg>
       ),
       href: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,
@@ -98,7 +97,7 @@ function ShareButton({ title }: { title: string }) {
       color: "#000000",
       icon: (
         <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
-          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
         </svg>
       ),
       href: `https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(url)}`,
@@ -117,15 +116,12 @@ function ShareButton({ title }: { title: string }) {
 
       {open && (
         <div className="absolute top-11 right-0 bg-white rounded-xl shadow-2xl border border-gray-100 w-52 z-50 overflow-hidden">
-          {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
             <span className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Share</span>
             <button onClick={() => setOpen(false)} className="text-gray-400 hover:text-gray-600 cursor-pointer">
               <X size={14} />
             </button>
           </div>
-
-          {/* Social links */}
           <div className="p-2">
             {shareLinks.map((s) => (
               <a
@@ -145,8 +141,6 @@ function ShareButton({ title }: { title: string }) {
                 <span className="text-sm text-gray-700 group-hover:text-gray-900">{s.label}</span>
               </a>
             ))}
-
-            {/* Copy link */}
             <button
               onClick={copyLink}
               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 transition-colors group cursor-pointer"
@@ -179,27 +173,45 @@ export default function SingleProductPage({ product }: { product: Product }) {
   const [addedToCart, setAddedToCart] = useState(false);
   const [avgRating, setAvgRating] = useState<number>(0);
   const [reviewCount, setReviewCount] = useState<number>(0);
-  
-    useEffect(() => {
-      fetch(`${API_URL}/api/reviews/product/${product.id}/summary`)
-        .then((r) => r.json())
-        .then((d) => {
-          setAvgRating(d.average ?? 0);   
-          setReviewCount(d.total ?? 0);  
-        })
-        .catch(() => {});
-    }, [product.id]);
+
+  /* ── touch / swipe refs ── */
+  const touchStartX = useRef<number>(0);
+  const touchEndX = useRef<number>(0);
+  /* ref for the mobile thumbnail strip — used to auto-scroll it */
+  const mobileThumbnailRef = useRef<HTMLDivElement>(null);
+
+  const allImages = [{ image_path: product.main_image }, ...product.gallery];
 
   useEffect(() => {
-    if (!product || !product.gallery || product.gallery?.length === 0) return;
-    const images = [{ image_path: product.main_image }, ...product.gallery];
+    fetch(`${API_URL}/api/reviews/product/${product.id}/summary`)
+      .then((r) => r.json())
+      .then((d) => {
+        setAvgRating(d.average ?? 0);
+        setReviewCount(d.total ?? 0);
+      })
+      .catch(() => {});
+  }, [product.id]);
+
+  /* ── auto-cycle images every 5 s ── */
+  useEffect(() => {
+    if (!product || !product.gallery || product.gallery.length === 0) return;
+    const images = allImages;
     const visibleCount = 5;
+    let currentIndex = 0;
+
     const interval = setInterval(() => {
+      currentIndex = currentIndex >= images.length - 1 ? 0 : currentIndex + 1;
+      setActiveImage(images[currentIndex].image_path);
+      /* keep desktop thumbnail strip in sync */
       setGalleryIndex((prev) => {
-        if (prev >= images.length - visibleCount) return 0;
-        return prev + 1;
+        if (currentIndex >= prev + visibleCount) return currentIndex - visibleCount + 1;
+        if (currentIndex < prev) return currentIndex;
+        return prev;
       });
-    }, 3000);
+      /* keep mobile thumbnail strip scrolled to active thumb */
+      scrollMobileStrip(currentIndex);
+    }, 5000);
+
     return () => clearInterval(interval);
   }, [product]);
 
@@ -213,6 +225,43 @@ export default function SingleProductPage({ product }: { product: Product }) {
       .then((r) => r.json())
       .then((d) => setLiked(d.liked));
   }, [product]);
+
+  /* ── scroll mobile strip so thumb at index is visible ── */
+  const scrollMobileStrip = (index: number) => {
+    if (!mobileThumbnailRef.current) return;
+    const THUMB_W = 56 + 8; // width + gap
+    mobileThumbnailRef.current.scrollTo({
+      left: Math.max(0, index * THUMB_W - THUMB_W),
+      behavior: "smooth",
+    });
+  };
+
+  /* ── shared helper: jump to any image by index ── */
+  const jumpToImage = (index: number) => {
+    setActiveImage(allImages[index].image_path);
+    setGalleryIndex(Math.max(0, index - 4));
+    scrollMobileStrip(index);
+  };
+
+  /* ── swipe handlers ── */
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.changedTouches[0].clientX;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    touchEndX.current = e.changedTouches[0].clientX;
+    const diff = touchStartX.current - touchEndX.current;
+    if (Math.abs(diff) < 50) return; // ignore micro-swipes
+
+    const currentIndex = allImages.findIndex((img) => img.image_path === activeImage);
+    if (diff > 0) {
+      // swipe left → next
+      jumpToImage(currentIndex < allImages.length - 1 ? currentIndex + 1 : 0);
+    } else {
+      // swipe right → prev
+      jumpToImage(currentIndex > 0 ? currentIndex - 1 : allImages.length - 1);
+    }
+  };
 
   const toggleWishlist = async () => {
     const token = localStorage.getItem("token");
@@ -235,9 +284,7 @@ export default function SingleProductPage({ product }: { product: Product }) {
     product.ebook_price &&
     product.ebook_sell_price &&
     product.ebook_price > product.ebook_sell_price
-      ? Math.round(
-          ((product.ebook_price - product.ebook_sell_price) / product.ebook_price) * 100
-        )
+      ? Math.round(((product.ebook_price - product.ebook_sell_price) / product.ebook_price) * 100)
       : 0;
 
   const descriptionWords = product.description.split(" ");
@@ -279,7 +326,7 @@ export default function SingleProductPage({ product }: { product: Product }) {
   };
 
   const isPaperbackOnly = product.product_type === "physical";
-  const allImages = [{ image_path: product.main_image }, ...product.gallery];
+  const activeIndex = allImages.findIndex((img) => img.image_path === activeImage);
 
   return (
     <div className="max-w-7xl mx-auto px-3 sm:px-5 md:px-8 lg:px-14 xl:px-20 py-4 sm:py-6">
@@ -308,36 +355,81 @@ export default function SingleProductPage({ product }: { product: Product }) {
 
         {/* ── LEFT: Images ── */}
         <div>
-          {/* Main image */}
-          <div className="relative flex justify-center bg-white rounded-xl p-4 sm:p-6 border border-gray-100">
+
+          {/* ── Main image (swipeable on mobile) ── */}
+          <div
+            className="relative flex justify-center bg-white rounded-xl p-4 sm:p-6 border border-gray-100 select-none"
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+          >
             <Image
               src={`${API_URL}${activeImage}`}
               alt={product.title}
               width={360}
               height={520}
-              className="object-contain max-h-[320px] sm:max-h-[400px] md:max-h-[480px] w-auto"
+              className="object-contain max-h-[320px] sm:max-h-[400px] md:max-h-[480px] w-auto pointer-events-none"
               unoptimized
             />
 
-            {/* ── Wishlist + Share button group ── */}
+            {/* ── Dot indicators — mobile only ── */}
+            {allImages.length > 1 && (
+              <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5 md:hidden">
+                {allImages.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => jumpToImage(i)}
+                    className={`h-1.5 rounded-full transition-all duration-300 ${
+                      i === activeIndex ? "bg-gray-800 w-4" : "bg-gray-300 w-1.5"
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* ── Wishlist + Share ── */}
             <div className="absolute top-3 right-3 sm:top-4 sm:right-4 flex flex-col gap-2">
               <button
                 onClick={toggleWishlist}
                 className="bg-white p-2 rounded-full shadow cursor-pointer hover:bg-gray-50 transition-colors"
                 aria-label="Wishlist"
               >
-                <Heart
-                  size={20}
-                  className={liked ? "text-red-600 fill-red-600" : "text-gray-600"}
-                />
+                <Heart size={20} className={liked ? "text-red-600 fill-red-600" : "text-gray-600"} />
               </button>
-
-              {/* Share button with dropdown */}
               <ShareButton title={product.title} />
             </div>
           </div>
 
-          {/* Gallery thumbnails */}
+          {/* ── MOBILE: horizontally scrollable thumbnail strip ── */}
+          {allImages.length > 1 && (
+            <div
+              ref={mobileThumbnailRef}
+              className="mt-3 flex gap-2 overflow-x-auto pb-1 scroll-smooth md:hidden mx-3"
+              style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" } as React.CSSProperties}
+            >
+              {allImages.map((img, i) => (
+                <button
+                  key={i}
+                  onClick={() => jumpToImage(i)}
+                  className={`border rounded p-0.5 flex-shrink-0 transition-all duration-200 ${
+                    i === activeIndex
+                      ? "border-red-400 scale-100 shadow-sm"
+                      : "border-gray-200"
+                  }`}
+                >
+                  <Image
+                    src={`${API_URL}${img.image_path}`}
+                    width={56}
+                    height={80}
+                    className="h-16 w-12 object-cover rounded"
+                    unoptimized
+                    alt=""
+                  />
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* ── DESKTOP: arrow-based thumbnail strip ── */}
           {product.gallery?.length > 0 && (() => {
             const images = allImages;
             const visibleCount = 5;
@@ -345,35 +437,28 @@ export default function SingleProductPage({ product }: { product: Product }) {
             const canNext = galleryIndex < images.length - visibleCount;
 
             return (
-              <div className="mt-3 sm:mt-4 flex items-center gap-2">
-                <button
-                  onClick={() => canPrev && setGalleryIndex(galleryIndex - 1)}
-                  disabled={!canPrev}
-                  className={`px-2 sm:px-3 text-lg rounded-full shadow cursor-pointer flex-shrink-0 ${
-                    canPrev ? "hover:bg-gray-100" : "opacity-30 cursor-not-allowed"
-                  }`}
-                >
-                  ‹
-                </button>
+              <div className="mt-3 sm:mt-4 hidden md:flex items-center gap-2">
 
                 <div className="overflow-hidden flex-1">
                   <div
-                    className="flex gap-2 sm:gap-3 transition-transform duration-300"
+                    className="flex gap-3 transition-transform duration-300"
                     style={{ transform: `translateX(-${galleryIndex * 74}px)` }}
                   >
                     {images.map((img, i) => (
                       <button
                         key={i}
                         onClick={() => setActiveImage(img.image_path)}
-                        className={`border rounded p-0.5 sm:p-1 flex-shrink-0 ${
-                          activeImage === img.image_path ? "border-red-400" : "border-gray-300"
+                        className={`border rounded p-1 flex-shrink-0 transition-all duration-200 ${
+                          activeImage === img.image_path
+                            ? "border-red-400 scale-100 shadow-sm"
+                            : "border-gray-300"
                         }`}
                       >
                         <Image
                           src={`${API_URL}${img.image_path}`}
                           width={60}
                           height={90}
-                          className="h-[72px] sm:h-24 w-[55px] sm:w-[70px] object-cover cursor-pointer"
+                          className="h-24 w-[70px] object-cover cursor-pointer"
                           unoptimized
                           alt=""
                         />
@@ -382,15 +467,6 @@ export default function SingleProductPage({ product }: { product: Product }) {
                   </div>
                 </div>
 
-                <button
-                  onClick={() => canNext && setGalleryIndex(galleryIndex + 1)}
-                  disabled={!canNext}
-                  className={`px-2 sm:px-3 text-lg rounded-full cursor-pointer shadow flex-shrink-0 ${
-                    canNext ? "hover:bg-gray-100" : "opacity-30 cursor-not-allowed"
-                  }`}
-                >
-                  ›
-                </button>
               </div>
             );
           })()}
@@ -418,37 +494,33 @@ export default function SingleProductPage({ product }: { product: Product }) {
           )}
 
           {/* Stars */}
-            <div className="flex items-center gap-1 mb-4">
-              <div className="flex items-center gap-0.5">
-                {[1, 2, 3, 4, 5].map((i) => {
-                  const filled = avgRating >= i;
-                  const partial = !filled && avgRating > i - 1;
-                  const fillPercent = partial ? Math.round((avgRating - (i - 1)) * 100) : 0;
-            
-                  return (
-                    <span key={i} className="relative inline-block w-3.5 h-3.5">
-                      {/* Background (empty) star */}
-                      <Star size={14} className="text-gray-300 absolute inset-0" fill="currentColor" />
-                      {/* Foreground (filled) star — clipped */}
-                      <span
-                        className="absolute inset-0 overflow-hidden"
-                        style={{ width: filled ? "100%" : `${fillPercent}%` }}
-                      >
-                        <Star size={14} className="text-yellow-500" fill="currentColor" />
-                      </span>
+          <div className="flex items-center gap-1 mb-4">
+            <div className="flex items-center gap-0.5">
+              {[1, 2, 3, 4, 5].map((i) => {
+                const filled = avgRating >= i;
+                const partial = !filled && avgRating > i - 1;
+                const fillPercent = partial ? Math.round((avgRating - (i - 1)) * 100) : 0;
+                return (
+                  <span key={i} className="relative inline-block w-3.5 h-3.5">
+                    <Star size={14} className="text-gray-300 absolute inset-0" fill="currentColor" />
+                    <span
+                      className="absolute inset-0 overflow-hidden"
+                      style={{ width: filled ? "100%" : `${fillPercent}%` }}
+                    >
+                      <Star size={14} className="text-yellow-500" fill="currentColor" />
                     </span>
-                  );
-                })}
-              </div>
-            
-              {reviewCount > 0 ? (
-                <span className="text-xs text-gray-500 ml-1">
-                  {avgRating.toFixed(1)} ({reviewCount} {reviewCount === 1 ? "review" : "reviews"})
-                </span>
-              ) : (
-                <span className="text-xs text-gray-400 ml-1">No reviews yet</span>
-              )}
+                  </span>
+                );
+              })}
             </div>
+            {reviewCount > 0 ? (
+              <span className="text-xs text-gray-500 ml-1">
+                {avgRating.toFixed(1)} ({reviewCount} {reviewCount === 1 ? "review" : "reviews"})
+              </span>
+            ) : (
+              <span className="text-xs text-gray-400 ml-1">No reviews yet</span>
+            )}
+          </div>
 
           {/* ── PRICE SECTION ── */}
           <div className="mb-5 space-y-3">
