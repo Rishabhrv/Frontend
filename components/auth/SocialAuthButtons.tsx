@@ -67,11 +67,11 @@ const SocialAuthButtons = () => {
       Sign in with Google
     </button>
     
-                      <AlertPopup
-                        open={toastOpen}
-                        message={toastMsg}
-                        onClose={() => setToastOpen(false)}
-                      />
+      <AlertPopup
+        open={toastOpen}
+        message={toastMsg}
+        onClose={() => setToastOpen(false)}
+      />
     </>
 
 

@@ -133,7 +133,8 @@ function BookCard({
           <Image
             src={imgSrc}
             alt={book.name}
-            fill
+            width={400}
+            height={400}
             unoptimized
             className="object-cover block"
             style={{
