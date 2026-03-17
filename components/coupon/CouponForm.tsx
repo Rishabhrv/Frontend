@@ -63,18 +63,26 @@ const CouponForm = ({ coupon, onClose, onSaved }: any) => {
       .then(setCategories);
   }, []);
 
-  useEffect(() => {
-    if (coupon) {
-      setForm({
-        ...coupon,
-        selected_products: coupon.selected_products || [],
-        selected_categories: coupon.selected_categories || [],
-        usage_limit: coupon.usage_limit ?? "",
-        max_discount: coupon.max_discount ?? "",
-        min_cart_value: coupon.min_cart_value ?? "",
-      });
-    }
-  }, [coupon]);
+useEffect(() => {
+  if (coupon) {
+    setForm({
+      ...coupon,
+      selected_products: coupon.selected_products || [],
+      selected_categories: coupon.selected_categories || [],
+      usage_limit: coupon.usage_limit ?? "",
+      max_discount: coupon.max_discount ?? "",
+      min_cart_value: coupon.min_cart_value ?? "",
+
+      start_date: coupon.start_date
+        ? coupon.start_date.split("T")[0]
+        : "",
+
+      expiry_date: coupon.expiry_date
+        ? coupon.expiry_date.split("T")[0]
+        : "",
+    });
+  }
+}, [coupon]);
 
   const submit = async () => {
     const method = coupon ? "PUT" : "POST";
