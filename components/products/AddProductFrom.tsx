@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Upload, Eye } from "lucide-react";
 import ProductAttributes from "./ProductAttributes";
 import ProductGallery from "./ProductGallery";
@@ -47,8 +46,6 @@ function buildCategoryTree(categories: Category[]): Category[] {
 }
 
 // ── CategoryNode MUST be outside AddProductFrom ──────────────────
-// If defined inside, React remounts it on every render (new function
-// reference each time), resetting checkbox state in edit mode.
 type CategoryNodeProps = {
   category: Category;
   level?: number;
@@ -81,11 +78,14 @@ const CategoryNode: React.FC<CategoryNodeProps> = ({
   </div>
 );
 
-// ── Req asterisk (also outside to avoid remount) ─────────────────
+// ── Req asterisk ─────────────────────────────────────────────────
 const Req = () => <span className="text-red-500 ml-0.5">*</span>;
 
 // ── API URL ───────────────────────────────────────────────────────
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
+
+const CONFIRM_MSG =
+  "You have unsaved changes. Are you sure you want to leave?\nYour changes will be lost.";
 
 // ─────────────────────────────────────────────────────────────────
 const AddProductFrom = ({ mode = "add", productId }: Props) => {
@@ -134,7 +134,118 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
   const [mainImageAlt, setMainImageAlt] = useState("");
   const [productImages, setProductImages] = useState<ProductImage[]>([]);
   const [selectedSubjects, setSelectedSubjects] = useState<number[]>([]);
-  const [mainImageUrl, setMainImageUrl] = useState<string | null>(null); 
+  const [mainImageUrl, setMainImageUrl] = useState<string | null>(null);
+
+  // ── Unsaved-changes guard ────────────────────────────────────────
+  const [isDirty, setIsDirty] = useState(false);
+  const isInitialLoad = useRef(true);
+  // Ref mirror so all event listeners always read the latest value
+  // without needing to be torn down and re-registered on every change.
+  const isDirtyRef = useRef(false);
+  isDirtyRef.current = isDirty;
+
+  // Watch every field that counts as a user change
+  useEffect(() => {
+    if (isInitialLoad.current) return;
+    setIsDirty(true);
+  }, [
+    title, description, price, sellPrice, stock, sku, slug, status,
+    productType, weight, length, width, height, ebookPrice, ebookSellPrice,
+    selectedCategories, metaTitle, metaDescription, keywords,
+    productImage, ebookFile, mainImageUrl, selectedSubjects,
+  ]);
+
+  // 1️⃣  Tab close / browser refresh
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (!isDirtyRef.current) return;
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, []);
+
+  // 2️⃣  <Link> clicks — capture phase fires BEFORE Next.js sees the event,
+  //     so stopImmediatePropagation() truly cancels the navigation.
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (!isDirtyRef.current) return;
+
+      // Walk up the DOM to find the closest <a>
+      const anchor = (e.target as HTMLElement).closest("a");
+      if (!anchor) return;
+
+      const href = anchor.getAttribute("href");
+      // Ignore hash-only links and the current page
+      if (!href || href.startsWith("#") || href === window.location.pathname) return;
+
+      // Ask the user BEFORE Next.js starts the navigation
+      const confirmed = window.confirm(CONFIRM_MSG);
+      if (!confirmed) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation(); // stops Next.js's own listener from firing
+        return;
+      }
+
+      // User confirmed — clear dirty so subsequent navigations don't re-ask
+      isDirtyRef.current = false;
+      setIsDirty(false);
+    };
+
+    // true = capture phase: our handler runs before any bubble-phase listener
+    document.addEventListener("click", handleClick, true);
+    return () => document.removeEventListener("click", handleClick, true);
+  }, []);
+
+  // 3️⃣  Programmatic navigation: router.push() / router.replace()
+  //     Next.js calls pushState *after* rendering, so we patch it to guard
+  //     imperative navigations that don't come from a click (e.g. form submits
+  //     that call router.push directly, redirects, etc.)
+  useEffect(() => {
+    const originalPushState = window.history.pushState.bind(window.history);
+    const originalReplaceState = window.history.replaceState.bind(window.history);
+
+    const guard = (original: typeof originalPushState) =>
+      (...args: Parameters<typeof originalPushState>) => {
+        // Allow navigation that happens right after a confirmed click
+        // (isDirtyRef will already be false at that point).
+        if (isDirtyRef.current) {
+          const confirmed = window.confirm(CONFIRM_MSG);
+          if (!confirmed) return; // abort — page stays, URL unchanged
+          isDirtyRef.current = false;
+          setIsDirty(false);
+        }
+        original(...args);
+      };
+
+    window.history.pushState = guard(originalPushState);
+    window.history.replaceState = guard(originalReplaceState);
+
+    return () => {
+      window.history.pushState = originalPushState;
+      window.history.replaceState = originalReplaceState;
+    };
+  }, []);
+
+  // 4️⃣  Browser Back / Forward buttons
+  useEffect(() => {
+    const handlePopState = () => {
+      if (!isDirtyRef.current) return;
+      const confirmed = window.confirm(CONFIRM_MSG);
+      if (!confirmed) {
+        // Re-push the current URL so the address bar doesn't change
+        window.history.pushState(null, "", window.location.href);
+      } else {
+        isDirtyRef.current = false;
+        setIsDirty(false);
+      }
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+  // ────────────────────────────────────────────────────────────────
 
   const fetchProductImages = async (id: number) => {
     try {
@@ -147,7 +258,10 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
   };
 
   useEffect(() => {
-    if (mode !== "edit" || !productId) return;
+    if (mode !== "edit" || !productId) {
+      isInitialLoad.current = false;
+      return;
+    }
     fetch(`${API_URL}/api/products/${productId}`)
       .then((res) => res.json())
       .then((data) => {
@@ -175,6 +289,8 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
         }
         setEbookPrice(data.ebook_price ?? "");
         setEbookSellPrice(data.ebook_sell_price ?? "");
+        // Prefill done — now allow dirty tracking
+        isInitialLoad.current = false;
       });
     fetchProductImages(productId);
   }, [mode, productId]);
@@ -306,7 +422,7 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
     if (productImage) {
       formData.append("image", productImage);
     } else if (mainImageUrl) {
-      formData.append("image_url", mainImageUrl);  // ← ADD (backend needs to handle this)
+      formData.append("image_url", mainImageUrl);
     }
     formData.append("title", title);
     formData.append("description", description);
@@ -334,15 +450,14 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
     formData.append("meta_title", metaTitle);
     formData.append("meta_description", metaDescription);
     formData.append("keywords", keywords);
-if (galleryData) {
-  formData.append("existingGallery", JSON.stringify(galleryData.existing));
-  formData.append("deletedGallery", JSON.stringify(galleryData.deleted));
-  galleryData.newFiles.forEach((file: File) => formData.append("gallery", file));
-  // ← ADD: send media URLs chosen in add mode
-  if (galleryData.newUrls?.length) {
-    formData.append("galleryUrls", JSON.stringify(galleryData.newUrls));
-  }
-}
+    if (galleryData) {
+      formData.append("existingGallery", JSON.stringify(galleryData.existing));
+      formData.append("deletedGallery", JSON.stringify(galleryData.deleted));
+      galleryData.newFiles.forEach((file: File) => formData.append("gallery", file));
+      if (galleryData.newUrls?.length) {
+        formData.append("galleryUrls", JSON.stringify(galleryData.newUrls));
+      }
+    }
     formData.append("subjects", JSON.stringify(selectedSubjects));
 
     const url =
@@ -355,13 +470,17 @@ if (galleryData) {
       setPopup({ open: true, type: "error", title: "Error", message: data.message || "Something went wrong" });
       return;
     }
+
+    // Clear dirty so no guard fires after a successful save
+    setIsDirty(false);
+    isDirtyRef.current = false;
+
     setPopup({
       open: true,
       type: "success",
       title: "Success",
       message: mode === "edit" ? "Product updated successfully" : "Product added successfully",
     });
-
   };
 
   useEffect(() => {
@@ -751,22 +870,22 @@ if (galleryData) {
         </div>
       </div>
 
-<PopupModal
-  open={popup.open}
-  type={popup.type}
-  title={popup.title}
-  message={popup.message}
-  onClose={() => {
-    setPopup({ ...popup, open: false });
-    if (popup.type === "success") {
-      if (mode === "edit") {
-        router.refresh();
-      } else {
-        router.push(`/admin/product/EditProduct?id=${productId}`);
-      }
-    }
-  }}
-/>
+      <PopupModal
+        open={popup.open}
+        type={popup.type}
+        title={popup.title}
+        message={popup.message}
+        onClose={() => {
+          setPopup({ ...popup, open: false });
+          if (popup.type === "success") {
+            if (mode === "edit") {
+              router.refresh();
+            } else {
+              router.push(`/admin/product/EditProduct?id=${productId}`);
+            }
+          }
+        }}
+      />
       <AlertPopup open={toastOpen} message={toastMsg} onClose={() => setToastOpen(false)} />
       <MediaLibraryModal
         open={mediaModalOpen}

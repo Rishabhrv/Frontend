@@ -200,7 +200,7 @@ export default function ProductsTable() {
   const [imprint, setImprint] = useState("");
 
   useEffect(() => {
-    fetch(`${API_URL}/api/products`)
+    fetch(`${API_URL}/api/products/table-product`)
       .then(res => res.json())
       .then(data => {
         setProducts(data.map((p: any) => ({
