@@ -337,7 +337,9 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
 
       const galleryData = galleryRef.current?.getGalleryData();
       const totalGalleryImages =
-        (galleryData?.existing?.length || 0) + (galleryData?.newFiles?.length || 0);
+        (galleryData?.existing?.length || 0) +
+        (galleryData?.newFiles?.length || 0) +
+        (galleryData?.newUrls?.length || 0);
       if (totalGalleryImages === 0)
         newErrors.gallery = "At least one gallery image is required";
 
