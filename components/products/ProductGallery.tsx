@@ -20,6 +20,8 @@ type GalleryImage = {
   file?: File;
   preview: string;
   isExisting?: boolean;
+  url?: string; 
+
 };
 
 type Props = {
@@ -116,7 +118,7 @@ const handleMediaSelect = async (media: MediaImage) => {
         isExisting: false,
         // no file — we'll send the URL as a reference
         url: media.url,
-      } as any,
+      },
     ]);
   }
   onValidChange?.();
