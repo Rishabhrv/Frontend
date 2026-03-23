@@ -336,12 +336,6 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
         newErrors.authors = "At least one author is required";
 
       const galleryData = galleryRef.current?.getGalleryData();
-      const totalGalleryImages =
-        (galleryData?.existing?.length || 0) +
-        (galleryData?.newFiles?.length || 0) +
-        (galleryData?.newUrls?.length || 0);
-      if (totalGalleryImages === 0)
-        newErrors.gallery = "At least one gallery image is required";
 
       if (!keywords.trim()) newErrors.keywords = "Focus keyphrase is required";
       if (!metaTitle.trim()) newErrors.metaTitle = "SEO title is required";
