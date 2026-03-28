@@ -9,7 +9,7 @@ export default function OrdersPage() {
           document.title = "Manage Orders | Admin Panel";
         }, []);
   return (
-    <div className="p-6">
+    <div className="p-6 bg-white text-gray-700">
 
         <div className="flex">
               <Sidebar />

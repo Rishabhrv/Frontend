@@ -76,7 +76,7 @@ export default function WishlistPage() {
 
   if (!items.length)
     return (
-      <div className="max-w-5xl mx-auto py-20 px-6 text-center">
+      <div className="max-w-5xl mx-auto py-20 px-6 text-center bg-white text-gray-700">
         <Heart className="mx-auto mb-4 text-gray-300" size={48} />
         <h1 className="text-2xl font-semibold mb-2">My Wishlist</h1>
         <p className="text-gray-500 text-sm">Your wishlist is empty.</p>
@@ -87,7 +87,7 @@ export default function WishlistPage() {
     );
 
   return (
-    <div className="max-w-5xl min-h-[100dvh] mx-auto py-8 sm:py-16 px-4 sm:px-6">
+    <div className="max-w-5xl min-h-[100dvh] mx-auto py-8 sm:py-16 px-4 sm:px-6 bg-white text-gray-700" >
 
       {/* HEADER */}
       <div className="text-center mb-6 sm:mb-10">

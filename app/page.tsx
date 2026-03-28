@@ -8,6 +8,7 @@ import AuthorCarousel from "@/components/home/Authorcarousel";
 import HomeReviewSection from "@/components/home/HomeReviewSection";
 import HeroBanner from "@/components/home/HeroBanner";
 import CategoryBookTab from "@/components/home/CategoryBookTab";
+
 import type { Metadata } from "next";
 
 
@@ -18,6 +19,9 @@ export const metadata: Metadata = {
   title: "AGPH Books Store | India's Trusted Self-Publishing Since 2022",
   description:
     "AGPH Books Store is India’s leading self-publishing company in Bhopal, helping authors publish books with expert services since 2022.",
+  icons: {
+    apple: "/public/images/logo/AGPH-Logo-Black-600x290.webp",
+  },
   metadataBase: new URL(SITE_URL || "https://ebookapp.agkit.in"),
   alternates: {
     canonical: "/",

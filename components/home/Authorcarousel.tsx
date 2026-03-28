@@ -62,7 +62,7 @@ function useAuthors() {
 
   useEffect(() => {
     let alive = true;
-    fetch(`${API_URL}/api/authors`)
+    fetch(`${API_URL}/api/authors/home-author`)
       .then(r => { if (!r.ok) throw new Error(); return r.json(); })
       .then((d: Author[]) => {
         if (alive) {
@@ -400,12 +400,12 @@ export default function AuthorCarousel() {
             <div>
               <div className="mb-3 flex items-center gap-3">
                 <div className="h-px w-8 bg-gray-700" />
-                <p
-                  className="text-[11px] uppercase tracking-[0.35em] text-gray-600"
+                <h3
+                  className="text-[14px] uppercase tracking-[0.35em] text-gray-600"
                   style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
                 >
                   Meet the writers
-                </p>
+                </h3>
               </div>
               <h2
                 className="text-[2rem] font-bold leading-tight text-[#1a1209]"

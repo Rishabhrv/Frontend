@@ -101,6 +101,7 @@ export default function OrderDetailPage() {
   const [saving, setSaving]           = useState(false);
   const [toastOpen, setToastOpen]     = useState(false);
   const [toastMsg, setToastMsg]       = useState("");
+  
         useEffect(() => {
           document.title = "Manage Orders | Admin Panel";
         }, []);
@@ -176,6 +177,7 @@ export default function OrderDetailPage() {
   const { order, customer, billing, shipping, items } = data;
   const ebookItems     = items.filter((i: any) => i.format === "ebook");
   const paperbackItems = items.filter((i: any) => i.format === "paperback");
+  const isEbookOnly    = paperbackItems.length === 0 && ebookItems.length > 0; // ← ADD
 
   const labelCls = "block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1";
   const inputCls = "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition";
@@ -349,7 +351,7 @@ export default function OrderDetailPage() {
             <div className="space-y-5">
 
               {/* Shipping tracker — only when shipping has started */}
-              {shipping?.status && (
+              {shipping?.status && !isEbookOnly && (
                 <div className="bg-white border border-gray-200 rounded-xl p-5">
                   <h3 className="text-sm font-semibold text-gray-700 border-b border-gray-100 pb-2 mb-4">Shipment Progress</h3>
                   <ShippingTracker current={shipping.status} />
@@ -379,9 +381,15 @@ export default function OrderDetailPage() {
                 <div>
                   <label className={labelCls}>Status</label>
                   <select className={inputCls} value={unifiedStatus} onChange={e => setUnifiedStatus(e.target.value)}>
-                    {UNIFIED_STATUSES.map(s => (
-                      <option key={s.value} value={s.value}>{s.label}</option>
-                    ))}
+                    {UNIFIED_STATUSES
+                      .filter(s => isEbookOnly
+                        ? ["pending", "paid", "confirmed", "cancelled"].includes(s.value)
+                        : true
+                      )
+                      .map(s => (
+                        <option key={s.value} value={s.value}>{s.label}</option>
+                      ))
+                    }
                   </select>
                 </div>
 

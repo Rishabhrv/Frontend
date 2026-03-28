@@ -60,12 +60,12 @@ export default async function Page({ params }: Props) {
   };
 
   return (
-    <>
+    <div >
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <CategoryPage />
-    </>
+    </div>
   );
 }
