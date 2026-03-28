@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://store1.agphbooks.com";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://ebookapp.agkit.in";
 const LOGO_URL = process.env.NEXT_PUBLIC_LOGO_URL!;
 
 export default function manifest(): MetadataRoute.Manifest {

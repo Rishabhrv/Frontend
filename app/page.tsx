@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   title: "AGPH Books Store | India's Trusted Self-Publishing Since 2022",
   description:
     "AGPH Books Store is India’s leading self-publishing company in Bhopal, helping authors publish books with expert services since 2022.",
-  metadataBase: new URL(SITE_URL || "https://store1.agphbooks.com"),
+  metadataBase: new URL(SITE_URL || "https://ebookapp.agkit.in"),
   alternates: {
     canonical: "/",
   },
