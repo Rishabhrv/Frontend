@@ -29,7 +29,7 @@ const AccountSlider = ({ open, onClose, user, onLogout }: Props) => {
 
       {/* SLIDER */}
       <div
-        className={`fixed top-0 right-0 h-full w-105 bg-white z-50 shadow-2xl transition-transform duration-300 ${
+        className={`fixed top-0 right-0 h-full w-105 bg-white text-gray-700 z-50 shadow-2xl transition-transform duration-300 ${
           open ? "translate-x-0" : "translate-x-full"
         }`}
       >

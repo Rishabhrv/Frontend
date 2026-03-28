@@ -20,7 +20,7 @@ export default function Sidebar() {
   }, [pathname]);
 
   return (
-    <aside className="hidden w-55 bg-white border-r border-gray-200 lg:block" >
+    <aside className="hidden w-55 bg-white border-r border-gray-200 lg:block min-h-screen" >
       {/* LOGO */}
       <div className="flex items-center px-4 py-6 text-xl font-bold">
         AGPH

@@ -35,7 +35,7 @@ export default function RootLayout({
         <Header />
 
         {/* MAIN CONTENT */}
-        <main className="pb-16 md:pb-0">
+        <main className="pb-16 md:pb-0 bg-white text-gray-700">
           {children}
         </main>
 

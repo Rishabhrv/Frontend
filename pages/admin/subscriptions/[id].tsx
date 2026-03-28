@@ -81,7 +81,7 @@ export default function SubscriptionDetailsPage() {
   if (!data) return <div className="p-6">Subscription not found</div>;
 
   return (
-    <div className="flex min-h-screen p-6">
+    <div className="flex min-h-screen p-6 bg-white text-gray-700">
       <Sidebar />
 
       <div className="flex-1">

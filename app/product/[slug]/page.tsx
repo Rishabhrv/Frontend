@@ -157,12 +157,12 @@ export default async function ProductPage({
   };
 
   return (
-    <>
+    <div className=" bg-white text-gray-700" >
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }}
       />
       <SingleProductPage product={product} />
-    </>
+    </div>
   );
 }

@@ -696,8 +696,8 @@ export default function SingleProductPage({ product }: { product: Product }) {
 
       {/* ── SUBJECTS ── */}
       {product.subjects && product.subjects.length > 0 && (
-        <div className="py-1.5 text-xs sm:text-sm px-5 xl:px-1">
-          <span className="font-semibold">Subjects: </span>
+        <div className="py-1.5 text-xs sm:text-sm flex gap-2">
+          <span className="font-semibold min-w-[120px] sm:min-w-[160px]">Subjects: </span>
           <span className="text-gray-500">
             {product.subjects.map((subject, i) => (
               <span key={subject.id}>

@@ -340,7 +340,7 @@ export default function CategoryPage() {
   );
 
   return (
-    <div className="mx-auto px-4 sm:px-6 lg:px-10 xl:px-25 py-8 lg:py-12">
+    <div className="mx-auto px-4 sm:px-6 lg:px-10 xl:px-25 py-8 lg:py-12 bg-white">
 
       {/* ── Mobile: Filter + Sort bar ── */}
       <div className="lg:hidden flex items-center border-b border-gray-200 mb-4">

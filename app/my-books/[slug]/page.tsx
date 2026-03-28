@@ -37,7 +37,7 @@ export default function EpubReaderPage() {
   const [progress, setProgress] = useState(0);
   const [theme, setTheme] = useState<"light" | "dark" | "read">("light");
   const [pageMode, setPageMode] = useState<"single" | "double">("double");
-  const [fontSize, setFontSize] = useState(100);
+  const [fontSize, setFontSize] = useState(90);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [toc, setToc] = useState<any[]>([]);
@@ -56,6 +56,10 @@ export default function EpubReaderPage() {
   const [bookReady, setBookReady] = useState(false);
   const [isBlurred, setIsBlurred] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [currentPage, setCurrentPage] = useState<number | null>(null);
+  const [totalPages, setTotalPages] = useState<number | null>(null);
+  const [nextPage, setNextPage] = useState<number | null>(null);
+
 
   /* ================= DETECT MOBILE ================= */
   useEffect(() => {
@@ -164,6 +168,12 @@ export default function EpubReaderPage() {
         const cfi = e.detail.cfi;
         if (!cfi) return;
         setCurrentCfi(cfi);
+            const loc = e.detail.location;
+            if (loc) {
+              setCurrentPage(loc.current ?? null);
+              setNextPage(loc.next ?? null);        // ← add this
+              setTotalPages(loc.total ?? null);
+            }
         const token = localStorage.getItem("token");
         try {
           await fetch(`${API_URL}/api/my-books/${slug}/progress`, {
@@ -786,6 +796,18 @@ export default function EpubReaderPage() {
                     transition: "filter 0.2s ease",
                   }}
                 />
+
+                {/* Page number indicator */}
+                {currentPage !== null && totalPages !== null && (
+                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-30 pointer-events-none">
+                    <span className="text-[11px] text-gray-500 font-mono tracking-wider bg-black/10 px-2.5 py-1 rounded-full">
+                      {pageMode === "double" && nextPage && nextPage <= totalPages
+                        ? `${currentPage + 1}–${nextPage + 1} / ${totalPages}`
+                        : `${currentPage + 1} / ${totalPages}`
+                      }
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 

@@ -125,11 +125,11 @@ const Header = () => {
         <div className="bg-gray-100 text-xs">
           <div className="mx-auto max-w-7xl px-4 py-2 flex items-center justify-between gap-3 text-gray-700 flex-wrap">
             <div className="flex items-center gap-3">
-              <a href="https://www.facebook.com/agphbooks/" target="_blank" rel="noopener noreferrer" className="hover:text-black"><Facebook className="h-4 w-4" /></a>
-              <a href="https://www.instagram.com/agphbooks/" target="_blank" rel="noopener noreferrer" className="hover:text-black"><Instagram className="h-4 w-4" /></a>
-              <a href="https://in.linkedin.com/company/agphbooks" target="_blank" rel="noopener noreferrer" className="hover:text-black"><Linkedin className="h-4 w-4" /></a>
-              <a href="https://www.youtube.com/@agphbooks" target="_blank" rel="noopener noreferrer" className="hover:text-black"><Youtube className="h-4 w-4" /></a>
-              <a href="https://x.com/agphbooks" target="_blank" rel="noopener noreferrer" className="hover:text-black">
+              <a href="https://www.facebook.com/agphbooks/" aria-label="AGPH Books Facebook" target="_blank" rel="noopener noreferrer" className="hover:text-black"><Facebook className="h-4 w-4" /></a>
+              <a href="https://www.instagram.com/agphbooks/" aria-label="AGPH Books Instagram" target="_blank" rel="noopener noreferrer" className="hover:text-black"><Instagram className="h-4 w-4" /></a>
+              <a href="https://in.linkedin.com/company/agphbooks" aria-label="AGPH Books LinkedIn" target="_blank" rel="noopener noreferrer" className="hover:text-black"><Linkedin className="h-4 w-4" /></a>
+              <a href="https://www.youtube.com/@agphbooks" aria-label="AGPH Books Youtube" target="_blank" rel="noopener noreferrer" className="hover:text-black"><Youtube className="h-4 w-4" /></a>
+              <a href="https://x.com/agphbooks" aria-label="AGPH Books Twitter" target="_blank" rel="noopener noreferrer" className="hover:text-black">
                 <svg className="h-3 w-3" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M18.9 2H22l-7.4 8.5L23 22h-6.8l-5.3-6.9L4.8 22H2l8-9.2L2 2h6.9l4.8 6.3L18.9 2z" />
                 </svg>

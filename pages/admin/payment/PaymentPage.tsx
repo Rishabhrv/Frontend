@@ -8,7 +8,7 @@ export default function PaymentPage() {
           document.title = "Manage Payments | Admin Panel";
         }, []);
   return (
-    <div className="p-6">
+    <div className="p-6 bg-white text-gray-700">
         <div className="flex">
           <Sidebar />
           <div className="flex-1 flex-col">

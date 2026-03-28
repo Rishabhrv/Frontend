@@ -449,8 +449,8 @@ export default function BookstoreHero() {
             maxWidth: screenSize === "mobile" ? "min(88vw, 340px)" : "680px",
           }}
         >
-          Curated academic resources designed to support students, researchers, and
-          professionals with trusted, syllabus-aligned publications.
+       AGPH Books Store is India's trusted self-publishing platform since 2022, 
+       offering curated academic resources for students, researchers, and professionals.
         </p>
 
         {/* CTA */}

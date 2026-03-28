@@ -210,9 +210,18 @@ if (error || !order) {
           <h1 className="anim-s1 display text-4xl md:text-5xl font-bold text-stone-800 mb-3 leading-tight">
             Order Confirmed!
           </h1>
-          <p className="anim-s2 text-stone-500 text-lg italic mb-5">
+          {!isOnlyEbook && (
+                   <p className="anim-s2 text-stone-500 text-lg italic mb-5">
             Thank you for your purchase — your books are on their way.
           </p>
+          )}
+
+          {isOnlyEbook && (
+                   <p className="anim-s2 text-stone-500 text-lg italic mb-5">
+            Thank you for your purchase — your eBook is ready to read.
+          </p>
+          )}
+   
 
           {/* Order ID + date pill */}
           <div className="anim-s3 inline-flex flex-wrap justify-center items-center gap-2 bg-amber-50 border border-amber-200 text-amber-800 text-sm px-4 py-2 rounded-full">
@@ -226,7 +235,7 @@ if (error || !order) {
         </div>
 
         {!isOnlyEbook && (
-  <div className="anim-s4 bg-white card-shadow rounded-2xl p-6 mb-6 border border-stone-100">
+  <div className="anim-s4 rounded-2xl">
       {/* ── Shipping Timeline ── */}
         
         <div className="anim-s4 bg-white card-shadow rounded-2xl p-6 mb-6 border border-stone-100">
