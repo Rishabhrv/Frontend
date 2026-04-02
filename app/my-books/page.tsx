@@ -225,7 +225,7 @@ export default function MyBooksPage() {
 
         <div className="flex flex-wrap gap-2 sm:gap-3">
           {categories.map(cat => (
-            <Link key={cat.id} href={`/category/${cat.slug}`}>
+            <Link key={cat.id} href={`/product-category/${cat.slug}`}>
               <button
                 className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm transition cursor-pointer
                   ${

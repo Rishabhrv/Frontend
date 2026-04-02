@@ -8,7 +8,9 @@ import AuthorCarousel from "@/components/home/Authorcarousel";
 import HomeReviewSection from "@/components/home/HomeReviewSection";
 import HeroBanner from "@/components/home/HeroBanner";
 import CategoryBookTab from "@/components/home/CategoryBookTab";
-
+import TopBannerAd from "@/components/ads/TopBannerAd";
+import BottomBannerAd from "@/components/ads/BottomBannerAd";
+import PopupAd from "@/components/ads/PopupAd";
 import type { Metadata } from "next";
 
 
@@ -110,6 +112,8 @@ const schema = {
     />
 
     <HeroSlider />
+    <PopupAd pageType="home" />
+    <TopBannerAd pageType="home" />
 
       <CategoryBookSection
         title="Academic Books"
@@ -150,6 +154,9 @@ const schema = {
     <FeaturedBookSection />
     <AuthorCarousel />
     <HomeReviewSection />
+    <BottomBannerAd
+      pageType="home"
+    />
     <CreateAccountSection />
     </>
   );

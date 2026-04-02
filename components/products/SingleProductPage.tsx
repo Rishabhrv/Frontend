@@ -7,6 +7,8 @@ import ReviewSection from "@/components/reviews/ReviewSection";
 import CategoryBookSection from "@/components/books/CategoryBookSection";
 import Link from "next/link";
 import NotifyMeButton from "../notification/NotifyMeButton";
+import BottomBannerAd from "../ads/BottomBannerAd";
+import PopupAd from "../ads/PopupAd";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
@@ -339,7 +341,7 @@ export default function SingleProductPage({ product }: { product: Product }) {
             <>
               <li>/</li>
               <li>
-                <Link href={`/category/${product.categories[0].slug}`} className="hover:underline">
+                <Link href={`/product-category/${product.categories[0].slug}`} className="hover:underline">
                   {product.categories[0].name}
                 </Link>
               </li>
@@ -771,6 +773,12 @@ export default function SingleProductPage({ product }: { product: Product }) {
 
       {/* ── REVIEWS ── */}
       {product && <ReviewSection productId={product.id} />}
+
+      <BottomBannerAd
+        pageType="product"
+      />
+      <PopupAd pageType="product" />
+      
 
       {/* ── RELATED BOOKS ── */}
       {product.categories?.length > 0 && (

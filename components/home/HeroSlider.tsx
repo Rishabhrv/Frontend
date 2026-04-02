@@ -267,7 +267,24 @@ export default function BookstoreHero() {
         const agph = new Set(catData.filter((c) => c.imprint === "agph").map((c) => c.name));
         const pRes = await fetch(`${API_BASE}/api/products?limit=20`);
         const pData: Product[] = await pRes.json();
-        setBooks(pData.filter((p) => p.categories.some((c) => agph.has(c))).slice(0, 7));
+        const filtered = pData
+          .filter((p) => p.categories.some((c) => agph.has(c)) && p.image)
+          .slice(0, 20); // grab more so we have fallbacks
+        
+        // Pre-validate each image URL actually resolves
+        const validated = await Promise.all(
+          filtered.map(
+            (p) =>
+              new Promise<Product | null>((resolve) => {
+                const img = new window.Image();
+                img.onload = () => resolve(p);
+                img.onerror = () => resolve(null); // URL exists in DB but file is missing
+                img.src = resolveImage(p.image)!;
+              })
+          )
+        );
+        
+        setBooks(validated.filter(Boolean).slice(0, 7) as Product[]);
       } catch (e) {
         console.error(e);
       } finally {
@@ -454,7 +471,7 @@ export default function BookstoreHero() {
         </p>
 
         {/* CTA */}
-        <Link href="/category/academic-books">
+        <Link href="/product-category/agph">
           <button
             className="flex cursor-pointer items-center gap-2.5 text-white font-semibold rounded-full transition-all duration-200 hover:-translate-y-0.5 hover:brightness-110 active:scale-95"
             style={{

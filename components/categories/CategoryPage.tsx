@@ -6,6 +6,10 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import BookCard from "@/components/books/BookCard";
 import { Star, SlidersHorizontal, X } from "lucide-react";
+import TopBannerAd from "../ads/TopBannerAd";
+import SidebarAd from "../ads/SidebarAd";
+import BottomBannerAd from "../ads/BottomBannerAd";
+import PopupAd from "../ads/PopupAd";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 
@@ -44,6 +48,7 @@ export default function CategoryPage() {
   const [subjectSearch, setSubjectSearch] = useState("");
   const [selectedSubject, setSelectedSubject] = useState<string>("");
   const [visibleSubjectCount, setVisibleSubjectCount] = useState(5);
+  const [categoryName, setCategoryName] = useState("");
 
   // Mobile sidebar state
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -96,7 +101,11 @@ export default function CategoryPage() {
   useEffect(() => {
     fetch(`${API}/api/viewcategory/counts`)
       .then((res) => res.json())
-      .then(setCategories)
+      .then((data) => {
+        setCategories(data);
+        const match = data.find((c: any) => c.slug === slug);
+        if (match) setCategoryName(match.name);
+      })
       .catch(() => setCategories([]));
   }, []);
 
@@ -188,7 +197,7 @@ export default function CategoryPage() {
           {(groupedCategories[0] || []).map((parent: any) => (
             <li key={parent.id}>
               <div className="flex justify-between items-center font-medium">
-                <a href={`/category/${parent.slug}`} className="hover:underline">
+                <a href={`/product-category/${parent.slug}`} className="hover:underline">
                   {parent.name}
                 </a>
                 <span className="text-xs text-gray-400">({parent.product_count})</span>
@@ -197,7 +206,7 @@ export default function CategoryPage() {
                 <ul className="mt-1 ml-4 space-y-1 pl-1">
                   {groupedCategories[parent.id].map((child: any) => (
                     <li key={child.id} className="flex justify-between items-center text-sm">
-                      <a href={`/category/${child.slug}`} className="hover:underline">
+                      <a href={`/product-category/${child.slug}`} className="hover:underline">
                         {child.name}
                       </a>
                       <span className="text-xs text-gray-400">({child.product_count})</span>
@@ -340,10 +349,11 @@ export default function CategoryPage() {
   );
 
   return (
-    <div className="mx-auto px-4 sm:px-6 lg:px-10 xl:px-25 py-8 lg:py-12 bg-white">
+    <div className="mx-auto px-4 sm:px-6 lg:px-10 xl:px-25 py-8 lg:py-6 bg-white">
+      <TopBannerAd pageType="category" />
 
       {/* ── Mobile: Filter + Sort bar ── */}
-      <div className="lg:hidden flex items-center border-b border-gray-200 mb-4">
+      <div className="lg:hidden flex items-center border-b border-gray-200 mb-4 ">
         <button
           onClick={() => setSidebarOpen(true)}
           className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium border-r border-gray-200 hover:bg-gray-50 transition"
@@ -446,14 +456,14 @@ export default function CategoryPage() {
                       {(groupedCategories[0] || []).map((parent: any) => (
                         <li key={parent.id}>
                           <div className="flex justify-between items-center font-medium py-1">
-                            <a href={`/category/${parent.slug}`} className="hover:underline">{parent.name}</a>
+                            <a href={`/product-category/${parent.slug}`} className="hover:underline">{parent.name}</a>
                             <span className="text-xs text-gray-400">({parent.product_count})</span>
                           </div>
                           {groupedCategories[parent.id] && (
                             <ul className="ml-3 space-y-1 border-l border-gray-200 pl-3 mt-1">
                               {groupedCategories[parent.id].map((child: any) => (
                                 <li key={child.id} className="flex justify-between items-center py-1">
-                                  <a href={`/category/${child.slug}`} className="hover:underline text-gray-600">{child.name}</a>
+                                  <a href={`/product-category/${child.slug}`} className="hover:underline text-gray-600">{child.name}</a>
                                   <span className="text-xs text-gray-400">({child.product_count})</span>
                                 </li>
                               ))}
@@ -613,11 +623,13 @@ export default function CategoryPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-8 xl:gap-10">
+      <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-8 xl:gap-10 py-6">
 
         {/* ── Desktop sidebar ── */}
         <div className="hidden lg:block">
           <SidebarContent />
+          <SidebarAd pageType="category"/>
+
         </div>
 
         {/* ── Products section ── */}
@@ -627,7 +639,7 @@ export default function CategoryPage() {
           <div className="mb-6 lg:mb-8">
             <p className="text-xs text-gray-400 mb-1">Home / {slug}</p>
             <h1 className="font-serif text-2xl sm:text-3xl lg:text-4xl mb-4 capitalize">
-              {slug?.replace(/-/g, " ")}
+              {categoryName || slug?.replace(/-/g, " ")}
             </h1>
 
             <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
@@ -749,6 +761,10 @@ export default function CategoryPage() {
           )}
         </section>
       </div>
+          <PopupAd pageType="category" />
+      <BottomBannerAd
+            pageType="category"
+          />
     </div>
   );
 }

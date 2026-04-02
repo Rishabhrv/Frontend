@@ -11,7 +11,7 @@ export async function GET() {
     .filter((c: any) => c.slug) // safety
     .map((c: any) => `
       <url>
-        <loc>${SITE_URL}/category/${c.slug}</loc>
+        <loc>${SITE_URL}/product-category/${c.slug}</loc>
         <lastmod>${new Date().toISOString()}</lastmod>
         <changefreq>daily</changefreq>
         <priority>0.9</priority>

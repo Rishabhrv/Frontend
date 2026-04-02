@@ -75,7 +75,20 @@ const FeaturedBookSection = () => {
   useEffect(() => {
     fetch(`${API_URL}/api/products/random/featured`)
       .then((res) => res.json())
-      .then((data) => setBook(data))
+      .then((data: Book) => {
+        if (!data?.main_image) return setBook(null);    
+
+        const src = data.main_image.startsWith("http")
+          ? data.main_image
+          : `${API_URL}${data.main_image.startsWith("/") ? "" : "/"}${data.main_image}`;    
+
+        return new Promise<void>((resolve) => {
+          const img = new window.Image();
+          img.onload = () => { setBook(data); resolve(); };
+          img.onerror = () => { setBook(null); resolve(); }; // file missing on server
+          img.src = src;
+        });
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
