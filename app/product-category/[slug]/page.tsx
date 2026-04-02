@@ -25,12 +25,12 @@ export async function generateMetadata(
       "Online bookstore India",
     ],
     alternates: {
-      canonical: `${SITE_URL}/category/${slug}`,
+      canonical: `${SITE_URL}/product-category/${slug}`,
     },
     openGraph: {
       title: `${categoryName} | AGPH Books Store`,
       description: `Explore ${categoryName} books including best sellers and new arrivals.`,
-      url: `${SITE_URL}/category/${slug}`,
+      url: `${SITE_URL}/product-category/${slug}`,
       type: "website",
     },
     twitter: {
@@ -50,7 +50,7 @@ export default async function Page({ params }: Props) {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
     name: `${categoryName} Books`,
-    url: `${SITE_URL}/category/${slug}`,
+    url: `${SITE_URL}/product-category/${slug}`,
     description: `Browse ${categoryName} books at AGPH Books Store.`,
     isPartOf: {
       "@type": "WebSite",

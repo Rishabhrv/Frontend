@@ -141,10 +141,29 @@ export default function EbooksPage() {
       try {
         const res  = await fetch(`${API_URL}/api/ebooks?limit=200&sort=newest`);
         const data = await res.json();
-        const allBooks: EbookRaw[] = data.ebooks ?? [];
+        const allRaw: EbookRaw[] = data.ebooks ?? [];
 
+        // Pre-validate all images before building sections
+        const validated = await Promise.all(
+          allRaw.map(
+            (raw) =>
+              new Promise<EbookRaw | null>((resolve) => {
+                if (!raw.main_image) return resolve(null);
+                const src = raw.main_image.startsWith("http")
+                  ? raw.main_image
+                  : `${API_URL}${raw.main_image.startsWith("/") ? "" : "/"}${raw.main_image}`;
+                const img = new window.Image();
+                img.onload = () => resolve(raw);
+                img.onerror = () => resolve(null);
+                img.src = src;
+              })
+          )
+        );
+        
+        const allBooks = validated.filter(Boolean) as EbookRaw[];
+        
         const catMap = new Map<string, { slug: string; books: Book[] }>();
-
+        
         allBooks.forEach((raw) => {
           const book = toBook(raw);
 
@@ -245,7 +264,7 @@ export default function EbooksPage() {
 
               {/* View all */}
               <Link
-                href={`/category/${category.slug}`}
+                href={`/product-category/${category.slug}`}
                 className="flex items-center gap-1 text-xs font-semibold text-gray-500 hover:text-gray-900 transition-colors shrink-0 ml-3"
               >
                 <span className="hidden sm:inline">View all</span>
@@ -270,7 +289,7 @@ export default function EbooksPage() {
             {/* View more row — show on mobile if there are more books than one row */}
             {books.length > cols * 2 && (
               <Link
-                href={`/category/${category.slug}`}
+                href={`/product-category/${category.slug}`}
                 className="mt-4 flex items-center justify-center gap-1.5 w-full py-2.5 rounded-xl border border-gray-300 text-xs sm:text-sm font-semibold text-gray-600 hover:bg-gray-200 hover:text-gray-900 transition-colors"
               >
                 See all {books.length} books in {category.name}

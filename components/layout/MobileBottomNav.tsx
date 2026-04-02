@@ -6,7 +6,7 @@ import { Home, LayoutGrid, BookOpen, User, ShoppingBag } from "lucide-react";
 
 const nav = [
   { label: "Home",       href: "/",                icon: Home        },
-  { label: "Categories", href: "/category/academic-books",        icon: LayoutGrid  },
+  { label: "Categories", href: "/product-category/agph",        icon: LayoutGrid  },
   { label: "My Books",   href: "/my-books",        icon: BookOpen    },
   { label: "Account",    href: "/account/menu",    icon: User        },
   { label: "Orders",     href: "/account/orders",  icon: ShoppingBag },

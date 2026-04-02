@@ -77,7 +77,24 @@ const CategoryBookSection = ({
     if (!isAgph) return;
     fetch(`${API_URL}/api/categories/${categorySlug}/products`)
       .then((res) => res.json())
-      .then((data) => setBooks(data.slice(0, 12)));
+      .then(async (data) => {
+        const candidates = data.slice(0, 30); // grab extra as buffer
+      
+        const validated = await Promise.all(
+          candidates.map(
+            (book: Book) =>
+              new Promise<Book | null>((resolve) => {
+                if (!book.main_image) return resolve(null);
+                const img = new window.Image();
+                img.onload = () => resolve(book);
+                img.onerror = () => resolve(null);
+                img.src = `${API_URL}${book.main_image}`;
+              })
+          )
+        );
+      
+        setBooks(validated.filter(Boolean).slice(0, 12) as Book[]);
+      });
   }, [isAgph, categorySlug]);
 
   // ── 3️⃣ Auto-slide ───────────────────────────────────────────────────────
@@ -99,7 +116,7 @@ const CategoryBookSection = ({
       {/* HEADER */}
       <div className="flex items-center justify-between mb-4">
         <Link
-          href={`/category/${categorySlug}`}
+          href={`/product-category/${categorySlug}`}
           className="group text-red-600 cursor-pointer font-semibold flex items-center"
         >
           <h2

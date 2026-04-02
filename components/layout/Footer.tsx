@@ -123,7 +123,7 @@ const Footer = () => {
             <ColHeading>Explore</ColHeading>
             <ul className="space-y-3 mb-7">
               <FooterLink href="/ebooks">E-Books</FooterLink>
-              <FooterLink href="/category/academic-books">Categories</FooterLink>
+              <FooterLink href="/product-category/agph">Categories</FooterLink>
               <FooterLink href="/new-release">New Releases</FooterLink>
             </ul>
             <ColHeading>Legal</ColHeading>

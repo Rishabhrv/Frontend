@@ -608,31 +608,56 @@ function Pagination({ currentPage, totalPages, onPageChange }: {
   currentPage: number; totalPages: number; onPageChange: (p: number) => void;
 }) {
   if (totalPages <= 1) return null;
-  const pages: (number | string)[] = [];
-  const start = Math.max(2, currentPage - 1);
-  const end   = Math.min(totalPages - 1, currentPage + 1);
-  pages.push(1);
-  if (start > 2) pages.push("...");
-  for (let i = start; i <= end; i++) pages.push(i);
-  if (end < totalPages - 1) pages.push("...");
-  if (totalPages > 1) pages.push(totalPages);
+
+  // Build the list of page numbers to show (always include 1, totalPages, and ±1 of current)
+  const pageSet = new Set<number>();
+  pageSet.add(1);
+  pageSet.add(totalPages);
+  for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+    if (i >= 1 && i <= totalPages) pageSet.add(i);
+  }
+  const sorted = Array.from(pageSet).sort((a, b) => a - b);
+
+  // Insert "..." where gaps are larger than 1
+  const pages: (number | "...")[] = [];
+  for (let i = 0; i < sorted.length; i++) {
+    if (i > 0 && sorted[i] - sorted[i - 1] > 1) pages.push("...");
+    pages.push(sorted[i]);
+  }
 
   return (
     <div className="flex items-center gap-2 text-sm">
-      <button disabled={currentPage === 1} onClick={() => onPageChange(currentPage - 1)}
-        className="rounded border px-3 py-1 disabled:opacity-50">Previous</button>
+      <button
+        disabled={currentPage === 1}
+        onClick={() => onPageChange(currentPage - 1)}
+        className="rounded border px-3 py-1 disabled:opacity-50 cursor-pointer"
+      >
+        Previous
+      </button>
+
       {pages.map((page, i) =>
         page === "..." ? (
-          <span key={i} className="px-2 text-gray-400">...</span>
+          <span key={`ellipsis-${i}`} className="px-2 text-gray-400">...</span>
         ) : (
-          <button key={page} onClick={() => onPageChange(Number(page))}
-            className={`h-8 w-8 rounded ${page === currentPage ? "bg-blue-600 text-white" : "hover:bg-gray-100"}`}>
+          <button
+            key={`page-${page}`}
+            onClick={() => onPageChange(page)}
+            className={`h-8 w-8 rounded cursor-pointer ${
+              page === currentPage ? "bg-blue-600 text-white" : "hover:bg-gray-100"
+            }`}
+          >
             {page}
           </button>
         )
       )}
-      <button disabled={currentPage === totalPages} onClick={() => onPageChange(currentPage + 1)}
-        className="rounded border cursor-pointer px-3 py-1 disabled:opacity-50">Next</button>
+
+      <button
+        disabled={currentPage === totalPages}
+        onClick={() => onPageChange(currentPage + 1)}
+        className="rounded border cursor-pointer px-3 py-1 disabled:opacity-50 cursor-pointer"
+      >
+        Next
+      </button>
     </div>
   );
 }

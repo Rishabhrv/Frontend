@@ -16,9 +16,9 @@ type UserType = { id: number; name: string; email: string };
 
 const NAV_LINKS = [
   { href: "/", label: "Home" },
-  { href: "/category/academic-books", label: "Academic Books" },
-  { href: "/category/edited-books", label: "Edited Books" },
-  { href: "/category/kids", label: "Kids" },
+  { href: "/product-category/agph", label: "Academic Books" },
+  { href: "/product-category/agvolumes", label: "Edited Books" },
+  { href: "/product-category/agkids", label: "Kids" },
   { href: "/ebooks", label: "E-Books" },
   { href: "/new-release", label: "New Release" },
   { href: "https://agphbooks.com/contact-us/", label: "Contact Us", external: true },
@@ -119,6 +119,7 @@ const Header = () => {
       {/* ═══════════════════════════════════════
           MAIN HEADER — always in document flow
       ═══════════════════════════════════════ */}
+      
       <header ref={headerRef} className="w-full bg-white border-b border-gray-200 relative">
 
         {/* TOP BAR */}

@@ -234,9 +234,27 @@ export default function CategoryBookSection() {
     setBooks([]);
     fetch(`${API_URL}/api/categories/${activeSlug}/products?limit=10&product_type=ebook`)
       .then((r) => r.json())
-      .then((data: Book[]) =>
-        setBooks(data.filter((b) => b.product_type === "ebook" || b.product_type === "both").slice(0, 10))
-      )
+      .then(async (data: Book[]) => {
+        const candidates = data
+          .filter((b) => b.product_type === "ebook" || b.product_type === "both")
+          .slice(0, 30);
+      
+        const validated = await Promise.all(
+          candidates.map(
+            (book) =>
+              new Promise<Book | null>((resolve) => {
+                const src = book.main_image ?? book.image;
+                if (!src) return resolve(null);
+                const img = new window.Image();
+                img.onload = () => resolve(book);
+                img.onerror = () => resolve(null);
+                img.src = src.startsWith("http") ? src : `${API_URL}${src.startsWith("/") ? "" : "/"}${src}`;
+              })
+          )
+        );
+      
+        setBooks(validated.filter(Boolean).slice(0, 10) as Book[]);
+      })
       .catch(console.error)
       .finally(() => setLoadingBooks(false));
   }, [activeSlug]);

@@ -264,7 +264,7 @@ const AuthorCard = memo(function AuthorCard({
             alt={author.name}
             fill
             unoptimized
-            className="object-cover"
+            className="object-cover object-top"
             onError={() => setImgBroken(true)}
           />
           ) : (

@@ -221,8 +221,26 @@ export default function ProductCarousel() {
         const res = await fetch(`${API_BASE}/api/products?limit=10`);
         if (!res.ok) throw new Error(`${res.status}`);
         const data: Product[] = await res.json();
-        const filtered = data.filter((p) => p.categories.some((c) => agphNames.has(c))).slice(0, 10);
-        setProducts(filtered.length ? filtered : FALLBACK_PRODUCTS);
+        const filtered = data
+          .filter((p) => p.categories.some((c) => agphNames.has(c)) && p.image)
+          .slice(0, 30);
+        
+        const validated = await Promise.all(
+          filtered.map(
+            (p: Product) =>
+              new Promise<Product | null>((resolve) => {
+                const img = new window.Image();
+                img.onload = () => resolve(p);
+                img.onerror = () => resolve(null);
+                img.src = p.image!.startsWith("http")
+                  ? p.image!
+                  : `${API_BASE}${p.image!.startsWith("/") ? "" : "/"}${p.image}`;
+              })
+          )
+        );
+        
+        const valid = validated.filter(Boolean).slice(0, 10) as Product[];
+        setProducts(valid.length ? valid : FALLBACK_PRODUCTS);
       } catch (err) {
         console.error(err);
         setError("Could not reach the server — showing demo data.");

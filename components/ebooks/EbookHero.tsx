@@ -91,7 +91,27 @@ export default function EbookHero() {
 
     fetch(`${API_URL}/api/ebooks?limit=5&sort=newest`)
       .then((r) => r.json())
-      .then((d) => setFeatured(d.ebooks ?? []))
+      .then(async (d) => {
+        const candidates: FeaturedBook[] = d.ebooks ?? [];
+    
+        const validated = await Promise.all(
+          candidates.map(
+            (book) =>
+              new Promise<FeaturedBook | null>((resolve) => {
+                if (!book.main_image) return resolve(null);
+                const src = book.main_image.startsWith("http")
+                  ? book.main_image
+                  : `${API_URL}${book.main_image.startsWith("/") ? "" : "/"}${book.main_image}`;
+                const img = new window.Image();
+                img.onload = () => resolve(book);
+                img.onerror = () => resolve(null);
+                img.src = src;
+              })
+          )
+        );
+    
+        setFeatured(validated.filter(Boolean) as FeaturedBook[]);
+      })
       .catch(() => {});
   }, []);
 

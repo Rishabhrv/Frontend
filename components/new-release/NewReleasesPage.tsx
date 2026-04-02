@@ -91,6 +91,22 @@ function normalise(p: RawCategoryProduct): Book {
   };
 }
 
+async function validateBooks(books: Book[]): Promise<Book[]> {
+  const validated = await Promise.all(
+    books.map(
+      (book) =>
+        new Promise<Book | null>((resolve) => {
+          if (!book.image || book.image === "/placeholder-book.png") return resolve(null);
+          const img = new window.Image();
+          img.onload = () => resolve(book);
+          img.onerror = () => resolve(null);
+          img.src = book.image;
+        })
+    )
+  );
+  return validated.filter(Boolean) as Book[];
+}
+
 async function fetchBooksForChildren(children: Category[]): Promise<Book[]> {
   const results = await Promise.all(
     children.map((child) =>
@@ -105,16 +121,20 @@ async function fetchBooksForChildren(children: Category[]): Promise<Book[]> {
   for (const arr of results)
     for (const book of arr)
       if (!seen.has(book.id)) { seen.add(book.id); merged.push(book); }
-  return merged.slice(0, FETCH_LIMIT);
+
+  const valid = await validateBooks(merged.slice(0, FETCH_LIMIT * 3));
+  return valid.slice(0, FETCH_LIMIT);
 }
 
 async function fetchBooksForSingle(slug: string): Promise<Book[]> {
-  return fetch(`${API_URL}/api/categories/${slug}/products?limit=${FETCH_LIMIT}`)
+  const books = await fetch(`${API_URL}/api/categories/${slug}/products?limit=${FETCH_LIMIT * 3}`)
     .then((r) => (r.ok ? r.json() : []))
     .then((raw: RawCategoryProduct[]) => raw.map(normalise))
-    .catch(() => []);
-}
+    .catch(() => [] as Book[]);
 
+  const valid = await validateBooks(books);
+  return valid.slice(0, FETCH_LIMIT);
+}
 /* ─────────────────────────── Skeleton ───────────────────────────── */
 
 function SkeletonCard({ visible }: { visible: number }) {
@@ -273,12 +293,25 @@ function HeroBanner() {
   useEffect(() => {
     fetch(`${API_URL}/api/products`)
       .then((r) => (r.ok ? r.json() : []))
-      .then((data: { image: string; status: string }[]) => {
-        const imgs = data
+      .then(async (data: { image: string; status: string }[]) => {
+        const candidates = data
           .filter((p) => p.status === "published" && p.image)
           .map((p) => toImgUrl(p.image))
-          .slice(0, 10);
-        setHeroBooks(imgs);
+          .slice(0, 30);
+    
+        const validated = await Promise.all(
+          candidates.map(
+            (src) =>
+              new Promise<string | null>((resolve) => {
+                const img = new window.Image();
+                img.onload = () => resolve(src);
+                img.onerror = () => resolve(null);
+                img.src = src;
+              })
+          )
+        );
+    
+        setHeroBooks(validated.filter(Boolean).slice(0, 10) as string[]);
       })
       .catch(() => {});
 
