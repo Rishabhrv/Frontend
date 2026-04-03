@@ -117,14 +117,14 @@ const schema = {
 
       <CategoryBookSection
         title="Academic Books"
-        categorySlug="academic-books"
+        categorySlug="agph"
                 visibleCount={5}
 
       />
 
       <CategoryBookSection
         title="Edited Books"
-        categorySlug="edited-books"
+        categorySlug="agvolumes"
         visibleCount={5}
       />
 
