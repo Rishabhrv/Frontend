@@ -12,7 +12,7 @@ const CreateAccountSection = () => {
           </h2>
 
           <p className="text-gray-700 mb-5 leading-relaxed text-sm sm:text-base">
-            Create your free AGPH Books account today. Explore exclusive books and manage your orders easily. Get special discounts and stay updated with new releases from India's trusted self-publishing platform.
+            Create your free AGPH Books Store account today. Explore exclusive books and manage your orders easily. Get special discounts and stay updated with new releases from India's trusted self-publishing platform.
           </p>
 
           <ul className="space-y-2.5 text-gray-700 mb-6 sm:mb-8 text-sm sm:text-base">
