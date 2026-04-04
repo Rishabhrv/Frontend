@@ -35,10 +35,15 @@ const AuthorForm = ({ editAuthor, clearEdit }: Props) => {
 
     const generateSlug = (value: string) =>
         value
-            .toLowerCase()
-            .trim()
-            .replace(/[^a-z0-9\s-]/g, "")
-            .replace(/\s+/g, "-");
+            .toString()
+    .normalize("NFC")
+    .trim()
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\p{M}\s-]/gu, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-");
+
+            
 
 
   /* 🔁 Fill data on Edit */
