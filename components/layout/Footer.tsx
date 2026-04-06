@@ -109,12 +109,20 @@ const Footer = () => {
               Read · Publish · Grow
             </div>
             <div className="flex items-center gap-2 mt-auto flex-wrap">
-              {socials.map(({ label, icon, href }) => (
-                <a key={label} href={href} target="_blank" rel="noopener noreferrer" aria-label={label}
-                  className="w-8 h-8 rounded-full flex items-center justify-center border border-gray-200 text-gray-400 hover:border-gray-900 hover:text-gray-900 hover:bg-gray-50 transition-all duration-200">
-                  {icon}
-                </a>
-              ))}
+{socials.map(({ label, icon, href }) => (
+  <a 
+    key={label} 
+    href={href} 
+    target="_blank" 
+    rel="noopener noreferrer" 
+    aria-label={label}
+    className="w-8 h-8 rounded-full flex items-center justify-center border border-gray-200 text-gray-400 hover:border-gray-900 hover:text-gray-900 hover:bg-gray-50 transition-all duration-200"
+  >
+    {icon}
+    {/* Add this hidden span below */}
+    <span className="sr-only h-0">{label}</span> 
+  </a>
+))}
             </div>
           </div>
 
@@ -122,15 +130,15 @@ const Footer = () => {
           <div className="col-span-1">
             <ColHeading>Explore</ColHeading>
             <ul className="space-y-3 mb-7">
-              <FooterLink href="/ebooks">E-Books</FooterLink>
-              <FooterLink href="/product-category/agph">Categories</FooterLink>
+              <FooterLink href="/ebooks">Digital E-Books</FooterLink>
+              <FooterLink href="/product-category/agph" >Book Categories</FooterLink>
               <FooterLink href="/new-release">New Releases</FooterLink>
             </ul>
             <ColHeading>Legal</ColHeading>
             <ul className="space-y-3">
               <FooterLink href="/privacy-policy">Privacy Policy</FooterLink>
               <FooterLink href="/terms-and-conditions">Terms & Conditions</FooterLink>
-              <FooterLink href="https://agphbooks.com/contact-us/">Contact Us</FooterLink>
+              <FooterLink href="https://agphbooks.com/contact-us/">Get Support</FooterLink>
             </ul>
           </div>
 

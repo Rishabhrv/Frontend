@@ -8,11 +8,9 @@ export default function FooterWithAccordion() {
   const [open, setOpen] = useState(false);
 
   return (
-    <>
-      {/* ── Mobile accordion (hidden on md+) ── */}
-      {/* pb-16 keeps it above the fixed bottom nav bar */}
-      <div className="md:hidden pb-16">
-
+    <div className="w-full pb-16 md:pb-0">
+      {/* ── MOBILE TOGGLE BUTTON (Only visible on small screens) ── */}
+      <div className="md:hidden ">
         <button
           onClick={() => setOpen((prev) => !prev)}
           aria-expanded={open}
@@ -34,21 +32,24 @@ export default function FooterWithAccordion() {
             />
           </div>
         </button>
+      </div>
 
-        {/* Expandable footer content */}
-        <div
-          className="overflow-hidden transition-[max-height] duration-500 ease-in-out"
-          style={{ maxHeight: open ? "3000px" : "0px" }}
-        >
+      {/* ── UNIFIED FOOTER CONTAINER ── */}
+      {/* 1. overflow-hidden + transition: handles mobile accordion animation */}
+      {/* 2. ${open ? "max-h-[3000px]" : "max-h-0"} : controls mobile expansion */}
+      {/* 3. md:max-h-none md:block : Overrides mobile constraints for desktop */}
+      <div
+        className={`
+          overflow-hidden transition-all duration-500 ease-in-out
+          ${open ? "max-h-[3000px]" : "max-h-0"} 
+          md:max-h-none md:block
+        `}
+      >
+        {/* Adds padding only on mobile so it doesn't overlap the fixed nav bar */}
+        <div className="pb-16 md:pb-0">
           <Footer />
         </div>
-
       </div>
-
-      {/* ── Desktop footer — always visible on md+ ── */}
-      <div className="hidden md:block">
-        <Footer />
-      </div>
-    </>
+    </div>
   );
 }
