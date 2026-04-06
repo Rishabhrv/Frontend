@@ -466,7 +466,7 @@ export default function BookstoreHero() {
             maxWidth: screenSize === "mobile" ? "min(88vw, 340px)" : "680px",
           }}
         >
-       AGPH Books Store is India's trusted self-publishing platform since 2022, 
+       AGPH Books Store is India's Trusted Academic Publications platform since 2022, 
        offering curated academic resources for students, researchers, and professionals.
         </p>
 

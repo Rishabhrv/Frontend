@@ -19,6 +19,7 @@ type Category = {
   id: number;
   name: string;
   parent_id: number | null;
+  imprint: "agph" | "agclassics";
   children?: Category[];
 };
 
@@ -135,6 +136,8 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
   const [productImages, setProductImages] = useState<ProductImage[]>([]);
   const [selectedSubjects, setSelectedSubjects] = useState<number[]>([]);
   const [mainImageUrl, setMainImageUrl] = useState<string | null>(null);
+  const [imprintFilter, setImprintFilter] = useState<"agph" | "agclassics">("agph");
+
 
   // ── Unsaved-changes guard ────────────────────────────────────────
   const [isDirty, setIsDirty] = useState(false);
@@ -494,6 +497,37 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
 
   const categoryTree = buildCategoryTree(categories);
   const isPublishing = status === "published";
+  const filteredCategoryTree = categoryTree.filter(
+  (cat) => cat.imprint === imprintFilter
+);
+const imprintAutoSet = useRef(false);
+
+useEffect(() => {
+  if (
+    mode !== "edit" ||
+    imprintAutoSet.current ||
+    categories.length === 0 ||
+    selectedCategories.length === 0
+  ) return;
+
+  // Recursively search the tree for the first selected category's imprint
+  const findImprint = (cats: Category[]): "agph" | "agclassics" | null => {
+    for (const cat of cats) {
+      if (selectedCategories.includes(cat.id)) return cat.imprint;
+      if (cat.children?.length) {
+        const found = findImprint(cat.children);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
+  const imprint = findImprint(categoryTree);
+  if (imprint) {
+    setImprintFilter(imprint);
+    imprintAutoSet.current = true;
+  }
+}, [categories, selectedCategories]);
 
   return (
     <div className="p-6 pr-2">
@@ -822,22 +856,45 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
           </div>
 
           {/* CATEGORY */}
-          <div className="bg-white rounded-xl border border-gray-300 p-4">
-            <h2 className="mb-4 font-medium text-gray-700">
-              Category {isPublishing && <Req />}
-            </h2>
-            <div className="max-h-56 overflow-y-auto space-y-2 bg-gray-50 p-5 rounded-lg">
-              {categoryTree.map((cat) => (
-                <CategoryNode
-                  key={cat.id}
-                  category={cat}
-                  selectedCategories={selectedCategories}
-                  toggleCategory={toggleCategory}
-                />
-              ))}
-            </div>
-            {errors.categories && <p className="text-red-500 text-xs mt-2">{errors.categories}</p>}
-          </div>
+          {/* CATEGORY */}
+<div className="bg-white rounded-xl border border-gray-300 p-4">
+  <h2 className="mb-3 font-medium text-gray-700">
+    Category {isPublishing && <Req />}
+  </h2>
+
+  {/* Imprint Filter Dropdown */}
+  <div className="mb-3">
+    <label className="block text-xs text-gray-500 mb-1">Filter by Imprint</label>
+    <select
+      value={imprintFilter}
+      onChange={(e) => setImprintFilter(e.target.value as "agph" | "agclassics")}
+      className="w-full rounded border px-3 py-1.5 text-sm bg-gray-50"
+    >
+      <option value="agph">AGPH</option>
+      <option value="agclassics">AG Classics</option>
+    </select>
+  </div>
+
+  <div className="max-h-56 overflow-y-auto space-y-2 bg-gray-50 p-5 rounded-lg">
+    {filteredCategoryTree.length > 0 ? (
+      filteredCategoryTree.map((cat) => (
+        <CategoryNode
+          key={cat.id}
+          category={cat}
+          selectedCategories={selectedCategories}
+          toggleCategory={toggleCategory}
+        />
+      ))
+    ) : (
+      <p className="text-xs text-gray-400 text-center py-2">
+        No categories found for this imprint
+      </p>
+    )}
+  </div>
+  {errors.categories && (
+    <p className="text-red-500 text-xs mt-2">{errors.categories}</p>
+  )}
+</div>
 
           {/* SLUG */}
           {mode === "edit" && (
