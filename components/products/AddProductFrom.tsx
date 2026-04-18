@@ -84,6 +84,8 @@ const Req = () => <span className="text-red-500 ml-0.5">*</span>;
 
 // ── API URL ───────────────────────────────────────────────────────
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
+const AGCLASSIC_URL = process.env.NEXT_PUBLIC_AGCLASSIC_URL!;
+
 
 const CONFIRM_MSG =
   "You have unsaved changes. Are you sure you want to leave?\nYour changes will be lost.";
@@ -785,8 +787,12 @@ useEffect(() => {
                 Product Image {isPublishing && <Req />}
               </h2>
               {mode === "edit" && slug && (
-                <Link href={`/product/${slug}`}
-                  className="bg-black text-white p-1 px-2 rounded hover:bg-gray-800 text-sm w-fit">
+                <Link 
+                  href={imprintFilter === "agclassics" ? `${AGCLASSIC_URL}/product/${slug}` : `/product/${slug}`}
+                  className="bg-black text-white p-1 px-2 rounded hover:bg-gray-800 text-sm w-fit"
+                  target={imprintFilter === "agclassics" ? "_blank" : undefined}
+                  rel={imprintFilter === "agclassics" ? "noopener noreferrer" : undefined}
+                >
                   <Eye className="mr-1 inline-block w-4 h-4" />Preview
                 </Link>
               )}
