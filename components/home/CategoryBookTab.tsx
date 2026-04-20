@@ -4,6 +4,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { Heart, ShoppingCart, CircleCheck, BookOpen } from "lucide-react";
+import {
+  addToGuestCart,
+  isInGuestWishlist,
+  toggleGuestWishlist,
+} from "@/utils/guestStorage"; // Ensure this path matches your project
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
@@ -44,51 +49,97 @@ const BookCard = ({ book }: { book: Book }) => {
   const [liked, setLiked] = useState(false);
   const [addedToCart, setAddedToCart] = useState(false);
 
+  // ── Wishlist: check server (logged-in) or localStorage (guest) ────────────
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (!token) return;
-    fetch(`${API_URL}/api/wishlist/check/${book.id}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((r) => (r.ok ? r.json() : { liked: false }))
-      .then((d) => setLiked(!!d.liked))
-      .catch(() => {});
+    if (token) {
+      fetch(`${API_URL}/api/wishlist/check/${book.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((r) => (r.ok ? r.json() : { liked: false }))
+        .then((d) => setLiked(!!d.liked))
+        .catch(() => setLiked(false));
+    } else {
+      setLiked(isInGuestWishlist(book.id));
+    }
   }, [book.id]);
 
+  // Keep guest wishlist icon in sync when updated from another component
+  useEffect(() => {
+    const sync = () => {
+      if (!localStorage.getItem("token")) setLiked(isInGuestWishlist(book.id));
+    };
+    window.addEventListener("guest-wishlist-change", sync);
+    return () => window.removeEventListener("guest-wishlist-change", sync);
+  }, [book.id]);
+
+  // ── Toggle wishlist ───────────────────────────────────────────────────────
   const toggleWishlist = async (e: React.MouseEvent) => {
     e.preventDefault();
     const token = localStorage.getItem("token");
-    if (!token) { window.dispatchEvent(new Event("open-account-slider")); return; }
-    try {
-      const res = await fetch(`${API_URL}/api/wishlist/${book.id}`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
+
+    if (token) {
+      try {
+        const res = await fetch(`${API_URL}/api/wishlist/${book.id}`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        setLiked(data.status === "added");
+        window.dispatchEvent(new Event("wishlist-change"));
+      } catch { console.log("Wishlist failed silently"); }
+    } else {
+      const nowLiked = toggleGuestWishlist({
+        id: book.id,
+        title: book.title,
+        slug: book.slug,
+        sell_price: book.ebook_sell_price ?? book.sell_price,
+        image: book.main_image ?? book.image,
+        author: book.author,
+        product_type: book.product_type,
+        stock: book.stock,
       });
-      if (!res.ok) throw new Error();
-      const data = await res.json();
-      setLiked(data.status === "added");
-      window.dispatchEvent(new Event("wishlist-change"));
-    } catch {}
+      setLiked(nowLiked);
+      window.dispatchEvent(new Event("guest-wishlist-change"));
+    }
   };
 
+  // ── Add to cart ───────────────────────────────────────────────────────────
   const addToCart = async () => {
     const token = localStorage.getItem("token");
-    if (!token) { window.dispatchEvent(new Event("open-account-slider")); return; }
     const format =
       book.product_type === "ebook" ? "ebook"
       : book.product_type === "both" ? "ebook"
       : book.stock > 0 ? "paperback" : "ebook";
-    try {
-      const res = await fetch(`${API_URL}/api/cart/add`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ product_id: book.id, format, quantity: 1 }),
+
+    if (token) {
+      try {
+        const res = await fetch(`${API_URL}/api/cart/add`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ product_id: book.id, format, quantity: 1 }),
+        });
+        const data = await res.json();
+        if (!res.ok) { if (data.msg === "OUT_OF_STOCK") return; throw new Error(); }
+        window.dispatchEvent(new Event("cart-change"));
+      } catch { console.error("Add to cart failed"); return; }
+    } else {
+      addToGuestCart({
+        product_id: book.id,
+        format,
+        title: book.title,
+        slug: book.slug,
+        image: book.main_image ?? book.image,
+        price: format === "ebook" ? (book.ebook_sell_price ?? book.sell_price) : book.sell_price,
+        stock: book.stock,
+        category_imprints: undefined,
       });
-      if (!res.ok) return;
       window.dispatchEvent(new Event("cart-change"));
-      setAddedToCart(true);
-      setTimeout(() => setAddedToCart(false), 2000);
-    } catch {}
+    }
+
+    setAddedToCart(true);
+    setTimeout(() => setAddedToCart(false), 2000);
   };
 
   const isEbookOnly  = book.product_type === "ebook";
