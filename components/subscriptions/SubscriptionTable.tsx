@@ -31,10 +31,11 @@ type SubscriptionPlan = {
   plan_key: string;
   title: string;
   base_price: number;
+  discount_price: number | null; // <-- Added discount price
   duration_months: number;
   description: string;
   status: string;
-  features: string[]; // <-- Added features array
+  features: string[]; 
 };
 
 const formatDate = (date: string) =>
@@ -79,10 +80,11 @@ export default function SubscriptionTable() {
     plan_key: "monthly",
     title: "",
     base_price: "",
+    discount_price: "", // <-- Added to state
     duration_months: 1,
     description: "",
     status: "active",
-    features: [] as string[], // <-- Added features state
+    features: [] as string[],
   });
 
   // Plan Deletion State
@@ -93,6 +95,7 @@ export default function SubscriptionTable() {
   const PLAN_DURATIONS: Record<string, number> = {
     monthly: 1,
     quarterly: 3,
+    "half-yearly": 6, // <-- Added half-yearly
     yearly: 12,
   };
 
@@ -139,7 +142,8 @@ export default function SubscriptionTable() {
   /* ================= PLAN RESTRICTION LOGIC ================= */
   const availablePlanKeys = useMemo(() => {
     const usedKeys = plans.map(p => p.plan_key);
-    return ["monthly", "quarterly", "yearly"].filter(key => !usedKeys.includes(key));
+    // Added 'half-yearly' to the available options pool
+    return ["monthly", "quarterly", "half-yearly", "yearly"].filter(key => !usedKeys.includes(key));
   }, [plans]);
 
   const canAddNewPlan = availablePlanKeys.length > 0;
@@ -199,13 +203,19 @@ export default function SubscriptionTable() {
       ? `${API_URL}/api/admin/subscription-plans/${editingPlan.id}`
       : `${API_URL}/api/admin/subscription-plans`;
 
+    // Clean up payload (handle empty discount price)
+    const payload = {
+      ...planForm,
+      discount_price: planForm.discount_price === "" ? null : Number(planForm.discount_price)
+    };
+
     const res = await fetch(url, {
       method,
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${localStorage.getItem("admin_token")}`,
       },
-      body: JSON.stringify(planForm),
+      body: JSON.stringify(payload),
     });
 
     const data = await res.json();
@@ -226,10 +236,11 @@ export default function SubscriptionTable() {
         plan_key: plan.plan_key,
         title: plan.title,
         base_price: plan.base_price.toString(),
+        discount_price: plan.discount_price ? plan.discount_price.toString() : "", // Load discount
         duration_months: plan.duration_months,
         description: plan.description || "",
         status: plan.status,
-        features: plan.features || [], // Load existing features
+        features: plan.features || [], 
       });
     } else {
       const defaultKey = availablePlanKeys[0] || "monthly";
@@ -238,10 +249,11 @@ export default function SubscriptionTable() {
         plan_key: defaultKey, 
         title: "",
         base_price: "",
+        discount_price: "",
         duration_months: PLAN_DURATIONS[defaultKey], 
         description: "",
         status: "active",
-        features: [""], // Start with one empty feature field
+        features: [""], 
       });
     }
     setShowPlanModal(true);
@@ -294,7 +306,7 @@ export default function SubscriptionTable() {
           )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {plans.map(plan => (
             <div key={plan.id} className="border border-gray-200 p-4 rounded-lg shadow-sm bg-white flex flex-col justify-between">
               <div>
@@ -304,11 +316,22 @@ export default function SubscriptionTable() {
                     {plan.status}
                   </span>
                 </div>
-                <p className="text-2xl font-semibold mb-1">₹{plan.base_price}</p>
-                <p className="text-sm text-gray-500 mb-2">{plan.duration_months} Month(s) - <span className="capitalize">{plan.plan_key}</span></p>
+                
+                {/* --- PRICE DISPLAY LOGIC --- */}
+                <div className="flex items-baseline gap-2 mb-1">
+                  {plan.discount_price ? (
+                    <>
+                      <p className="text-2xl font-semibold">₹{plan.discount_price}</p>
+                      <p className="text-sm text-gray-400 line-through">₹{plan.base_price}</p>
+                    </>
+                  ) : (
+                    <p className="text-2xl font-semibold">₹{plan.base_price}</p>
+                  )}
+                </div>
+
+                <p className="text-sm text-gray-500 mb-2">{plan.duration_months} Month(s) - <span className="capitalize">{plan.plan_key.replace('-', ' ')}</span></p>
                 <p className="text-xs text-gray-600 line-clamp-2">{plan.description}</p>
                 
-                {/* Show short feature list on card */}
                 <div className="mt-3 space-y-1">
                   {plan.features?.slice(0, 2).map((f, i) => (
                      <p key={i} className="text-xs text-gray-500">✓ {f}</p>
@@ -505,7 +528,7 @@ export default function SubscriptionTable() {
             >
               {plans.map(p => (
                 <option key={p.id} value={p.plan_key}>
-                  {p.plan_key} ({p.title})
+                  {p.plan_key.replace('-', ' ')} ({p.title})
                 </option>
               ))}
               {plans.length === 0 && <option value="">No plans available</option>}
@@ -599,21 +622,31 @@ export default function SubscriptionTable() {
               disabled={!!editingPlan} 
             >
               {editingPlan ? (
-                <option value={editingPlan.plan_key}>{editingPlan.plan_key}</option>
+                <option value={editingPlan.plan_key}>{editingPlan.plan_key.replace('-', ' ')}</option>
               ) : (
                 availablePlanKeys.map(key => (
-                  <option key={key} value={key}>{key}</option>
+                  <option key={key} value={key}>{key.replace('-', ' ')}</option>
                 ))
               )}
             </select>
 
-            <input
-              type="number"
-              placeholder="Base Price (₹)"
-              value={planForm.base_price}
-              onChange={e => setPlanForm({ ...planForm, base_price: e.target.value })}
-              className="w-full border rounded px-3 py-2 text-sm"
-            />
+            {/* --- PRICE INPUTS --- */}
+            <div className="flex gap-2">
+              <input
+                type="number"
+                placeholder="Base Price (₹)"
+                value={planForm.base_price}
+                onChange={e => setPlanForm({ ...planForm, base_price: e.target.value })}
+                className="w-full border rounded px-3 py-2 text-sm"
+              />
+              <input
+                type="number"
+                placeholder="Discount Price (₹) (Optional)"
+                value={planForm.discount_price}
+                onChange={e => setPlanForm({ ...planForm, discount_price: e.target.value })}
+                className="w-full border rounded px-3 py-2 text-sm"
+              />
+            </div>
 
             <textarea
               placeholder="Description"
