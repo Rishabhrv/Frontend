@@ -9,19 +9,19 @@ import Link from "next/link";
 import NotifyMeButton from "../notification/NotifyMeButton";
 import BottomBannerAd from "../ads/BottomBannerAd";
 import PopupAd from "../ads/PopupAd";
+import {
+  addToGuestCart,
+  isInGuestWishlist,
+  toggleGuestWishlist,
+} from "@/utils/guestStorage"; // ← add this
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
-type Attribute = { name: string; value: string };
+type Attribute    = { name: string; value: string };
 type GalleryImage = { image_path: string };
-type Subject = { id: number; name: string; slug: string };
-type Author = {
-  id: number;
-  name: string;
-  image: string | null;
-  bio?: string | null;
-  slug: string;
-};
+type Subject      = { id: number; name: string; slug: string };
+type Author       = { id: number; name: string; image: string | null; bio?: string | null; slug: string };
+type Category     = { id: number; name: string; slug: string };
 
 type Product = {
   id: number;
@@ -45,15 +45,9 @@ type Product = {
   subjects?: Subject[];
 };
 
-type Category = {
-  id: number;
-  name: string;
-  slug: string;
-};
-
-/* ─── Share dropdown component ─── */
+/* ─── Share dropdown ─────────────────────────────────────────────────────── */
 function ShareButton({ title }: { title: string }) {
-  const [open, setOpen] = useState(false);
+  const [open,   setOpen]   = useState(false);
   const [copied, setCopied] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -77,32 +71,32 @@ function ShareButton({ title }: { title: string }) {
     {
       label: "WhatsApp",
       color: "#25D366",
+      href: `https://wa.me/?text=${encodeURIComponent(title + " " + url)}`,
       icon: (
         <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
           <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
         </svg>
       ),
-      href: `https://wa.me/?text=${encodeURIComponent(title + " " + url)}`,
     },
     {
       label: "Facebook",
       color: "#1877F2",
+      href: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,
       icon: (
         <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
           <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
         </svg>
       ),
-      href: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,
     },
     {
       label: "X (Twitter)",
       color: "#000000",
+      href: `https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(url)}`,
       icon: (
         <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
           <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
         </svg>
       ),
-      href: `https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(url)}`,
     },
   ];
 
@@ -161,118 +155,168 @@ function ShareButton({ title }: { title: string }) {
   );
 }
 
+/* ─── Main component ─────────────────────────────────────────────────────── */
 export default function SingleProductPage({ product }: { product: Product }) {
-  const [liked, setLiked] = useState(false);
-  const [activeImage, setActiveImage] = useState(product.main_image);
-  const [format, setFormat] = useState<"paperback" | "ebook">(
+  const [liked,            setLiked]            = useState(false);
+  const [activeImage,      setActiveImage]      = useState(product.main_image);
+  const [format,           setFormat]           = useState<"paperback" | "ebook">(
     product.product_type === "ebook" ? "ebook" : "paperback"
   );
-  const [qty, setQty] = useState(1);
-  const [galleryIndex, setGalleryIndex] = useState(0);
-  const [showFullDesc, setShowFullDesc] = useState(false);
-  const [expandedAuthors, setExpandedAuthors] = useState<Record<number, boolean>>({});
-  const [stockWarning, setStockWarning] = useState(false);
-  const [addedToCart, setAddedToCart] = useState(false);
-  const [avgRating, setAvgRating] = useState<number>(0);
-  const [reviewCount, setReviewCount] = useState<number>(0);
+  const [qty,              setQty]              = useState(1);
+  const [galleryIndex,     setGalleryIndex]     = useState(0);
+  const [showFullDesc,     setShowFullDesc]     = useState(false);
+  const [expandedAuthors,  setExpandedAuthors]  = useState<Record<number, boolean>>({});
+  const [stockWarning,     setStockWarning]     = useState(false);
+  const [addedToCart,      setAddedToCart]      = useState(false);
+  const [avgRating,        setAvgRating]        = useState<number>(0);
+  const [reviewCount,      setReviewCount]      = useState<number>(0);
 
-  /* ── touch / swipe refs ── */
-  const touchStartX = useRef<number>(0);
-  const touchEndX = useRef<number>(0);
-  /* ref for the mobile thumbnail strip — used to auto-scroll it */
-  const mobileThumbnailRef = useRef<HTMLDivElement>(null);
+  const touchStartX          = useRef<number>(0);
+  const touchEndX            = useRef<number>(0);
+  const mobileThumbnailRef   = useRef<HTMLDivElement>(null);
 
   const allImages = [{ image_path: product.main_image }, ...product.gallery];
 
+  /* ── Review summary ── */
   useEffect(() => {
     fetch(`${API_URL}/api/reviews/product/${product.id}/summary`)
       .then((r) => r.json())
-      .then((d) => {
-        setAvgRating(d.average ?? 0);
-        setReviewCount(d.total ?? 0);
-      })
+      .then((d) => { setAvgRating(d.average ?? 0); setReviewCount(d.total ?? 0); })
       .catch(() => {});
   }, [product.id]);
 
-  /* ── auto-cycle images every 5 s ── */
+  /* ── Auto-cycle images every 5 s ── */
   useEffect(() => {
-    if (!product || !product.gallery || product.gallery.length === 0) return;
-    const images = allImages;
+    if (!product.gallery?.length) return;
+    const images       = allImages;
     const visibleCount = 5;
-    let currentIndex = 0;
+    let currentIndex   = 0;
 
     const interval = setInterval(() => {
       currentIndex = currentIndex >= images.length - 1 ? 0 : currentIndex + 1;
       setActiveImage(images[currentIndex].image_path);
-      /* keep desktop thumbnail strip in sync */
       setGalleryIndex((prev) => {
         if (currentIndex >= prev + visibleCount) return currentIndex - visibleCount + 1;
         if (currentIndex < prev) return currentIndex;
         return prev;
       });
-      /* keep mobile thumbnail strip scrolled to active thumb */
       scrollMobileStrip(currentIndex);
     }, 5000);
 
     return () => clearInterval(interval);
   }, [product]);
 
+  /* ── Wishlist initial state: server (logged-in) or localStorage (guest) ── */
   useEffect(() => {
-    if (!product) return;
     const token = localStorage.getItem("token");
-    if (!token) return;
-    fetch(`${API_URL}/api/wishlist/check/${product.id}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((r) => r.json())
-      .then((d) => setLiked(d.liked));
-  }, [product]);
+    if (token) {
+      fetch(`${API_URL}/api/wishlist/check/${product.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((r) => r.json())
+        .then((d) => setLiked(d.liked));
+    } else {
+      setLiked(isInGuestWishlist(product.id));
+    }
+  }, [product.id]);
 
-  /* ── scroll mobile strip so thumb at index is visible ── */
+  // Keep heart in sync when guest wishlist changes elsewhere (e.g. BookCard)
+  useEffect(() => {
+    const sync = () => {
+      if (!localStorage.getItem("token")) setLiked(isInGuestWishlist(product.id));
+    };
+    window.addEventListener("guest-wishlist-change", sync);
+    return () => window.removeEventListener("guest-wishlist-change", sync);
+  }, [product.id]);
+
+  /* ── Helpers ── */
   const scrollMobileStrip = (index: number) => {
     if (!mobileThumbnailRef.current) return;
-    const THUMB_W = 56 + 8; // width + gap
     mobileThumbnailRef.current.scrollTo({
-      left: Math.max(0, index * THUMB_W - THUMB_W),
+      left:     Math.max(0, index * (56 + 8) - (56 + 8)),
       behavior: "smooth",
     });
   };
 
-  /* ── shared helper: jump to any image by index ── */
   const jumpToImage = (index: number) => {
     setActiveImage(allImages[index].image_path);
     setGalleryIndex(Math.max(0, index - 4));
     scrollMobileStrip(index);
   };
 
-  /* ── swipe handlers ── */
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartX.current = e.changedTouches[0].clientX;
+  const handleTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.changedTouches[0].clientX; };
+  const handleTouchEnd   = (e: React.TouchEvent) => {
+    touchEndX.current = e.changedTouches[0].clientX;
+    const diff         = touchStartX.current - touchEndX.current;
+    if (Math.abs(diff) < 50) return;
+    const currentIndex = allImages.findIndex((img) => img.image_path === activeImage);
+    if (diff > 0) jumpToImage(currentIndex < allImages.length - 1 ? currentIndex + 1 : 0);
+    else          jumpToImage(currentIndex > 0 ? currentIndex - 1 : allImages.length - 1);
   };
 
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    touchEndX.current = e.changedTouches[0].clientX;
-    const diff = touchStartX.current - touchEndX.current;
-    if (Math.abs(diff) < 50) return; // ignore micro-swipes
+  /* ── Toggle wishlist ── */
+  const toggleWishlist = async () => {
+    const token = localStorage.getItem("token");
 
-    const currentIndex = allImages.findIndex((img) => img.image_path === activeImage);
-    if (diff > 0) {
-      // swipe left → next
-      jumpToImage(currentIndex < allImages.length - 1 ? currentIndex + 1 : 0);
+    if (token) {
+      // Logged-in: sync with server
+      await fetch(`${API_URL}/api/wishlist/${product.id}`, {
+        method:  "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setLiked((v) => !v);
+      window.dispatchEvent(new Event("wishlist-change"));
     } else {
-      // swipe right → prev
-      jumpToImage(currentIndex > 0 ? currentIndex - 1 : allImages.length - 1);
+      // Guest: persist to localStorage
+      const nowLiked = toggleGuestWishlist({
+        id:           product.id,
+        title:        product.title,
+        slug:         product.categories?.[0]?.slug ?? "",  // fallback; slug comes from product page URL
+        sell_price:   format === "ebook" ? (product.ebook_sell_price ?? product.sell_price) : product.sell_price,
+        image:        `${API_URL}${product.main_image}`,
+        product_type: product.product_type,
+        stock:        product.stock,
+      });
+      setLiked(nowLiked);
     }
   };
 
-  const toggleWishlist = async () => {
-    const token = localStorage.getItem("token");
-    if (!token) return window.dispatchEvent(new Event("open-account-slider"));
-    await fetch(`${API_URL}/api/wishlist/${product?.id}`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    setLiked(!liked);
+  /* ── Add to cart ── */
+  const addToCart = async () => {
+    const token      = localStorage.getItem("token");
+    const cartFormat = format === "ebook" ? "ebook" : "paperback";
+    const cartQty    = format === "ebook" ? 1 : qty;
+    const cartPrice  = format === "ebook"
+      ? (product.ebook_sell_price ?? product.sell_price)
+      : product.sell_price;
+
+    if (token) {
+      // Logged-in: sync with server
+      try {
+        const res = await fetch(`${API_URL}/api/cart/add`, {
+          method:  "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body:    JSON.stringify({ product_id: product.id, format: cartFormat, quantity: cartQty }),
+        });
+        if (!res.ok) throw new Error("Add to cart failed");
+        window.dispatchEvent(new Event("cart-change"));
+      } catch (err) { console.error(err); return; }
+    } else {
+      // Guest: persist to localStorage
+      addToGuestCart({
+        product_id: product.id,
+        format:     cartFormat,
+        quantity:   cartQty,
+        title:      product.title,
+        slug:       product.categories?.[0]?.slug ?? "",
+        image:      `${API_URL}${product.main_image}`,
+        price:      cartPrice,
+        stock:      product.stock,
+      });
+    }
+
+    setAddedToCart(true);
+    setTimeout(() => setAddedToCart(false), 1500);
   };
 
   if (!product) return null;
@@ -283,9 +327,7 @@ export default function SingleProductPage({ product }: { product: Product }) {
       : 0;
 
   const ebookDiscount =
-    product.ebook_price &&
-    product.ebook_sell_price &&
-    product.ebook_price > product.ebook_sell_price
+    product.ebook_price && product.ebook_sell_price && product.ebook_price > product.ebook_sell_price
       ? Math.round(((product.ebook_price - product.ebook_sell_price) / product.ebook_price) * 100)
       : 0;
 
@@ -295,40 +337,11 @@ export default function SingleProductPage({ product }: { product: Product }) {
 
   const getShortBio = (text: string, limit = 100) => {
     const words = text.split(" ");
-    if (words.length <= limit) return text;
-    return words.slice(0, limit).join(" ");
-  };
-
-  const addToCart = async () => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      window.dispatchEvent(new Event("open-account-slider"));
-      return;
-    }
-    try {
-      const res = await fetch(`${API_URL}/api/cart/add`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          product_id: product!.id,
-          format: format === "ebook" ? "ebook" : "paperback",
-          quantity: format === "ebook" ? 1 : qty,
-        }),
-      });
-      if (!res.ok) throw new Error("Add to cart failed");
-      window.dispatchEvent(new Event("cart-change"));
-      setAddedToCart(true);
-      setTimeout(() => setAddedToCart(false), 1500);
-    } catch (err) {
-      console.error(err);
-    }
+    return words.length <= limit ? text : words.slice(0, limit).join(" ");
   };
 
   const isPaperbackOnly = product.product_type === "physical";
-  const activeIndex = allImages.findIndex((img) => img.image_path === activeImage);
+  const activeIndex     = allImages.findIndex((img) => img.image_path === activeImage);
 
   return (
     <div className="max-w-7xl mx-auto px-3 sm:px-5 md:px-8 lg:px-14 xl:px-20 py-4 sm:py-6">
@@ -357,8 +370,6 @@ export default function SingleProductPage({ product }: { product: Product }) {
 
         {/* ── LEFT: Images ── */}
         <div>
-
-          {/* ── Main image (swipeable on mobile) ── */}
           <div
             className="relative flex justify-center bg-white rounded-xl p-4 sm:p-6 border border-gray-100 select-none"
             onTouchStart={handleTouchStart}
@@ -367,13 +378,12 @@ export default function SingleProductPage({ product }: { product: Product }) {
             <Image
               src={`${API_URL}${activeImage}`}
               alt={product.title}
-              width={360}
-              height={520}
+              width={360} height={520}
               className="object-contain max-h-[320px] sm:max-h-[400px] md:max-h-[480px] w-auto pointer-events-none"
               unoptimized
             />
 
-            {/* ── Dot indicators — mobile only ── */}
+            {/* Dot indicators — mobile only */}
             {allImages.length > 1 && (
               <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5 md:hidden">
                 {allImages.map((_, i) => (
@@ -388,7 +398,7 @@ export default function SingleProductPage({ product }: { product: Product }) {
               </div>
             )}
 
-            {/* ── Wishlist + Share ── */}
+            {/* Wishlist + Share */}
             <div className="absolute top-3 right-3 sm:top-4 sm:right-4 flex flex-col gap-2">
               <button
                 onClick={toggleWishlist}
@@ -401,7 +411,7 @@ export default function SingleProductPage({ product }: { product: Product }) {
             </div>
           </div>
 
-          {/* ── MOBILE: horizontally scrollable thumbnail strip ── */}
+          {/* Mobile thumbnail strip */}
           {allImages.length > 1 && (
             <div
               ref={mobileThumbnailRef}
@@ -413,34 +423,27 @@ export default function SingleProductPage({ product }: { product: Product }) {
                   key={i}
                   onClick={() => jumpToImage(i)}
                   className={`border rounded p-0.5 flex-shrink-0 transition-all duration-200 ${
-                    i === activeIndex
-                      ? "border-red-400 scale-100 shadow-sm"
-                      : "border-gray-200"
+                    i === activeIndex ? "border-red-400 scale-100 shadow-sm" : "border-gray-200"
                   }`}
                 >
                   <Image
                     src={`${API_URL}${img.image_path}`}
-                    width={56}
-                    height={80}
+                    width={56} height={80}
                     className="h-16 w-12 object-cover rounded"
-                    unoptimized
-                    alt=""
+                    unoptimized alt=""
                   />
                 </button>
               ))}
             </div>
           )}
 
-          {/* ── DESKTOP: arrow-based thumbnail strip ── */}
+          {/* Desktop thumbnail strip */}
           {product.gallery?.length > 0 && (() => {
-            const images = allImages;
+            const images       = allImages;
             const visibleCount = 5;
-            const canPrev = galleryIndex > 0;
-            const canNext = galleryIndex < images.length - visibleCount;
 
             return (
               <div className="mt-3 sm:mt-4 hidden md:flex items-center gap-2">
-
                 <div className="overflow-hidden flex-1">
                   <div
                     className="flex gap-3 transition-transform duration-300"
@@ -458,17 +461,14 @@ export default function SingleProductPage({ product }: { product: Product }) {
                       >
                         <Image
                           src={`${API_URL}${img.image_path}`}
-                          width={60}
-                          height={90}
+                          width={60} height={90}
                           className="h-24 w-[70px] object-cover cursor-pointer"
-                          unoptimized
-                          alt=""
+                          unoptimized alt=""
                         />
                       </button>
                     ))}
                   </div>
                 </div>
-
               </div>
             );
           })()}
@@ -499,9 +499,9 @@ export default function SingleProductPage({ product }: { product: Product }) {
           <div className="flex items-center gap-1 mb-4">
             <div className="flex items-center gap-0.5">
               {[1, 2, 3, 4, 5].map((i) => {
-                const filled = avgRating >= i;
-                const partial = !filled && avgRating > i - 1;
-                const fillPercent = partial ? Math.round((avgRating - (i - 1)) * 100) : 0;
+                const filled       = avgRating >= i;
+                const partial      = !filled && avgRating > i - 1;
+                const fillPercent  = partial ? Math.round((avgRating - (i - 1)) * 100) : 0;
                 return (
                   <span key={i} className="relative inline-block w-3.5 h-3.5">
                     <Star size={14} className="text-gray-300 absolute inset-0" fill="currentColor" />
@@ -524,7 +524,7 @@ export default function SingleProductPage({ product }: { product: Product }) {
             )}
           </div>
 
-          {/* ── PRICE SECTION ── */}
+          {/* ── PRICE ── */}
           <div className="mb-5 space-y-3">
             <div className="flex items-end gap-2 sm:gap-3 flex-wrap">
               <span className="text-2xl sm:text-3xl font-semibold text-red-600">
@@ -609,10 +609,7 @@ export default function SingleProductPage({ product }: { product: Product }) {
                       </span>
                       <button
                         onClick={() => {
-                          if (product.stock && qty >= product.stock) {
-                            setStockWarning(true);
-                            return;
-                          }
+                          if (product.stock && qty >= product.stock) { setStockWarning(true); return; }
                           setQty((q) => q + 1);
                           setStockWarning(false);
                         }}
@@ -632,11 +629,7 @@ export default function SingleProductPage({ product }: { product: Product }) {
                         : "bg-black text-white hover:bg-gray-800"
                     } ${format === "paperback" && product.stock === 0 ? "opacity-50 cursor-not-allowed" : ""}`}
                   >
-                    {addedToCart ? (
-                      <><CircleCheck size={16} /> Added</>
-                    ) : (
-                      <><ShoppingCart size={16} /> Add to Cart</>
-                    )}
+                    {addedToCart ? <><CircleCheck size={16} /> Added</> : <><ShoppingCart size={16} /> Add to Cart</>}
                   </button>
                 </>
               )}
@@ -645,9 +638,9 @@ export default function SingleProductPage({ product }: { product: Product }) {
             {/* Trust strip */}
             <div className="grid grid-cols-3 gap-2 sm:gap-3 pt-4 sm:pt-6 border-t border-gray-200">
               {[
-                { icon: "/images/icons/quality.png", title: "Premium Quality", sub: "High-grade paper & binding" },
-                { icon: "/images/icons/fast_delivery.png", title: "Fast Shipping", sub: "Dispatch in 24–48 hours" },
-                { icon: "/images/icons/best_price.png", title: "Best Price", sub: "Direct publisher pricing" },
+                { icon: "/images/icons/quality.png",       title: "Premium Quality", sub: "High-grade paper & binding" },
+                { icon: "/images/icons/fast_delivery.png", title: "Fast Shipping",   sub: "Dispatch in 24–48 hours" },
+                { icon: "/images/icons/best_price.png",    title: "Best Price",      sub: "Direct publisher pricing" },
               ].map((item, i) => (
                 <div key={i} className="flex flex-col sm:flex-row items-center sm:items-start gap-1 sm:gap-3 text-center sm:text-left">
                   <img src={item.icon} alt="" className="h-10 w-10 sm:h-12 sm:w-12 object-contain flex-shrink-0" />
@@ -717,7 +710,7 @@ export default function SingleProductPage({ product }: { product: Product }) {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 text-xs sm:text-sm">
             {product.weight && <div>Weight: {product.weight} kg</div>}
             {product.length && <div>Length: {product.length} cm</div>}
-            {product.width && <div>Width: {product.width} cm</div>}
+            {product.width  && <div>Width: {product.width} cm</div>}
             {product.height && <div>Height: {product.height} cm</div>}
           </div>
         </div>
@@ -734,11 +727,9 @@ export default function SingleProductPage({ product }: { product: Product }) {
                   <Link href={`/author/${a.slug}`}>
                     <Image
                       src={a.image ? `${API_URL}${a.image}` : `/default-author.png`}
-                      width={80}
-                      height={80}
+                      width={80} height={80}
                       className="w-14 h-14 sm:w-20 sm:h-20 rounded-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
-                      unoptimized
-                      alt={a.name}
+                      unoptimized alt={a.name}
                     />
                   </Link>
                 </div>
@@ -774,11 +765,8 @@ export default function SingleProductPage({ product }: { product: Product }) {
       {/* ── REVIEWS ── */}
       {product && <ReviewSection productId={product.id} />}
 
-      <BottomBannerAd
-        pageType="product"
-      />
+      <BottomBannerAd pageType="product" />
       <PopupAd pageType="product" />
-      
 
       {/* ── RELATED BOOKS ── */}
       {product.categories?.length > 0 && (

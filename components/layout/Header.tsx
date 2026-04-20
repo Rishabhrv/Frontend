@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import AccountSlider from "./AccountSlider";
 import { usePathname } from "next/navigation";
+import { getGuestCart } from "@/utils/guestStorage"; // ← add this
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
@@ -74,9 +75,17 @@ const Header = () => {
       .catch(() => { localStorage.removeItem("token"); setUser(null); });
   };
 
+  // ── Cart count: server for logged-in users, localStorage for guests ───────
   const fetchCartCount = () => {
     const token = localStorage.getItem("token");
-    if (!token) { setCartCount(0); return; }
+
+    if (!token) {
+      // Guest: sum quantities from localStorage
+      const total = getGuestCart().reduce((sum, item) => sum + item.quantity, 0);
+      setCartCount(total);
+      return;
+    }
+
     fetch(`${API_URL}/api/cart/count`, { headers: { Authorization: `Bearer ${token}` } })
       .then(res => res.json())
       .then(data => setCartCount(data.count || 0))
@@ -84,14 +93,17 @@ const Header = () => {
   };
 
   useEffect(() => {
-    fetchUser(); fetchCartCount();
-    window.addEventListener("auth-change", fetchUser);
-    window.addEventListener("auth-change", fetchCartCount);
-    window.addEventListener("cart-change", fetchCartCount);
+    fetchUser();
+    fetchCartCount();
+    window.addEventListener("auth-change",       fetchUser);
+    window.addEventListener("auth-change",       fetchCartCount);
+    window.addEventListener("cart-change",       fetchCartCount);
+    window.addEventListener("guest-cart-change", fetchCartCount); // ← guest updates
     return () => {
-      window.removeEventListener("auth-change", fetchUser);
-      window.removeEventListener("auth-change", fetchCartCount);
-      window.removeEventListener("cart-change", fetchCartCount);
+      window.removeEventListener("auth-change",       fetchUser);
+      window.removeEventListener("auth-change",       fetchCartCount);
+      window.removeEventListener("cart-change",       fetchCartCount);
+      window.removeEventListener("guest-cart-change", fetchCartCount);
     };
   }, []);
 
@@ -117,9 +129,8 @@ const Header = () => {
   return (
     <>
       {/* ═══════════════════════════════════════
-          MAIN HEADER — always in document flow
+          MAIN HEADER
       ═══════════════════════════════════════ */}
-      
       <header ref={headerRef} className="w-full bg-white border-b border-gray-200 relative">
 
         {/* TOP BAR */}
@@ -243,8 +254,7 @@ const Header = () => {
       </header>
 
       {/* ═══════════════════════════════════════
-          COMPACT STICKY BAR — appears on scroll
-          Shows: logo + search + cart icon
+          COMPACT STICKY BAR
       ═══════════════════════════════════════ */}
       <div
         className={`
@@ -254,8 +264,6 @@ const Header = () => {
         `}
       >
         <div className="mx-auto max-w-7xl px-4 py-2.5 flex items-center gap-3">
-
-          {/* Logo — desktop only, takes minimal space */}
           <Link href="/" className="hidden md:flex shrink-0 items-center mr-2">
             <Image
               src="/images/logo/AGPH-Logo-Black-600x290.webp"
@@ -265,12 +273,10 @@ const Header = () => {
             />
           </Link>
 
-          {/* Search — full width */}
           <div className="flex-1 relative">
             <SearchBox {...sharedSearchProps} />
           </div>
 
-          {/* Cart + Account icons */}
           <div className="flex items-center gap-3 text-gray-700 shrink-0">
             <Link href="/wishlist" aria-label="Wishlist" className="hidden sm:block">
               <Heart className="h-5 w-5 hover:text-black" />

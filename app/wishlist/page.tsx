@@ -3,14 +3,20 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Trash2, ShoppingBag, Heart } from "lucide-react";
+import { Trash2, ShoppingBag, Heart, LogIn } from "lucide-react";
+import {
+  getGuestWishlist,
+  removeFromGuestWishlist,
+  addToGuestCart,
+  GuestWishlistItem,
+} from "@/utils/guestStorage";   // ← adjust to your import path
 
 type WishlistItem = {
   id: number;
   title: string;
   slug: string;
   sell_price: number;
-  main_image: string;
+  main_image: string;   // relative path  /uploads/...
   author?: string;
   product_type: "ebook" | "physical" | "both";
   stock: number;
@@ -18,89 +24,167 @@ type WishlistItem = {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
-export default function WishlistPage() {
-  const [items, setItems] = useState<WishlistItem[]>([]);
-  const [addingId, setAddingId] = useState<number | null>(null);
+// ── Normalise image src ── handles both full URLs and relative paths
+const imgSrc = (src: string) => (src.startsWith("http") ? src : `${API_URL}${src}`);
 
+export default function WishlistPage() {
+  const [items,     setItems]     = useState<WishlistItem[]>([]);
+  const [addingId,  setAddingId]  = useState<number | null>(null);
+  const [isGuest,   setIsGuest]   = useState(false);
+
+  // ── Load wishlist ─────────────────────────────────────────────────────────
   const loadWishlist = () => {
     const token = localStorage.getItem("token");
-    if (!token) { window.location.href = "/login"; return; }
-    fetch(`${API_URL}/api/wishlist/my`, { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.json())
+
+    if (!token) {
+      // Guest: read from localStorage
+      setIsGuest(true);
+      const guestItems = getGuestWishlist().map((g: GuestWishlistItem) => ({
+        id:           g.id,
+        title:        g.title,
+        slug:         g.slug,
+        sell_price:   g.sell_price,
+        main_image:   g.image,
+        author:       g.author,
+        product_type: g.product_type,
+        stock:        g.stock,
+      }));
+      setItems(guestItems);
+      return;
+    }
+
+    setIsGuest(false);
+    fetch(`${API_URL}/api/wishlist/my`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
       .then(setItems);
   };
 
   useEffect(() => {
     loadWishlist();
-    window.addEventListener("wishlist-change", loadWishlist);
-    return () => window.removeEventListener("wishlist-change", loadWishlist);
+    window.addEventListener("wishlist-change",       loadWishlist);
+    window.addEventListener("guest-wishlist-change", loadWishlist);
+    return () => {
+      window.removeEventListener("wishlist-change",       loadWishlist);
+      window.removeEventListener("guest-wishlist-change", loadWishlist);
+    };
   }, []);
 
+  // ── Remove ────────────────────────────────────────────────────────────────
   const removeItem = async (productId: number) => {
     const token = localStorage.getItem("token");
+
+    if (!token) {
+      removeFromGuestWishlist(productId);
+      loadWishlist();
+      return;
+    }
+
     await fetch(`${API_URL}/api/wishlist/remove/${productId}`, {
-      method: "DELETE",
+      method:  "DELETE",
       headers: { Authorization: `Bearer ${token}` },
     });
     loadWishlist();
   };
 
-  const getCartFormat = (item: WishlistItem) => {
-    if (item.product_type === "ebook") return "ebook";
+  // ── Get format ────────────────────────────────────────────────────────────
+  const getCartFormat = (item: WishlistItem): "ebook" | "paperback" => {
+    if (item.product_type === "ebook")    return "ebook";
     if (item.product_type === "physical") return "paperback";
     return item.stock > 0 ? "paperback" : "ebook";
   };
 
+  // ── Add to bag ────────────────────────────────────────────────────────────
   const addToCart = async (item: WishlistItem) => {
-    const token = localStorage.getItem("token");
-    if (!token) { window.location.href = "/login"; return; }
+    const token  = localStorage.getItem("token");
     const format = getCartFormat(item);
     setAddingId(item.id);
+
     try {
-      const res = await fetch(`${API_URL}/api/cart/add`, {
-        method: "POST",
+      if (!token) {
+        // Guest: add to guest cart
+        addToGuestCart({
+          product_id: item.id,
+          format,
+          title:      item.title,
+          slug:       item.slug,
+          image:      item.main_image,
+          price:      item.sell_price,
+          stock:      item.stock,
+        });
+        removeFromGuestWishlist(item.id);
+        loadWishlist();
+        return;
+      }
+
+      const res  = await fetch(`${API_URL}/api/cart/add`, {
+        method:  "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ product_id: item.id, format, quantity: 1 }),
+        body:    JSON.stringify({ product_id: item.id, format, quantity: 1 }),
       });
       const data = await res.json();
       if (!res.ok) { if (data.msg === "OUT_OF_STOCK") return; throw new Error(); }
       window.dispatchEvent(new Event("cart-change"));
       removeItem(item.id);
     } catch { console.error("Add to cart failed"); }
-    finally { setAddingId(null); }
+    finally   { setAddingId(null); }
   };
 
   const today = new Date().toLocaleDateString("en-US", {
     year: "numeric", month: "long", day: "numeric",
   });
 
-  if (!items.length)
+  // ── Empty state ───────────────────────────────────────────────────────────
+  if (!items.length) {
     return (
       <div className="max-w-5xl mx-auto py-20 px-6 text-center bg-white text-gray-700">
         <Heart className="mx-auto mb-4 text-gray-300" size={48} />
         <h1 className="text-2xl font-semibold mb-2">My Wishlist</h1>
         <p className="text-gray-500 text-sm">Your wishlist is empty.</p>
-        <Link href="/" className="inline-block mt-6 px-6 py-2.5 bg-black text-white rounded-lg text-sm hover:bg-gray-800 transition">
+        <Link
+          href="/"
+          className="inline-block mt-6 px-6 py-2.5 bg-black text-white rounded-lg text-sm hover:bg-gray-800 transition"
+        >
           Browse Books
         </Link>
       </div>
     );
+  }
 
   return (
-    <div className="max-w-5xl min-h-[100dvh] mx-auto py-8 sm:py-16 px-4 sm:px-6 bg-white text-gray-700" >
+    <div className="max-w-5xl min-h-[100dvh] mx-auto py-8 sm:py-16 px-4 sm:px-6 bg-white text-gray-700">
 
-      {/* HEADER */}
+      {/* ── Guest login nudge ── */}
+      {isGuest && (
+        <div className="flex items-center justify-between gap-3 mb-6 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm">
+          <p className="text-amber-800">
+            <span className="font-semibold">You&apos;re browsing as a guest.</span>{" "}
+            Log in to save your wishlist across devices.
+          </p>
+          <Link
+            href="/login"
+            className="flex items-center gap-1.5 shrink-0 bg-black text-white text-xs font-medium px-4 py-2 rounded-lg hover:bg-gray-800 transition"
+          >
+            <LogIn size={13} /> Log in
+          </Link>
+        </div>
+      )}
+
+      {/* ── Header ── */}
       <div className="text-center mb-6 sm:mb-10">
         <p className="text-xs tracking-widest text-gray-500 uppercase">Updated: {today}</p>
         <h1 className="text-2xl sm:text-3xl font-serif mt-2">My Wishlist</h1>
       </div>
 
-      <p className="text-sm mb-4 text-gray-600">{items.length} Item{items.length !== 1 ? "s" : ""}</p>
+      <p className="text-sm mb-4 text-gray-600">
+        {items.length} Item{items.length !== 1 ? "s" : ""}
+      </p>
 
       <div className="border-t border-gray-300">
-        {items.map(book => {
+        {items.map((book) => {
           const outOfStock = book.product_type === "physical" && book.stock === 0;
-          const isAdding = addingId === book.id;
+          const isAdding   = addingId === book.id;
 
           return (
             <div
@@ -110,7 +194,7 @@ export default function WishlistPage() {
               {/* IMAGE */}
               <Link href={`/product/${book.slug}`} className="shrink-0">
                 <Image
-                  src={`${API_URL}${book.main_image}`}
+                  src={imgSrc(book.main_image)}
                   alt={book.title}
                   width={80}
                   height={120}
@@ -119,9 +203,12 @@ export default function WishlistPage() {
                 />
               </Link>
 
-              {/* TITLE + AUTHOR — grows to fill space */}
+              {/* TITLE + AUTHOR */}
               <div className="flex-1 min-w-0">
-                <Link href={`/product/${book.slug}`} className="font-medium text-sm sm:text-base hover:underline line-clamp-2 leading-snug">
+                <Link
+                  href={`/product/${book.slug}`}
+                  className="font-medium text-sm sm:text-base hover:underline line-clamp-2 leading-snug"
+                >
                   {book.title}
                 </Link>
                 {book.author && (
@@ -138,10 +225,10 @@ export default function WishlistPage() {
               <button
                 onClick={() => addToCart(book)}
                 disabled={outOfStock || isAdding}
-                className={`shrink-0 flex items-center gap-1.5 px-3 sm:px-5 py-2 rounded text-xs sm:text-sm font-medium transition cursor-pointer whitespace-nowrap
+                className={`shrink-0 flex items-center gap-1.5 px-3 sm:px-5 py-2 rounded text-xs sm:text-sm font-medium transition whitespace-nowrap
                   ${outOfStock
                     ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                    : "bg-black text-white hover:bg-gray-800 active:scale-95"
+                    : "bg-black text-white hover:bg-gray-800 active:scale-95 cursor-pointer"
                   }`}
               >
                 <ShoppingBag size={14} className="hidden sm:inline" />
