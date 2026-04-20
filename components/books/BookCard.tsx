@@ -4,6 +4,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { Heart, ShoppingCart, CircleCheck } from "lucide-react";
 import { useEffect, useState } from "react";
+import {
+  addToGuestCart,
+  isInGuestWishlist,
+  toggleGuestWishlist,
+} from "@/utils/guestStorage";   // ← adjust import path to match your project
 
 type Book = {
   id: number;
@@ -24,88 +29,137 @@ type Book = {
 type BookCardProps = {
   book: Book;
   visibleCount: number;
-  forceFormat?: "ebook" | "paperback"; // ← new prop
+  forceFormat?: "ebook" | "paperback";
 };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
 const BookCard = ({ book, visibleCount, forceFormat }: BookCardProps) => {
-  const [liked, setLiked] = useState(false);
-  const [addedToCart, setAddedToCart] = useState(false);
+  const [liked,        setLiked]        = useState(false);
+  const [addedToCart,  setAddedToCart]  = useState(false);
 
-  /* CHECK WISHLIST */
+  // ── Wishlist: check server (logged-in) or localStorage (guest) ────────────
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (!token) { setLiked(false); return; }
-    fetch(`${API_URL}/api/wishlist/check/${book.id}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((r) => (r.ok ? r.json() : { liked: false }))
-      .then((d) => setLiked(!!d.liked))
-      .catch(() => setLiked(false));
+    if (token) {
+      fetch(`${API_URL}/api/wishlist/check/${book.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((r) => (r.ok ? r.json() : { liked: false }))
+        .then((d) => setLiked(!!d.liked))
+        .catch(() => setLiked(false));
+    } else {
+      setLiked(isInGuestWishlist(book.id));
+    }
   }, [book.id]);
 
-  /* TOGGLE WISHLIST */
+  // Keep guest wishlist icon in sync when updated from another component
+  useEffect(() => {
+    const sync = () => {
+      if (!localStorage.getItem("token")) setLiked(isInGuestWishlist(book.id));
+    };
+    window.addEventListener("guest-wishlist-change", sync);
+    return () => window.removeEventListener("guest-wishlist-change", sync);
+  }, [book.id]);
+
+  // ── Toggle wishlist ───────────────────────────────────────────────────────
   const toggleWishlist = async (e: React.MouseEvent) => {
     e.preventDefault();
     const token = localStorage.getItem("token");
-    if (!token) { window.dispatchEvent(new Event("open-account-slider")); return; }
-    try {
-      const res = await fetch(`${API_URL}/api/wishlist/${book.id}`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
+
+    if (token) {
+      // Logged-in: sync with server
+      try {
+        const res  = await fetch(`${API_URL}/api/wishlist/${book.id}`, {
+          method:  "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        setLiked(data.status === "added");
+        window.dispatchEvent(new Event("wishlist-change"));
+      } catch { console.log("Wishlist failed silently"); }
+    } else {
+      // Guest: persist to localStorage
+      const nowLiked = toggleGuestWishlist({
+        id:           book.id,
+        title:        book.title,
+        slug:         book.slug,
+        sell_price:   book.sell_price,
+        image:        book.image,
+        author:       book.author,
+        product_type: book.product_type,
+        stock:        book.stock,
       });
-      if (!res.ok) throw new Error();
-      const data = await res.json();
-      setLiked(data.status === "added");
-      window.dispatchEvent(new Event("wishlist-change"));
-    } catch { console.log("Wishlist failed silently"); }
+      setLiked(nowLiked);
+    }
   };
 
-  const getCartFormat = () => {
-    if (forceFormat) return forceFormat; // ← honour override first
-    if (book.product_type === "ebook") return "ebook";
+  // ── Determine format ──────────────────────────────────────────────────────
+  const getCartFormat = (): "ebook" | "paperback" => {
+    if (forceFormat)                  return forceFormat;
+    if (book.product_type === "ebook")    return "ebook";
     if (book.product_type === "physical") return "paperback";
     return book.stock > 0 ? "paperback" : "ebook";
   };
 
+  // ── Add to cart ───────────────────────────────────────────────────────────
   const addToCart = async () => {
-    const token = localStorage.getItem("token");
-    if (!token) { window.dispatchEvent(new Event("open-account-slider")); return; }
+    const token  = localStorage.getItem("token");
     const format = getCartFormat();
-    try {
-      const res = await fetch(`${API_URL}/api/cart/add`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ product_id: book.id, format, quantity: 1 }),
+
+    if (token) {
+      // Logged-in: sync with server
+      try {
+        const res  = await fetch(`${API_URL}/api/cart/add`, {
+          method:  "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body:    JSON.stringify({ product_id: book.id, format, quantity: 1 }),
+        });
+        const data = await res.json();
+        if (!res.ok) { if (data.msg === "OUT_OF_STOCK") return; throw new Error(); }
+        window.dispatchEvent(new Event("cart-change"));
+      } catch { console.error("Add to cart failed"); return; }
+    } else {
+      // Guest: persist to localStorage
+      addToGuestCart({
+        product_id:        book.id,
+        format,
+        title:             book.title,
+        slug:              book.slug,
+        image:             book.image,
+        price:             format === "ebook" ? (book.ebook_sell_price ?? book.sell_price) : book.sell_price,
+        stock:             book.stock,
+        category_imprints: undefined,
       });
-      const data = await res.json();
-      if (!res.ok) { if (data.msg === "OUT_OF_STOCK") return; throw new Error(); }
-      window.dispatchEvent(new Event("cart-change"));
-      setAddedToCart(true);
-      setTimeout(() => setAddedToCart(false), 2000);
-    } catch { console.error("Add to cart failed"); }
+    }
+
+    setAddedToCart(true);
+    setTimeout(() => setAddedToCart(false), 2000);
   };
 
-  const isEbookOnly = book.product_type === "ebook";
-  const displaySellPrice = isEbookOnly ? book.ebook_sell_price : book.sell_price;
-  const displayMrp = isEbookOnly ? book.ebook_price : book.price;
-  const showDiscount = displayMrp && displaySellPrice && displayMrp > displaySellPrice;
-  const discountPercent = showDiscount
+  // ── Derived display values ────────────────────────────────────────────────
+  const isEbookOnly       = book.product_type === "ebook";
+  const displaySellPrice  = isEbookOnly ? book.ebook_sell_price : book.sell_price;
+  const displayMrp        = isEbookOnly ? book.ebook_price      : book.price;
+  const showDiscount      = displayMrp && displaySellPrice && displayMrp > displaySellPrice;
+  const discountPercent   = showDiscount
     ? Math.round(((displayMrp - displaySellPrice) / displayMrp) * 100)
     : 0;
 
   const isOutOfStock = book.product_type === "physical" && book.stock === 0;
-  const isDisabled = addedToCart || isOutOfStock;
+  const isDisabled   = addedToCart || isOutOfStock;
 
   return (
     <div className="flex-shrink-0 px-1 my-2" style={{ width: `${100 / visibleCount}%` }}>
       <div className="group relative bg-white rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-300 flex flex-col">
 
-        {/* ── COVER IMAGE BLOCK ── */}
+        {/* ── COVER IMAGE ── */}
         <Link href={`/product/${book.slug}`} className="block">
-          <div className="relative bg-gray-100 flex items-center justify-center overflow-hidden" style={{ minHeight: 220 }}>
-
+          <div
+            className="relative bg-gray-100 flex items-center justify-center overflow-hidden"
+            style={{ minHeight: 220 }}
+          >
             {/* Wishlist button */}
             <button
               onClick={toggleWishlist}

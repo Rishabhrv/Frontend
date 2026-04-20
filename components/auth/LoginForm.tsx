@@ -4,8 +4,10 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import SocialAuthButtons from "./SocialAuthButtons";
 import AlertPopup from "@/components/Popups/AlertPopup";
+import { mergeGuestDataOnLogin } from "@/utils/guestStorage"; // ← add this
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
+const LOCKOUT_MINUTES = 15;
 
 const LoginForm = () => {
   const [email,     setEmail]     = useState("");
@@ -18,7 +20,6 @@ const LoginForm = () => {
   const [remaining, setRemaining] = useState<number | null>(null);
   const [loading,   setLoading]   = useState(false);
 
-  // Live countdown tick
   useEffect(() => {
     if (countdown <= 0) { setLocked(false); return; }
     const t = setTimeout(() => setCountdown((c) => c - 1), 1000);
@@ -56,6 +57,10 @@ const LoginForm = () => {
       }
 
       localStorage.setItem("token", data.token);
+
+      // ── Merge guest cart & wishlist into the newly logged-in account ──
+      await mergeGuestDataOnLogin(data.token);
+
       window.dispatchEvent(new Event("auth-change"));
       window.location.href = "/";
 
@@ -66,8 +71,6 @@ const LoginForm = () => {
       setLoading(false);
     }
   };
-
-  const LOCKOUT_MINUTES = 15;
 
   return (
     <>
@@ -96,7 +99,6 @@ const LoginForm = () => {
           </Link>
         </div>
 
-        {/* Error / lockout message */}
         {error && (
           <div className={`rounded-lg px-4 py-3 text-sm ${
             locked
@@ -105,7 +107,6 @@ const LoginForm = () => {
           }`}>
             <p className="font-medium">{error}</p>
 
-            {/* Countdown */}
             {locked && countdown > 0 && (
               <div className="mt-2 flex items-center gap-2">
                 <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -118,7 +119,6 @@ const LoginForm = () => {
               </div>
             )}
 
-            {/* Remaining attempts warning */}
             {!locked && remaining !== null && remaining > 0 && (
               <p className="mt-1 text-xs">
                 ⚠️ {remaining} attempt{remaining !== 1 ? "s" : ""} remaining before your account is temporarily locked.
