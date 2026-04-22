@@ -114,6 +114,8 @@ export default function SubscriptionTable() {
       .then(setPlans);
   }, []);
 
+  
+
   useEffect(() => {
     if (plans.length > 0 && !form.plan_key) {
       setForm(prev => ({
@@ -294,8 +296,9 @@ export default function SubscriptionTable() {
       
       {/* ================= PLANS SECTION ================= */}
       <div className="space-y-4 mb-8">
+        <h2 className="text-2xl font-bold">AG Classics</h2>
         <div className="flex justify-between items-center">
-          <h2 className="text-xl font-bold">Manage Subscription Plans</h2>
+          <h2 className="text-sm font-bold">Manage Subscription Plans</h2>
           {canAddNewPlan && (
             <button
               onClick={() => openPlanModal()}
