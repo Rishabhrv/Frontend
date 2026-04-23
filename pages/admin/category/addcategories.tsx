@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import Sidebar from "@/components/admin/Sidebar";
 import Header from "@/components/admin/Header";
+import AdminGuard  from "@/components/admin/AdminGuard";
 import AddCategoriesForm from '@/components/categories/AddCategoriesFrom';
 import CategoriesList from '@/components/categories/CategoriesList';
 import "../../../app/globals.css";
@@ -12,7 +13,8 @@ const addcategories = () => {
     }, []);
 
   return (
-    <div className="p-6 bg-white text-gray-700">
+    <AdminGuard pageKey="category">
+      <div className="p-6 bg-white text-gray-700">
       <div className="flex">
         <Sidebar />
 
@@ -42,6 +44,10 @@ const addcategories = () => {
         </div>
       </div>
     </div>
+
+
+    </AdminGuard>
+    
   );
 };
 

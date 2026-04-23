@@ -3,13 +3,15 @@ import ProductsTable from "@/components/products/ProductsTable";
 import Sidebar from "@/components/admin/Sidebar";
 import Header from "@/components/admin/Header";
 import "../../../app/globals.css";
+import AdminGuard  from "@/components/admin/AdminGuard";
 
 export default function ProductsPage() {
         useEffect(() => {
           document.title = "Manage Products | Admin Panel";
         }, []);
   return (
-    <div className="p-6 bg-white text-gray-700" >
+    <AdminGuard pageKey="products">
+          <div className="p-6 bg-white text-gray-700" >
 
         <div className="flex">
               <Sidebar />
@@ -19,5 +21,8 @@ export default function ProductsPage() {
               </div>
             </div>
     </div>
+
+    </AdminGuard>
+
   );
 }

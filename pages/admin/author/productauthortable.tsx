@@ -3,6 +3,7 @@
 import React, { useState,useEffect } from "react";
 import Sidebar from "@/components/admin/Sidebar";
 import Header from "@/components/admin/Header";
+import AdminGuard  from "@/components/admin/AdminGuard";
 import AuthorTable from "@/components/authors/AuthorTable";
 import AuthorForm from "@/components/authors/AuthorForm";
 import "../../../app/globals.css";
@@ -16,7 +17,8 @@ const ProductAuthor = () => {
   }, []);
 
   return (
-    <div className="p-6 bg-white text-gray-700">
+    <AdminGuard pageKey="author">
+      <div className="p-6 bg-white text-gray-700">
       <div className="flex">
         <Sidebar />
 
@@ -43,6 +45,9 @@ const ProductAuthor = () => {
         </div>
       </div>
     </div>
+
+    </AdminGuard>
+    
   );
 };
 

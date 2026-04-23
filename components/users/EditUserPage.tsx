@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import AlertPopup from "@/components/Popups/AlertPopup";
 import SuperAdminOtpModal from "./SuperAdminOtpModal";
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
 function getToken() {
@@ -59,6 +60,34 @@ interface Review {
   created_at: string;
 }
 
+/* ─── Page key type ─── */
+type PageKey =
+  | "products" | "orders"   | "category"      | "subject"
+  | "author"   | "users"    | "reviews"        | "shipping"
+  | "subscriptions" | "payment" | "coupons"    | "ads";
+
+interface PageOption {
+  key: PageKey;
+  label: string;
+  description: string;
+}
+
+/* ─── All available pages ─── */
+const ALL_PAGES: PageOption[] = [
+  { key: "products",      label: "Products",      description: "View, add and edit products"          },
+  { key: "orders",        label: "Orders",        description: "View and manage customer orders"      },
+  { key: "category",      label: "Category",      description: "Manage product categories"            },
+  { key: "subject",       label: "Subject",       description: "Manage subjects"                      },
+  { key: "author",        label: "Book Authors",  description: "Manage book authors"                  },
+  { key: "users",         label: "Users",         description: "View and edit users"                  },
+  { key: "reviews",       label: "Reviews",       description: "Approve or reject reviews"            },
+  { key: "shipping",      label: "Shipping",      description: "Manage shipping zones and methods"    },
+  { key: "subscriptions", label: "Subscriptions", description: "View subscription plans and users"    },
+  { key: "payment",       label: "Payment",       description: "View payment history"                 },
+  { key: "coupons",       label: "Coupons",       description: "Create and manage coupons"            },
+  { key: "ads",           label: "Ads",           description: "Manage advertisements"               },
+];
+
 /* ─── Badge ─── */
 function Badge({ value }: { value: string }) {
   const styles: Record<string, string> = {
@@ -82,7 +111,11 @@ function Badge({ value }: { value: string }) {
     delivered:        "bg-green-100 text-green-700",
   };
   return (
-    <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${styles[value] ?? "bg-gray-100 text-gray-600"}`}>
+    <span
+      className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${
+        styles[value] ?? "bg-gray-100 text-gray-600"
+      }`}
+    >
       {value.replace(/_/g, " ")}
     </span>
   );
@@ -95,10 +128,18 @@ const roInputCls =
 const labelCls =
   "block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1";
 
-function Card({ title, children }: { title: string; children: React.ReactNode }) {
+function Card({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-6 mb-5">
-      <h2 className="text-sm font-semibold text-gray-700 pb-3 mb-5 border-b border-gray-100">{title}</h2>
+      <h2 className="text-sm font-semibold text-gray-700 pb-3 mb-5 border-b border-gray-100">
+        {title}
+      </h2>
       {children}
     </div>
   );
@@ -119,9 +160,16 @@ export default function EditUserPage({ userId }: { userId: string }) {
   const [toastOpen, setToastOpen] = useState(false);
   const [toastMsg, setToastMsg]   = useState("");
 
-  // Superadmin OTP gate
-  const [showOtpModal, setShowOtpModal]       = useState(false);
-  const [superAdminUnlocked, setSuperAdminUnlocked] = useState(false); // true after OTP verified
+  /* ── Permissions state ── */
+  const [assignedPages, setAssignedPages]   = useState<PageKey[]>([]);
+  const [permLoading, setPermLoading]       = useState(false);
+  const [permSaving, setPermSaving]         = useState(false);
+  const [permDirty, setPermDirty]           = useState(false);
+  const permFetchedRef = useRef<string | null>(null);
+
+  /* ── Superadmin OTP gate ── */
+  const [showOtpModal, setShowOtpModal]             = useState(false);
+  const [superAdminUnlocked, setSuperAdminUnlocked] = useState(false);
 
   const [form, setForm] = useState({
     name: "", email: "", phone: "",
@@ -135,26 +183,38 @@ export default function EditUserPage({ userId }: { userId: string }) {
   const [addrEditing, setAddrEditing] = useState(false);
   const [addrSaving, setAddrSaving]   = useState(false);
 
-  const isSuperAdmin = user?.id === 1;
-  // superadmin form is editable only after OTP verified
+  const isSuperAdmin    = user?.id === 1;
+  const isAdminUser     = user?.role === "admin" && !isSuperAdmin;
   const superAdminLocked = isSuperAdmin && !superAdminUnlocked;
 
-  /* ── Fetch all ── */
+  // ── Only show orders with a successful payment ──
+  const successOrders = orders.filter((o) => o.payment_status === "success");
+
+  /* ── Fetch user data ── */
   useEffect(() => {
     const h = authHeaders();
     Promise.all([
-      fetch(`${API_URL}/api/admin/users/${userId}`, { headers: h }).then((r) => r.json()),
-      fetch(`${API_URL}/api/admin/users/${userId}/addresses`, { headers: h }).then((r) => r.json()),
-      fetch(`${API_URL}/api/admin/users/${userId}/orders`, { headers: h }).then((r) => r.json()),
-      fetch(`${API_URL}/api/admin/users/${userId}/subscriptions`, { headers: h }).then((r) => r.json()),
-      fetch(`${API_URL}/api/admin/users/${userId}/reviews`, { headers: h }).then((r) => r.json()),
+      fetch(`${API_URL}/api/admin/users/${userId}`,              { headers: h }).then((r) => r.json()),
+      fetch(`${API_URL}/api/admin/users/${userId}/addresses`,    { headers: h }).then((r) => r.json()),
+      fetch(`${API_URL}/api/admin/users/${userId}/orders`,       { headers: h }).then((r) => r.json()),
+      fetch(`${API_URL}/api/admin/users/${userId}/subscriptions`,{ headers: h }).then((r) => r.json()),
+      fetch(`${API_URL}/api/admin/users/${userId}/reviews`,      { headers: h }).then((r) => r.json()),
     ]).then(([u, addr, ord, subs, revs]) => {
       setUser(u);
-      setForm({ name: u.name, email: u.email, phone: u.phone ?? "", role: u.role, status: u.status, newPassword: "", confirmPassword: "" });
+      setForm({
+        name: u.name, email: u.email, phone: u.phone ?? "",
+        role: u.role, status: u.status,
+        newPassword: "", confirmPassword: "",
+      });
 
       const first = Array.isArray(addr) && addr.length > 0 ? addr[0] : null;
       setAddress(first);
-      if (first) setAddrForm({ address: first.address, city: first.city, state: first.state, country: first.country, pincode: first.pincode });
+      if (first) {
+        setAddrForm({
+          address: first.address, city: first.city,
+          state: first.state, country: first.country, pincode: first.pincode,
+        });
+      }
 
       setOrders(Array.isArray(ord) ? ord : []);
       setSubs(Array.isArray(subs) ? subs : []);
@@ -162,6 +222,76 @@ export default function EditUserPage({ userId }: { userId: string }) {
       setLoading(false);
     });
   }, [userId]);
+
+  /* ── Fetch permissions when Permissions tab is opened ── */
+  useEffect(() => {
+    if (!user) return;
+    if (!isAdminUser) return;
+    if (activeTab !== "permissions") return;
+    if (permFetchedRef.current === userId) return;
+
+    permFetchedRef.current = userId;
+    setPermLoading(true);
+
+    fetch(
+      `${API_URL}/api/admin/permissions/user/${userId}`,
+      { headers: authHeaders(), cache: "no-store" }
+    )
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}: ${r.statusText}`);
+        return r.json();
+      })
+      .then((data) => {
+        setAssignedPages(data.pages ?? []);
+        setPermDirty(false);
+      })
+      .catch((err) => {
+        console.error("Failed to load permissions:", err);
+        permFetchedRef.current = null;
+        setToastMsg("Failed to load permissions");
+        setToastOpen(true);
+      })
+      .finally(() => setPermLoading(false));
+  }, [activeTab, user, isAdminUser, userId]);
+
+  /* ── Toggle a single page ── */
+  const togglePage = (key: PageKey) => {
+    setAssignedPages((prev) =>
+      prev.includes(key) ? prev.filter((p) => p !== key) : [...prev, key]
+    );
+    setPermDirty(true);
+  };
+
+  /* ── Select / deselect all ── */
+  const toggleAll = () => {
+    if (assignedPages.length === ALL_PAGES.length) {
+      setAssignedPages([]);
+    } else {
+      setAssignedPages(ALL_PAGES.map((p) => p.key));
+    }
+    setPermDirty(true);
+  };
+
+  /* ── Save permissions ── */
+  const savePermissions = async () => {
+    setPermSaving(true);
+    try {
+      const res = await fetch(`${API_URL}/api/admin/permissions`, {
+        method: "POST",
+        headers: { ...authHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: Number(userId), pages: assignedPages }),
+      });
+      if (!res.ok) throw new Error();
+      setPermDirty(false);
+      setToastMsg("Permissions saved successfully");
+      setToastOpen(true);
+    } catch {
+      setToastMsg("Failed to save permissions");
+      setToastOpen(true);
+    } finally {
+      setPermSaving(false);
+    }
+  };
 
   /* ── Save profile ── */
   const saveProfile = async () => {
@@ -172,9 +302,7 @@ export default function EditUserPage({ userId }: { userId: string }) {
     }
     setSaving(true);
     const body: Record<string, string> = {
-      name: form.name,
-      email: form.email,
-      phone: form.phone,
+      name: form.name, email: form.email, phone: form.phone,
       role: isSuperAdmin ? user!.role : form.role,
       status: isSuperAdmin ? user!.status : form.status,
     };
@@ -186,9 +314,12 @@ export default function EditUserPage({ userId }: { userId: string }) {
       body: JSON.stringify(body),
     });
     setSaving(false);
-    if (!res.ok) { setToastMsg("Failed to update profile"); setToastOpen(true); return; }
+    if (!res.ok) {
+      setToastMsg("Failed to update profile");
+      setToastOpen(true);
+      return;
+    }
     setForm((f) => ({ ...f, newPassword: "", confirmPassword: "" }));
-    // Re-lock superadmin after save
     if (isSuperAdmin) setSuperAdminUnlocked(false);
     setToastMsg("Profile updated successfully");
     setToastOpen(true);
@@ -226,7 +357,8 @@ export default function EditUserPage({ userId }: { userId: string }) {
     setReviews((r) => r.map((x) => (x.id === reviewId ? { ...x, status } : x)));
   };
 
-  const totalOrderSpend = orders.reduce((s, o) => s + Number(o.total_amount), 0);
+  // Spend is now based only on successful-payment orders
+  const totalOrderSpend = successOrders.reduce((s, o) => s + Number(o.total_amount), 0);
   const totalSubSpend   = subscriptions.reduce((s, sub) => s + Number(sub.amount_paid), 0);
   const totalSpent      = totalOrderSpend + totalSubSpend;
 
@@ -242,14 +374,24 @@ export default function EditUserPage({ userId }: { userId: string }) {
     );
   }
 
+  /* ── Build tabs dynamically ── */
   const tabs = [
     { id: "profile",       label: "Profile" },
-    { id: "orders",        label: `Orders (${orders.length})` },
+    // Tab count shows only successful-payment orders
+    { id: "orders",        label: `Orders (${successOrders.length})` },
     { id: "subscriptions", label: `Subscriptions (${subscriptions.length})` },
     { id: "reviews",       label: `Reviews (${reviews.length})` },
+    ...(isAdminUser
+      ? [{ id: "permissions", label: "Permissions" }]
+      : []),
   ];
 
-  const initials = user?.name?.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
+  const initials = user?.name
+    ?.split(" ")
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
 
   return (
     <div className="p-10">
@@ -267,10 +409,17 @@ export default function EditUserPage({ userId }: { userId: string }) {
                 Super Admin
               </span>
             )}
+            {isAdminUser && (
+              <span className="ml-2 text-xs font-medium bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full align-middle">
+                Admin
+              </span>
+            )}
           </h1>
           <p className="text-xs text-gray-400">
             {user?.email}&nbsp;·&nbsp;Joined{" "}
-            {new Date(user!.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+            {new Date(user!.created_at).toLocaleDateString("en-IN", {
+              day: "2-digit", month: "short", year: "numeric",
+            })}
           </p>
         </div>
         <div className="flex gap-1.5 ml-1 flex-wrap">
@@ -283,27 +432,42 @@ export default function EditUserPage({ userId }: { userId: string }) {
       {/* ── Stat cards ── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
         {[
-          { label: "Total Orders", value: orders.length },
-          { label: "Total Spent", value: `₹${totalSpent.toLocaleString("en-IN")}`, sub: `Orders ₹${totalOrderSpend.toLocaleString("en-IN")} + Subs ₹${totalSubSpend.toLocaleString("en-IN")}` },
-          { label: "Active Subs", value: subscriptions.filter((s) => s.status === "active").length },
-          { label: "Reviews", value: reviews.length },
+          // Count reflects only successful-payment orders
+          { label: "Total Orders",  value: successOrders.length },
+          {
+            label: "Total Spent",
+            value: `₹${totalSpent.toLocaleString("en-IN")}`,
+            sub: `Orders ₹${totalOrderSpend.toLocaleString("en-IN")} + Subs ₹${totalSubSpend.toLocaleString("en-IN")}`,
+          },
+          { label: "Active Subs",   value: subscriptions.filter((s) => s.status === "active").length },
+          { label: "Reviews",       value: reviews.length },
         ].map((s) => (
           <div key={s.label} className="bg-white border border-gray-200 rounded-xl px-4 py-4">
             <p className="text-xl font-bold text-gray-800">{s.value}</p>
             <p className="text-xs text-gray-400 mt-0.5">{s.label}</p>
-            {"sub" in s && s.sub && <p className="text-[10px] text-gray-300 mt-1 leading-tight">{s.sub}</p>}
+            {"sub" in s && s.sub && (
+              <p className="text-[10px] text-gray-300 mt-1 leading-tight">{s.sub}</p>
+            )}
           </div>
         ))}
       </div>
 
       {/* ── Tabs ── */}
-      <div className="flex border-b border-gray-200 mb-5">
+      <div className="flex border-b border-gray-200 mb-5 overflow-x-auto">
         {tabs.map((t) => (
-          <button key={t.id} onClick={() => setActiveTab(t.id)}
+          <button
+            key={t.id}
+            onClick={() => setActiveTab(t.id)}
             className={`px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors -mb-px cursor-pointer ${
-              activeTab === t.id ? "border-blue-500 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-            }`}>
+              activeTab === t.id
+                ? "border-blue-500 text-blue-600"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+            }`}
+          >
             {t.label}
+            {t.id === "permissions" && permDirty && (
+              <span className="ml-1.5 inline-block w-1.5 h-1.5 rounded-full bg-orange-400 align-middle" />
+            )}
           </button>
         ))}
       </div>
@@ -313,12 +477,9 @@ export default function EditUserPage({ userId }: { userId: string }) {
       ══════════════════════════════════ */}
       {activeTab === "profile" && (
         <>
-          {/* ── Superadmin OTP gate banner ── */}
           {isSuperAdmin && (
             <div className={`flex items-center justify-between gap-4 rounded-xl px-4 py-3 mb-5 border ${
-              superAdminUnlocked
-                ? "bg-green-50 border-green-200"
-                : "bg-yellow-50 border-yellow-200"
+              superAdminUnlocked ? "bg-green-50 border-green-200" : "bg-yellow-50 border-yellow-200"
             }`}>
               <div className="flex items-center gap-2">
                 {superAdminUnlocked ? (
@@ -350,7 +511,6 @@ export default function EditUserPage({ userId }: { userId: string }) {
             </div>
           )}
 
-          {/* Basic Info */}
           <Card title="Basic Information">
             {isSuperAdmin && (
               <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 text-gray-500 text-xs rounded-lg px-3 py-2 mb-4">
@@ -365,8 +525,7 @@ export default function EditUserPage({ userId }: { userId: string }) {
                 <label className={labelCls}>Full Name</label>
                 <input type="text"
                   className={superAdminLocked ? roInputCls : inputCls}
-                  value={form.name}
-                  readOnly={superAdminLocked}
+                  value={form.name} readOnly={superAdminLocked}
                   onChange={(e) => !superAdminLocked && setForm({ ...form, name: e.target.value })}
                 />
               </div>
@@ -374,8 +533,7 @@ export default function EditUserPage({ userId }: { userId: string }) {
                 <label className={labelCls}>Email Address</label>
                 <input type="email"
                   className={superAdminLocked ? roInputCls : inputCls}
-                  value={form.email}
-                  readOnly={superAdminLocked}
+                  value={form.email} readOnly={superAdminLocked}
                   onChange={(e) => !superAdminLocked && setForm({ ...form, email: e.target.value })}
                 />
               </div>
@@ -383,8 +541,7 @@ export default function EditUserPage({ userId }: { userId: string }) {
                 <label className={labelCls}>Phone Number</label>
                 <input type="tel"
                   className={superAdminLocked ? roInputCls : inputCls}
-                  value={form.phone}
-                  readOnly={superAdminLocked}
+                  value={form.phone} readOnly={superAdminLocked}
                   onChange={(e) => !superAdminLocked && setForm({ ...form, phone: e.target.value })}
                 />
               </div>
@@ -392,33 +549,30 @@ export default function EditUserPage({ userId }: { userId: string }) {
                 <label className={labelCls}>User ID</label>
                 <input className={roInputCls} value={`#${user!.id}`} readOnly />
               </div>
-
-              {/* Role — always locked for superadmin */}
               <div>
                 <label className={labelCls}>Role</label>
                 {isSuperAdmin ? (
                   <input className={roInputCls} value="admin" readOnly />
                 ) : (
-                  <select className={inputCls} value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
+                  <select className={inputCls} value={form.role}
+                    onChange={(e) => setForm({ ...form, role: e.target.value })}>
                     <option value="customer">Customer</option>
                     <option value="admin">Admin</option>
                   </select>
                 )}
               </div>
-
-              {/* Status — always locked for superadmin */}
               <div>
                 <label className={labelCls}>Status</label>
                 {isSuperAdmin ? (
                   <input className={roInputCls} value="active" readOnly />
                 ) : (
-                  <select className={inputCls} value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
+                  <select className={inputCls} value={form.status}
+                    onChange={(e) => setForm({ ...form, status: e.target.value })}>
                     <option value="active">Active</option>
                     <option value="blocked">Blocked</option>
                   </select>
                 )}
               </div>
-
               <div>
                 <label className={labelCls}>Provider</label>
                 <input className={roInputCls} value={user!.provider} readOnly />
@@ -430,7 +584,6 @@ export default function EditUserPage({ userId }: { userId: string }) {
             </div>
           </Card>
 
-          {/* Address */}
           <Card title="Address">
             {addrEditing ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -441,27 +594,36 @@ export default function EditUserPage({ userId }: { userId: string }) {
                 </div>
                 <div>
                   <label className={labelCls}>City</label>
-                  <input className={inputCls} value={addrForm.city} onChange={(e) => setAddrForm({ ...addrForm, city: e.target.value })} />
+                  <input className={inputCls} value={addrForm.city}
+                    onChange={(e) => setAddrForm({ ...addrForm, city: e.target.value })} />
                 </div>
                 <div>
                   <label className={labelCls}>State</label>
-                  <input className={inputCls} value={addrForm.state} onChange={(e) => setAddrForm({ ...addrForm, state: e.target.value })} />
+                  <input className={inputCls} value={addrForm.state}
+                    onChange={(e) => setAddrForm({ ...addrForm, state: e.target.value })} />
                 </div>
                 <div>
                   <label className={labelCls}>Country</label>
-                  <input className={inputCls} value={addrForm.country} onChange={(e) => setAddrForm({ ...addrForm, country: e.target.value })} />
+                  <input className={inputCls} value={addrForm.country}
+                    onChange={(e) => setAddrForm({ ...addrForm, country: e.target.value })} />
                 </div>
                 <div>
                   <label className={labelCls}>Pincode</label>
-                  <input className={inputCls} value={addrForm.pincode} onChange={(e) => setAddrForm({ ...addrForm, pincode: e.target.value })} />
+                  <input className={inputCls} value={addrForm.pincode}
+                    onChange={(e) => setAddrForm({ ...addrForm, pincode: e.target.value })} />
                 </div>
                 <div className="sm:col-span-2 flex gap-3 pt-1">
                   <button onClick={saveAddress} disabled={addrSaving}
                     className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-medium px-4 py-2 rounded-lg transition cursor-pointer">
                     {addrSaving ? "Saving…" : "Save Address"}
                   </button>
-                  <button onClick={() => { setAddrEditing(false); if (address) setAddrForm({ address: address.address, city: address.city, state: address.state, country: address.country, pincode: address.pincode }); }}
-                    className="border border-gray-200 text-gray-600 text-sm font-medium px-4 py-2 rounded-lg hover:bg-gray-50 transition cursor-pointer">
+                  <button
+                    onClick={() => {
+                      setAddrEditing(false);
+                      if (address) setAddrForm({ address: address.address, city: address.city, state: address.state, country: address.country, pincode: address.pincode });
+                    }}
+                    className="border border-gray-200 text-gray-600 text-sm font-medium px-4 py-2 rounded-lg hover:bg-gray-50 transition cursor-pointer"
+                  >
                     Cancel
                   </button>
                 </div>
@@ -473,24 +635,24 @@ export default function EditUserPage({ userId }: { userId: string }) {
                   {address.city}, {address.state} – {address.pincode}<br />
                   <span className="text-gray-400">{address.country}</span>
                 </p>
-                <button onClick={() => setAddrEditing(true)} className="text-xs text-blue-600 hover:underline font-medium shrink-0 cursor-pointer">Edit</button>
+                <button onClick={() => setAddrEditing(true)}
+                  className="text-xs text-blue-600 hover:underline font-medium shrink-0 cursor-pointer">
+                  Edit
+                </button>
               </div>
             ) : (
               <div className="text-center py-4">
                 <p className="text-sm text-gray-400 mb-3">No address saved yet.</p>
-                <button onClick={() => setAddrEditing(true)} className="text-sm text-blue-600 hover:underline font-medium cursor-pointer">+ Add Address</button>
+                <button onClick={() => setAddrEditing(true)}
+                  className="text-sm text-blue-600 hover:underline font-medium cursor-pointer">
+                  + Add Address
+                </button>
               </div>
             )}
           </Card>
 
-          {/* ── Change Password
-               superadmin locked → greyed out fields with lock message
-               superadmin unlocked → editable fields
-               everyone else → normal editable fields
-          ── */}
           <Card title="Change Password">
             {superAdminLocked ? (
-              /* Locked state for superadmin */
               <div className="flex items-center gap-3 py-2">
                 <svg className="w-5 h-5 text-gray-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V7a4.5 4.5 0 10-9 0v3.5M3.75 10.5h16.5v10.25A1.25 1.25 0 0119 22H5a1.25 1.25 0 01-1.25-1.25V10.5z" />
@@ -503,12 +665,14 @@ export default function EditUserPage({ userId }: { userId: string }) {
                   <div>
                     <label className={labelCls}>New Password</label>
                     <input type="password" className={inputCls} placeholder="Enter new password"
-                      value={form.newPassword} onChange={(e) => setForm({ ...form, newPassword: e.target.value })} />
+                      value={form.newPassword}
+                      onChange={(e) => setForm({ ...form, newPassword: e.target.value })} />
                   </div>
                   <div>
                     <label className={labelCls}>Confirm Password</label>
                     <input type="password" className={inputCls} placeholder="Re-enter new password"
-                      value={form.confirmPassword} onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} />
+                      value={form.confirmPassword}
+                      onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} />
                     {form.newPassword && form.confirmPassword && form.newPassword !== form.confirmPassword && (
                       <p className="text-xs text-red-500 mt-1.5">Passwords do not match.</p>
                     )}
@@ -522,7 +686,6 @@ export default function EditUserPage({ userId }: { userId: string }) {
             )}
           </Card>
 
-          {/* Save / Cancel — hidden for locked superadmin */}
           {!superAdminLocked && (
             <div className="flex gap-3">
               <button onClick={saveProfile} disabled={saving}
@@ -536,7 +699,6 @@ export default function EditUserPage({ userId }: { userId: string }) {
             </div>
           )}
 
-          {/* Back to list button always visible when superadmin is locked */}
           {superAdminLocked && (
             <div className="flex gap-3">
               <button onClick={() => router.push("/admin/users")}
@@ -549,12 +711,114 @@ export default function EditUserPage({ userId }: { userId: string }) {
       )}
 
       {/* ══════════════════════════════════
-          ORDERS TAB
+          PERMISSIONS TAB
+      ══════════════════════════════════ */}
+      {activeTab === "permissions" && isAdminUser && (
+        <>
+          <div className="flex items-start gap-3 bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 mb-5">
+            <svg className="w-4 h-4 text-blue-400 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20A10 10 0 0012 2z" />
+            </svg>
+            <p className="text-xs text-blue-700 leading-relaxed">
+              Control which admin panel pages <strong>{user?.name}</strong> can access.
+              Changes take effect immediately after saving. The sidebar will
+              automatically show only the pages they have access to.
+            </p>
+          </div>
+
+          <Card title="Page Access">
+            {permLoading ? (
+              <div className="space-y-3">
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className="h-14 animate-pulse rounded-lg bg-gray-100" />
+                ))}
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-100">
+                  <p className="text-xs text-gray-500">
+                    <span className="font-semibold text-gray-700">{assignedPages.length}</span>
+                    {" "}of{" "}
+                    <span className="font-semibold text-gray-700">{ALL_PAGES.length}</span>
+                    {" "}pages selected
+                  </p>
+                  <button
+                    onClick={toggleAll}
+                    className="text-xs font-medium text-blue-600 hover:underline cursor-pointer"
+                  >
+                    {assignedPages.length === ALL_PAGES.length ? "Deselect All" : "Select All"}
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {ALL_PAGES.map(({ key, label, description }) => {
+                    const checked = assignedPages.includes(key);
+                    return (
+                      <label
+                        key={key}
+                        className={`flex items-start gap-3 rounded-xl border px-4 py-3.5 cursor-pointer transition-all ${
+                          checked
+                            ? "border-blue-200 bg-blue-50"
+                            : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
+                        }`}
+                      >
+                        <div className="mt-0.5 shrink-0">
+                          <input
+                            type="checkbox"
+                            className="sr-only"
+                            checked={checked}
+                            onChange={() => togglePage(key)}
+                          />
+                          <div className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-colors ${
+                            checked ? "bg-blue-600 border-blue-600" : "bg-white border-gray-300"
+                          }`}>
+                            {checked && (
+                              <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </div>
+                        </div>
+                        <div>
+                          <p className={`text-sm font-medium leading-tight ${checked ? "text-blue-700" : "text-gray-700"}`}>
+                            {label}
+                          </p>
+                          <p className="text-xs text-gray-400 mt-0.5">{description}</p>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+
+                <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-100">
+                  <p className="text-xs text-gray-400">
+                    {permDirty ? (
+                      <span className="text-orange-500 font-medium">● Unsaved changes</span>
+                    ) : (
+                      <span className="text-green-600 font-medium">✓ All changes saved</span>
+                    )}
+                  </p>
+                  <button
+                    onClick={savePermissions}
+                    disabled={permSaving || !permDirty}
+                    className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium px-5 py-2.5 rounded-lg transition cursor-pointer"
+                  >
+                    {permSaving ? "Saving…" : "Save Permissions"}
+                  </button>
+                </div>
+              </>
+            )}
+          </Card>
+        </>
+      )}
+
+      {/* ══════════════════════════════════
+          ORDERS TAB — successful payments only
       ══════════════════════════════════ */}
       {activeTab === "orders" && (
         <Card title="Order History">
-          {orders.length === 0 ? (
-            <p className="text-sm text-gray-400 py-4 text-center">No orders found.</p>
+          {successOrders.length === 0 ? (
+            <p className="text-sm text-gray-400 py-4 text-center">No successful orders found.</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -566,20 +830,30 @@ export default function EditUserPage({ userId }: { userId: string }) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
-                  {orders.map((o) => (
+                  {successOrders.map((o) => (
                     <tr key={o.id} className="hover:bg-gray-50 transition">
                       <td className="py-3 pr-4 font-semibold text-gray-700">#{o.id}</td>
-                      <td className="py-3 pr-4 text-gray-500">{new Date(o.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</td>
+                      <td className="py-3 pr-4 text-gray-500">
+                        {new Date(o.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                      </td>
                       <td className="py-3 pr-4 font-medium text-gray-800">₹{Number(o.total_amount).toLocaleString("en-IN")}</td>
                       <td className="py-3 pr-4">
-                        {o.coupon_code
-                          ? <span className="text-xs"><code className="bg-gray-100 text-gray-700 px-1.5 py-0.5 rounded">{o.coupon_code}</code><span className="text-gray-400 ml-1">−₹{o.coupon_discount}</span></span>
-                          : <span className="text-gray-300">—</span>}
+                        {o.coupon_code ? (
+                          <span className="text-xs">
+                            <code className="bg-gray-100 text-gray-700 px-1.5 py-0.5 rounded">{o.coupon_code}</code>
+                            <span className="text-gray-400 ml-1">−₹{o.coupon_discount}</span>
+                          </span>
+                        ) : (
+                          <span className="text-gray-300">—</span>
+                        )}
                       </td>
                       <td className="py-3 pr-4"><Badge value={o.status} /></td>
                       <td className="py-3 pr-4"><Badge value={o.payment_status} /></td>
                       <td className="py-3">
-                        <button onClick={() => router.push(`/admin/orders/${o.id}`)} className="text-xs text-blue-600 hover:underline font-medium">View</button>
+                        <button onClick={() => router.push(`/admin/orders/${o.id}`)}
+                          className="text-xs text-blue-600 hover:underline font-medium">
+                          View
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -613,8 +887,12 @@ export default function EditUserPage({ userId }: { userId: string }) {
                       <td className="py-3 pr-4 font-semibold text-gray-700">{s.title}</td>
                       <td className="py-3 pr-4 text-gray-600">{s.months} month{s.months !== 1 ? "s" : ""}</td>
                       <td className="py-3 pr-4 font-medium text-gray-800">₹{Number(s.amount_paid).toLocaleString("en-IN")}</td>
-                      <td className="py-3 pr-4 text-gray-500">{new Date(s.start_date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</td>
-                      <td className="py-3 pr-4 text-gray-500">{new Date(s.end_date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</td>
+                      <td className="py-3 pr-4 text-gray-500">
+                        {new Date(s.start_date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                      </td>
+                      <td className="py-3 pr-4 text-gray-500">
+                        {new Date(s.end_date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                      </td>
                       <td className="py-3 pr-4"><Badge value={s.status} /></td>
                     </tr>
                   ))}
@@ -651,13 +929,21 @@ export default function EditUserPage({ userId }: { userId: string }) {
                         <span className="text-gray-200">{"★".repeat(5 - r.rating)}</span>
                       </td>
                       <td className="py-3 pr-4 text-gray-500 max-w-[220px] truncate">{r.comment}</td>
-                      <td className="py-3 pr-4 text-gray-400">{new Date(r.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</td>
+                      <td className="py-3 pr-4 text-gray-400">
+                        {new Date(r.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                      </td>
                       <td className="py-3 pr-4"><Badge value={r.status} /></td>
                       <td className="py-3">
                         {r.status === "pending" ? (
-                          <button onClick={() => updateReviewStatus(r.id, "approved")} className="text-xs text-green-600 hover:underline font-medium">Approve</button>
+                          <button onClick={() => updateReviewStatus(r.id, "approved")}
+                            className="text-xs text-green-600 hover:underline font-medium">
+                            Approve
+                          </button>
                         ) : (
-                          <button onClick={() => updateReviewStatus(r.id, "pending")} className="text-xs text-gray-500 hover:underline font-medium">Unpublish</button>
+                          <button onClick={() => updateReviewStatus(r.id, "pending")}
+                            className="text-xs text-gray-500 hover:underline font-medium">
+                            Unpublish
+                          </button>
                         )}
                       </td>
                     </tr>
@@ -671,14 +957,13 @@ export default function EditUserPage({ userId }: { userId: string }) {
 
       <AlertPopup open={toastOpen} message={toastMsg} onClose={() => setToastOpen(false)} />
 
-      {/* OTP gate modal — only for superadmin */}
       {showOtpModal && isSuperAdmin && (
         <SuperAdminOtpModal
           adminEmail={user!.email}
           onClose={() => setShowOtpModal(false)}
           onVerified={() => setSuperAdminUnlocked(true)}
           onSuccess={(msg) => { setToastMsg(msg); setToastOpen(true); }}
-          onError={(msg) => { setToastMsg(msg); setToastOpen(true); }}
+          onError={(msg)   => { setToastMsg(msg); setToastOpen(true); }}
         />
       )}
     </div>

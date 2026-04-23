@@ -3,297 +3,205 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { Box, Layers, ChevronDown, LibraryBig, Users, ShoppingCart, Truck, BadgeCheck,BadgeIndianRupee, BadgePercent,Megaphone , UserStar, AlignVerticalDistributeStart } from "lucide-react";
+import {
+  Box, Layers, ChevronDown, LibraryBig, Users, ShoppingCart,
+  Truck, BadgeCheck, BadgeIndianRupee, BadgePercent,
+  Megaphone, UserStar, AlignVerticalDistributeStart, ShieldOff,
+  LucideIcon,
+} from "lucide-react";
+import { usePermissions } from "@/hooks/usePermissions";
+
+
+type PageKey =
+  | "products" | "orders"   | "category" | "subject"
+  | "author"   | "users"    | "reviews"  | "shipping"
+  | "subscriptions" | "payment" | "coupons" | "ads";
+
+interface NavItem {
+  key: PageKey;
+  label: string;
+  icon: LucideIcon;
+  href: string;
+  pathPrefix: string;
+}
+
+const NAV_ITEMS: NavItem[] = [
+  { key: "orders",        label: "Orders",       icon: ShoppingCart,                 href: "/admin/orders/OrdersPage",             pathPrefix: "/admin/orders"         },
+  { key: "category",      label: "Category",     icon: Layers,                       href: "/admin/category/addcategories",        pathPrefix: "/admin/category"       },
+  { key: "subject",       label: "Subject",      icon: AlignVerticalDistributeStart, href: "/admin/subject/SubjectPage",           pathPrefix: "/admin/subject"        },
+  { key: "author",        label: "Book Authors", icon: LibraryBig,                   href: "/admin/author/productauthortable",     pathPrefix: "/admin/author"         },
+  { key: "users",         label: "Users",        icon: Users,                        href: "/admin/users/UsersPage",               pathPrefix: "/admin/users"          },
+  { key: "reviews",       label: "Review",       icon: UserStar,                     href: "/admin/reviews/ReviewsPage",           pathPrefix: "/admin/reviews"        },
+  { key: "shipping",      label: "Shipping",     icon: Truck,                        href: "/admin/shipping/ShippingZone",         pathPrefix: "/admin/shipping"       },
+  { key: "subscriptions", label: "Subscription", icon: BadgeCheck,                   href: "/admin/subscriptions/SubscriptionPage",pathPrefix: "/admin/subscriptions" },
+  { key: "payment",       label: "Payment",      icon: BadgeIndianRupee,             href: "/admin/payment/PaymentPage",           pathPrefix: "/admin/payment"        },
+  { key: "coupons",       label: "Coupons",      icon: BadgePercent,                 href: "/admin/coupon/CouponPage",             pathPrefix: "/admin/coupon"         },
+  { key: "ads",           label: "Ads",          icon: Megaphone,                    href: "/admin/ads/AdPage",                    pathPrefix: "/admin/ads"            },
+];
 
 export default function Sidebar() {
   const pathname = usePathname() ?? "";
-
   const [openMenu, setOpenMenu] = useState<"products" | null>(null);
+  const { can, loading } = usePermissions();
 
-  /* AUTO OPEN PRODUCTS BASED ON URL */
   useEffect(() => {
-    if (pathname.startsWith("/admin/product")) {
-      setOpenMenu("products");
-    } else {
-      setOpenMenu(null);
-    }
+    if (pathname.startsWith("/admin/product")) setOpenMenu("products");
+    else setOpenMenu(null);
   }, [pathname]);
 
+  if (loading) {
+    return (
+      <aside className="hidden w-55 border-r border-gray-200 bg-white lg:block min-h-screen">
+        <div className="flex items-center px-4 py-6 text-xl font-bold">AGPH</div>
+        <div className="space-y-2 px-4 pt-4">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="h-10 animate-pulse rounded-xl bg-gray-100" />
+          ))}
+        </div>
+      </aside>
+    );
+  }
+
+  const noAccess =
+    !can("products") && NAV_ITEMS.every(({ key }) => !can(key));
+
   return (
-    <aside className="hidden w-55 bg-white border-r border-gray-200 lg:block min-h-screen" >
+    <aside className="hidden w-55 bg-white border-r border-gray-200 lg:block min-h-screen">
       {/* LOGO */}
-      <div className="flex items-center px-4 py-6 text-xl font-bold">
-        AGPH
-      </div>
+      <div className="flex items-center px-4 py-6 text-xl font-bold">AGPH</div>
 
       <nav className="px-3 text-sm">
-        <p className="px-3 py-2 text-xs text-gray-400 uppercase">
-          Menu
-        </p>
+        <p className="px-3 py-2 text-xs text-gray-400 uppercase">Menu</p>
 
-        {/* PRODUCTS (WITH SUBMENU) */}
-        <SidebarItem
-          icon={<Box size={18} />}
-          label="Products"
-          isOpen={openMenu === "products"}
-          onClick={() =>
-            setOpenMenu(openMenu === "products" ? null : "products")
-          }
-        >
-          <SubItem
-            label="Product List"
-            href="/admin/product/ProductsPage"
-            active={pathname === "/admin/product/ProductsPage"}
-          />
-          <SubItem
-            label="Add Product"
-            href="/admin/product/AddProduct"
-            active={pathname === "/admin/product/AddProduct"}
-          />
-        </SidebarItem>
-
-        {/* ORDERS (NO SUBMENU) */}
-        <Link
-          href="/admin/orders/OrdersPage"
-          className={`mt-1 flex items-center gap-3 rounded-xl px-4 py-3 transition
-            ${
-              pathname.startsWith("/admin/orders")
-                ? "bg-blue-50 text-blue-600 font-medium"
-                : "text-gray-700 hover:bg-gray-100"
+        {/* PRODUCTS */}
+        {can("products") && (
+          <SidebarItem
+            icon={<Box size={18} />}
+            label="Products"
+            isOpen={openMenu === "products"}
+            onClick={() =>
+              setOpenMenu(openMenu === "products" ? null : "products")
             }
-          `}
-        >
-          <ShoppingCart size={18} />
-          Orders
-        </Link>
+          >
+            <SubItem
+              label="Product List"
+              href="/admin/product/ProductsPage"
+              active={pathname === "/admin/product/ProductsPage"}
+            />
+            <SubItem
+              label="Add Product"
+              href="/admin/product/AddProduct"
+              active={pathname === "/admin/product/AddProduct"}
+            />
+          </SidebarItem>
+        )}
 
-        {/* CATEGORY (NO SUBMENU) */}
-        <Link
-          href="/admin/category/addcategories"
-          className={`mt-1 flex items-center gap-3 rounded-xl px-4 py-3 transition
-            ${
-              pathname.startsWith("/admin/category")
-                ? "bg-blue-50 text-blue-600 font-medium"
-                : "text-gray-700 hover:bg-gray-100"
-            }
-          `}
-        >
-          <Layers size={18} />
-          Category
-        </Link>
+        {/* DYNAMIC NAV ITEMS */}
+        {NAV_ITEMS.map(({ key, label, icon: Icon, href, pathPrefix }) =>
+          can(key) ? (
+            <NavLink
+              key={key}
+              href={href}
+              active={pathname.startsWith(pathPrefix)}
+              icon={<Icon size={18} />}
+              label={label}
+            />
+          ) : null
+        )}
 
-        {/* SUBJECT (NO SUBMENU) */}
-        <Link
-          href="/admin/subject/SubjectPage"
-          className={`mt-1 flex items-center gap-3 rounded-xl px-4 py-3 transition
-            ${
-              pathname.startsWith("/admin/subject")
-                ? "bg-blue-50 text-blue-600 font-medium"
-                : "text-gray-700 hover:bg-gray-100"
-            }
-          `}
-        >
-          <AlignVerticalDistributeStart size={18} />
-          Subject
-        </Link>
-
-        {/* AUTHOR (NO SUBMENU) */}
-        <Link
-          href="/admin/author/productauthortable"
-          className={`mt-1 flex items-center gap-3 rounded-xl px-4 py-3 transition
-            ${
-              pathname.startsWith("/admin/author")
-                ? "bg-blue-50 text-blue-600 font-medium"
-                : "text-gray-700 hover:bg-gray-100"
-            }
-          `}
-        >
-          <LibraryBig  size={18} />
-          Book Authors
-        </Link>
-
-        {/* USERS (NO SUBMENU) */}
-        <Link
-          href="/admin/users/UsersPage"
-          className={`mt-1 flex items-center gap-3 rounded-xl px-4 py-3 transition
-            ${
-              pathname.startsWith("/admin/users")
-                ? "bg-blue-50 text-blue-600 font-medium"
-                : "text-gray-700 hover:bg-gray-100"
-            }
-          `}
-        >
-          <Users size={18} />
-          Users
-        </Link>
-
-
-        {/* Review (NO SUBMENU) */}
-        <Link
-          href="/admin/reviews/ReviewsPage"
-          className={`mt-1 flex items-center gap-3 rounded-xl px-4 py-3 transition
-            ${
-              pathname.startsWith("/admin/reviews")
-                ? "bg-blue-50 text-blue-600 font-medium"
-                : "text-gray-700 hover:bg-gray-100"
-            }
-          `}
-        >
-          <UserStar  size={18} />
-          Review
-        </Link>
-
-
-        {/* Shipping (NO SUBMENU) */}
-        <Link
-          href="/admin/shipping/ShippingZone"
-          className={`mt-1 flex items-center gap-3 rounded-xl px-4 py-3 transition
-            ${
-              pathname.startsWith("/admin/shipping")
-                ? "bg-blue-50 text-blue-600 font-medium"
-                : "text-gray-700 hover:bg-gray-100"
-            }
-          `}
-        >
-          <Truck size={18} />
-          Shipping
-        </Link>
-
-        {/* Subscription (NO SUBMENU) */}
-        <Link
-          href="/admin/subscriptions/SubscriptionPage"
-          className={`mt-1 flex items-center gap-3 rounded-xl px-4 py-3 transition
-            ${
-              pathname.startsWith("/admin/subscriptions")
-                ? "bg-blue-50 text-blue-600 font-medium"
-                : "text-gray-700 hover:bg-gray-100"
-            }
-          `}
-        >
-          <BadgeCheck size={18} />
-          Subscription
-        </Link>
-
-        {/* Payment (NO SUBMENU) */}
-        <Link
-          href="/admin/payment/PaymentPage"
-          className={`mt-1 flex items-center gap-3 rounded-xl px-4 py-3 transition
-            ${
-              pathname.startsWith("/admin/payment")
-                ? "bg-blue-50 text-blue-600 font-medium"
-                : "text-gray-700 hover:bg-gray-100"
-            }
-          `}
-        >
-          <BadgeIndianRupee size={18} />
-          Payment
-        </Link>
-
-         {/* Payment (NO SUBMENU) */}
-        <Link
-          href="/admin/coupon/CouponPage"
-          className={`mt-1 flex items-center gap-3 rounded-xl px-4 py-3 transition
-            ${
-              pathname.startsWith("/admin/coupon")
-                ? "bg-blue-50 text-blue-600 font-medium"
-                : "text-gray-700 hover:bg-gray-100"
-            }
-          `}
-        >
-          <BadgePercent size={18} />
-          Coupons
-        </Link>
-
-        <Link
-          href="/admin/ads/AdPage"
-          className={`mt-1 flex items-center gap-3 rounded-xl px-4 py-3 transition
-            ${
-              pathname.startsWith("/admin/ads")
-                ? "bg-blue-50 text-blue-600 font-medium"
-                : "text-gray-700 hover:bg-gray-100"
-            }
-          `}
-        >
-          <Megaphone  size={18} />
-          Ads
-        </Link>
-
-
-
+        {/* NO ACCESS STATE */}
+        {noAccess && (
+          <div className="mt-4 flex flex-col items-center gap-2 px-4 py-6 text-center text-gray-400">
+            <ShieldOff size={28} />
+            <p className="text-xs">
+              No pages assigned.
+              <br />
+              Contact super admin.
+            </p>
+          </div>
+        )}
       </nav>
     </aside>
   );
 }
 
-/* ---------- HELPERS ---------- */
+/* ── Helpers ─────────────────────────────────────────── */
 
-function SidebarItem({
-  icon,
-  label,
-  isOpen,
-  onClick,
-  children,
-}: {
+interface NavLinkProps {
+  href: string;
+  active: boolean;
+  icon: React.ReactNode;
+  label: string;
+}
+
+function NavLink({ href, active, icon, label }: NavLinkProps) {
+  return (
+    <Link
+      href={href}
+      className={`mt-1 flex items-center gap-3 rounded-xl px-4 py-3 transition
+        ${active
+          ? "bg-blue-50 text-blue-600 font-medium"
+          : "text-gray-700 hover:bg-gray-100"
+        }`}
+    >
+      {icon}
+      {label}
+    </Link>
+  );
+}
+
+interface SidebarItemProps {
   icon: React.ReactNode;
   label: string;
   isOpen: boolean;
   onClick: () => void;
   children?: React.ReactNode;
-}) {
+}
+
+function SidebarItem({ icon, label, isOpen, onClick, children }: SidebarItemProps) {
   return (
     <div className="mb-1">
       <button
         type="button"
         onClick={onClick}
         className={`flex w-full items-center justify-between rounded-xl px-4 py-3 transition cursor-pointer
-          ${
-            isOpen
-              ? "bg-blue-50 text-blue-600"
-              : "text-gray-700 hover:bg-gray-100"
-          }
-        `}
+          ${isOpen
+            ? "bg-blue-50 text-blue-600"
+            : "text-gray-700 hover:bg-gray-100"
+          }`}
       >
         <div className="flex items-center gap-3">
           {icon}
           <span className="font-medium">{label}</span>
         </div>
-
         <ChevronDown
           size={16}
-          className={`transition-transform ${
-            isOpen ? "rotate-180" : ""
-          }`}
+          className={`transition-transform ${isOpen ? "rotate-180" : ""}`}
         />
       </button>
 
       {isOpen && (
-        <div className="ml-10 mt-1 space-y-1">
-          {children}
-        </div>
+        <div className="ml-10 mt-1 space-y-1">{children}</div>
       )}
     </div>
   );
 }
 
-function SubItem({
-  label,
-  href,
-  active,
-}: {
+interface SubItemProps {
   label: string;
   href: string;
   active?: boolean;
-}) {
+}
+
+function SubItem({ label, href, active }: SubItemProps) {
   return (
     <Link
       href={href}
       className={`block rounded-lg px-3 py-2 text-sm transition
-        ${
-          active
-            ? "bg-blue-50 text-blue-600 font-medium"
-            : "text-gray-600 hover:bg-blue-50 hover:text-blue-600"
-        }
-      `}
+        ${active
+          ? "bg-blue-50 text-blue-600 font-medium"
+          : "text-gray-600 hover:bg-blue-50 hover:text-blue-600"
+        }`}
     >
       {label}
     </Link>

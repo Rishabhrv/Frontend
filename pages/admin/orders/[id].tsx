@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import Sidebar from "@/components/admin/Sidebar";
 import Header from "@/components/admin/Header";
 import AlertPopup from "@/components/Popups/AlertPopup";
+import AdminGuard  from "@/components/admin/AdminGuard";
+
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
@@ -183,6 +185,7 @@ export default function OrderDetailPage() {
   const inputCls = "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition";
 
   return (
+    <AdminGuard pageKey="orders">
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
@@ -459,5 +462,6 @@ export default function OrderDetailPage() {
 
       <AlertPopup open={toastOpen} message={toastMsg} onClose={() => setToastOpen(false)} />
     </div>
+    </AdminGuard>
   );
 }

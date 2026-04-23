@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useSearchParams } from "next/navigation"; 
 import Sidebar from "@/components/admin/Sidebar";
 import Header from "@/components/admin/Header";
+import AdminGuard  from "@/components/admin/AdminGuard";
 import CreateAdPage from "@/components/ads/CreateAdPage";
 import "../../../app/globals.css";
 
@@ -20,7 +21,8 @@ const EditAds = () => {
   if (!id) return null;
 
   return (
-    <div className="p-6 bg-white text-gray-700">
+    <AdminGuard pageKey="ads">
+          <div className="p-6 bg-white text-gray-700">
       <div className="flex">
         <Sidebar />
         <div className="flex flex-1 flex-col">
@@ -32,6 +34,9 @@ const EditAds = () => {
         </div>
       </div>
     </div>
+
+    </AdminGuard>
+
   );
 };
 

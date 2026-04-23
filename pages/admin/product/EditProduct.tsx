@@ -4,6 +4,8 @@ import Header from "@/components/admin/Header";
 import AddProductFrom from "@/components/products/AddProductFrom";
 import { useRouter } from "next/router";
 import "../../../app/globals.css";
+import AdminGuard  from "@/components/admin/AdminGuard";
+
 
 export default function EditProduct() {
   const router = useRouter();
@@ -15,7 +17,8 @@ export default function EditProduct() {
   if (!id) return null;
 
   return (
-    <div className="p-6 bg-white text-gray-700" >
+    <AdminGuard pageKey="products">
+          <div className="p-6 bg-white text-gray-700" >
       <div className="flex">
         <Sidebar />
         <div className="flex flex-1 flex-col">
@@ -24,5 +27,7 @@ export default function EditProduct() {
         </div>
       </div>
     </div>
+    </AdminGuard>
+
   );
 }
