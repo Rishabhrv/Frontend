@@ -4,6 +4,8 @@ import Sidebar from "@/components/admin/Sidebar";
 import Header from "@/components/admin/Header";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
+import AdminGuard  from "@/components/admin/AdminGuard";
+
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
@@ -97,6 +99,7 @@ export default function SubscriptionDetailsPage() {
   if (!data) return <div className="p-6">Subscription not found</div>;
 
   return (
+    <AdminGuard pageKey="subscriptions">
     <div className="flex min-h-screen p-6 bg-white text-gray-700">
       <Sidebar />
 
@@ -279,5 +282,6 @@ export default function SubscriptionDetailsPage() {
         </div>
       </div>
     </div>
+    </AdminGuard>
   );
 }

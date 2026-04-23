@@ -2,6 +2,8 @@ import React, { useEffect } from "react";
 import Sidebar from "@/components/admin/Sidebar";
 import Header from "@/components/admin/Header";
 import SubjectsTable from "@/components/subject/Subjectstable";
+import AdminGuard  from "@/components/admin/AdminGuard";
+
 export default function SubjectPage() {
   useEffect(() => {
     document.title = "Manage Subjects | Admin Panel";
@@ -9,7 +11,8 @@ export default function SubjectPage() {
 
   
   return (
-    <div className="p-6 bg-white text-gray-700">
+    <AdminGuard pageKey="subject">
+      <div className="p-6 bg-white text-gray-700">
         <div className="flex">
           <Sidebar />
           <div className="flex-1 flex-col">
@@ -20,5 +23,8 @@ export default function SubjectPage() {
           </div>
         </div>
     </div>
+
+    </AdminGuard>
+
   );
 }
