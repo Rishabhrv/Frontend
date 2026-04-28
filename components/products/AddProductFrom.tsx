@@ -139,6 +139,7 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
   const [selectedSubjects, setSelectedSubjects] = useState<number[]>([]);
   const [mainImageUrl, setMainImageUrl] = useState<string | null>(null);
   const [imprintFilter, setImprintFilter] = useState<"agph" | "agclassics">("agph");
+  const [bookId, setBookId] = useState("");
 
 
   // ── Unsaved-changes guard ────────────────────────────────────────
@@ -157,7 +158,7 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
     title, description, price, sellPrice, stock, sku, slug, status,
     productType, weight, length, width, height, ebookPrice, ebookSellPrice,
     selectedCategories, metaTitle, metaDescription, keywords,
-    productImage, ebookFile, mainImageUrl, selectedSubjects,
+    productImage, ebookFile, mainImageUrl, selectedSubjects, bookId,
   ]);
 
   // 1️⃣  Tab close / browser refresh
@@ -294,6 +295,7 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
         }
         setEbookPrice(data.ebook_price ?? "");
         setEbookSellPrice(data.ebook_sell_price ?? "");
+        setBookId(data.book_id ? String(data.book_id) : "");
         // Prefill done — now allow dirty tracking
         isInitialLoad.current = false;
       });
@@ -314,6 +316,8 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
       if (!sku.trim()) newErrors.sku = "SKU is required";
       if (selectedCategories.length === 0)
         newErrors.categories = "At least one category is required";
+
+      if (!String(bookId).trim()) newErrors.bookId = "MIS Book ID is required";
 
       if (productType === "physical" || productType === "both") {
         if (!price) newErrors.price = "Cost price is required";
@@ -391,6 +395,7 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
     formData.append("meta_description", metaDescription);
     formData.append("keywords", keywords);
     formData.append("subjects", JSON.stringify(selectedSubjects));
+    formData.append("book_id", bookId);
     if (productId) formData.append("product_id", String(productId));
     try {
       const res = await fetch(`${API_URL}/api/products/convert-doc`, {
@@ -451,6 +456,7 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
     formData.append("meta_title", metaTitle);
     formData.append("meta_description", metaDescription);
     formData.append("keywords", keywords);
+    formData.append("book_id", bookId);
     if (galleryData) {
       formData.append("existingGallery", JSON.stringify(galleryData.existing));
       formData.append("deletedGallery", JSON.stringify(galleryData.deleted));
@@ -546,17 +552,43 @@ useEffect(() => {
             <h2 className="mb-4 font-medium text-gray-700">Basic Information</h2>
             <div className="flex gap-6">
               <div className="flex-1 space-y-4">
-                <div>
-                  <label className="block text-sm mb-1">Product Title <Req /></label>
-                  <input
-                    type="text" placeholder="Enter Product Title"
-                    className={`w-full rounded border px-3 py-2 text-sm ${errors.title ? "border-red-400" : ""}`}
-                    value={title}
-                    onChange={(e) => { setTitle(e.target.value); clearError("title"); }}
-                  />
-                  {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title}</p>}
-                </div>
-
+                  <div className="flex gap-4">
+                    {/* 80% */}
+                    <div className="w-[80%]">
+                      <label className="block text-sm mb-1">Product Title <Req /></label>
+                      <input
+                        type="text"
+                        placeholder="Enter Product Title"
+                        className={`w-full rounded border px-3 py-2 text-sm ${errors.title ? "border-red-400" : ""}`}
+                        value={title}
+                        onChange={(e) => {
+                          setTitle(e.target.value);
+                          clearError("title");
+                        }}
+                      />
+                      {errors.title && (
+                        <p className="text-red-500 text-xs mt-1">{errors.title}</p>
+                      )}
+                    </div>
+                    <div className="w-[20%]">
+                      <label className="block text-sm mb-1">
+                        MIS Book ID {isPublishing && <Req />}
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. 1583"
+                        className={`w-full rounded border px-3 py-2 text-sm ${errors.bookId ? "border-red-400" : ""}`}
+                        value={bookId}
+                        onChange={(e) => {
+                          setBookId(e.target.value);
+                          clearError("bookId");
+                        }}
+                      />
+                      {errors.bookId && (
+                        <p className="text-red-500 text-xs mt-1">{errors.bookId}</p>
+                      )}
+                    </div>
+                  </div>
                 <div>
                   <label className="block text-sm mb-1">
                     Full Description {isPublishing && <Req />}

@@ -230,7 +230,14 @@ const filteredProducts = useMemo(() => {
   let data = products.filter(p => {
     if (activeTab !== "all" && p.status !== activeTab) return false;
     if (search      && !p.name.toLowerCase().includes(search.toLowerCase())) return false;
-    if (category    && !p.categories.includes(category)) return false;
+    if (category) {
+      if (category === "__none__") {
+        // If it has categories, exclude it (we only want empty arrays)
+        if (p.categories && p.categories.length > 0) return false;
+      } else if (!p.categories.includes(category)) {
+        return false;
+      }
+    }
     if (stockFilter === "instock"    && p.stock <= 0) return false;
     if (stockFilter === "outofstock" && p.stock >  0) return false;
 if (productType && p.product_type !== productType) return false;
@@ -459,6 +466,7 @@ if (imprint     && !p.imprints.includes(imprint))  return false;
             className="rounded border px-2 py-1 text-sm border-gray-300"
           >
             <option value="">All categories</option>
+            <option value="__none__">No category</option>
             {allCategories.map(cat => <option key={cat.id} value={cat.name}>{cat.name}</option>)}
           </select>
 

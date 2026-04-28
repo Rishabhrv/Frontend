@@ -49,7 +49,6 @@ const BookCard = ({ book }: { book: Book }) => {
   const [liked, setLiked] = useState(false);
   const [addedToCart, setAddedToCart] = useState(false);
 
-  // ── Wishlist: check server (logged-in) or localStorage (guest) ────────────
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (token) {
@@ -64,7 +63,6 @@ const BookCard = ({ book }: { book: Book }) => {
     }
   }, [book.id]);
 
-  // Keep guest wishlist icon in sync when updated from another component
   useEffect(() => {
     const sync = () => {
       if (!localStorage.getItem("token")) setLiked(isInGuestWishlist(book.id));
@@ -73,7 +71,6 @@ const BookCard = ({ book }: { book: Book }) => {
     return () => window.removeEventListener("guest-wishlist-change", sync);
   }, [book.id]);
 
-  // ── Toggle wishlist ───────────────────────────────────────────────────────
   const toggleWishlist = async (e: React.MouseEvent) => {
     e.preventDefault();
     const token = localStorage.getItem("token");
@@ -105,7 +102,6 @@ const BookCard = ({ book }: { book: Book }) => {
     }
   };
 
-  // ── Add to cart ───────────────────────────────────────────────────────────
   const addToCart = async () => {
     const token = localStorage.getItem("token");
     const format =
@@ -256,16 +252,21 @@ export default function CategoryBookSection() {
         const active = data.filter((c) => c.status === "active" && c.imprint === "agph");
         const checks = await Promise.all(
           active.map((cat) =>
-            fetch(`${API_URL}/api/categories/${cat.slug}/products`)
+            fetch(`${API_URL}/api/categories/${cat.slug}/products?product_type=ebook`)
               .then((r) => r.json())
-              .then((books: Book[]) => ({
-                cat,
-                hasEbooks: books.some((b) => b.product_type === "ebook" || b.product_type === "both"),
-              }))
+              .then((resData) => {
+                const booksArr: Book[] = Array.isArray(resData) ? resData : (resData.data || []);
+                return {
+                  cat,
+                  hasEbooks: booksArr.some((b) => b.product_type === "ebook" || b.product_type === "both"),
+                };
+              })
               .catch(() => ({ cat, hasEbooks: false }))
           )
         );
-        const withEbooks = checks.filter((c) => c.hasEbooks).map((c) => c.cat);
+        // Filter out categories without ebooks, then limit to the first 10
+        const withEbooks = checks.filter((c) => c.hasEbooks).map((c) => c.cat).slice(0, 10);
+        
         setCategories(withEbooks);
         if (withEbooks.length) setActiveSlug(withEbooks[0].slug);
       })
@@ -283,10 +284,13 @@ export default function CategoryBookSection() {
     if (!activeSlug) return;
     setLoadingBooks(true);
     setBooks([]);
-    fetch(`${API_URL}/api/categories/${activeSlug}/products?limit=10&product_type=ebook`)
+    
+    fetch(`${API_URL}/api/categories/${activeSlug}/products?product_type=ebook`)
       .then((r) => r.json())
-      .then(async (data: Book[]) => {
-        const candidates = data
+      .then(async (resData) => {
+        const booksArr: Book[] = Array.isArray(resData) ? resData : (resData.data || []);
+        
+        const candidates = booksArr
           .filter((b) => b.product_type === "ebook" || b.product_type === "both")
           .slice(0, 30);
       
@@ -298,7 +302,7 @@ export default function CategoryBookSection() {
                 if (!src) return resolve(null);
                 const img = new window.Image();
                 img.onload = () => resolve(book);
-                img.onerror = () => resolve(null);
+                img.onerror = () => resolve(null); // Invalid images are dropped
                 img.src = src.startsWith("http") ? src : `${API_URL}${src.startsWith("/") ? "" : "/"}${src}`;
               })
           )
@@ -369,7 +373,7 @@ export default function CategoryBookSection() {
       <div className="flex gap-6 items-start">
 
         {/* Desktop sidebar */}
-        <aside className="hidden lg:block flex-shrink-0 w-44 sticky top-24">
+        <aside className="hidden lg:block flex-shrink-0 w-54 sticky top-24">
           <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
             <div className="px-4 py-3 border-b border-gray-50">
               <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Categories</p>
@@ -388,7 +392,7 @@ export default function CategoryBookSection() {
                     <button
                       key={cat.id}
                       onClick={() => setActiveSlug(cat.slug)}
-                      className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200
+                      className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer 
                         ${isActive
                           ? "bg-gray-700 text-white shadow-sm"
                           : "text-gray-600 hover:bg-amber-50 hover:text-amber-800"

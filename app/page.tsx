@@ -12,6 +12,8 @@ import TopBannerAd from "@/components/ads/TopBannerAd";
 import BottomBannerAd from "@/components/ads/BottomBannerAd";
 import PopupAd from "@/components/ads/PopupAd";
 import type { Metadata } from "next";
+import ImageSlider from "@/components/home/ImageSlider";
+import Bookrecommendationsection from "@/components/home/Bookrecommendationsection";
 
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL;
@@ -28,6 +30,23 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "/",
   },
+  keywords: [
+    "AGPH Books Store",
+    "Self-Publishing in India",
+    "Book Publishing Services",
+    "Bhopal Book Publishing",
+    "Author Services",
+    "Book Distribution",    
+    "Book Marketing",
+    "Book Design",
+    "Book Editing",
+    "Book Printing",
+    "Book Promotion",
+    "Book Sales",
+    "Bookstore in Bhopal",
+    "Independent Publishing",
+    "Book Publishing Company",
+  ],
   openGraph: {
     title: "AGPH Books Store | India's Trusted Self-Publishing Since 2022",
     description:
@@ -112,12 +131,38 @@ const schema = {
     />
 
     <HeroSlider />
+    <Bookrecommendationsection />
     <PopupAd pageType="home" />
     <TopBannerAd pageType="home" />
 
       <CategoryBookSection
         title="Academic Books"
         categorySlug="agph"
+                visibleCount={5}
+
+      />
+
+      
+<ImageSlider />
+
+
+      <CategoryBookSection
+        title="Fiction Books"
+        categorySlug="fiction"
+                visibleCount={5}
+
+      />
+
+      <CategoryBookSection
+        title="Non-Fiction Books"
+        categorySlug="non-fiction"
+                visibleCount={5}
+
+      />
+
+      <CategoryBookSection
+        title="Authority Books"
+        categorySlug="authority-book"
                 visibleCount={5}
 
       />

@@ -436,65 +436,86 @@ export default function BookstoreHero() {
 
       </div>
 
-      {/* ── Text block ── */}
-      <div
-        className="relative z-10 flex flex-col items-center text-center pb-20 px-6"
+    {/* ── Text block ── */}
+<div
+  className="relative z-10 flex flex-col items-center text-center pb-12 px-6"
+  style={{
+    marginTop: screenSize === "mobile" ? 48 : 24,
+    opacity: 0,
+    animation: visible ? "textFade 0.75s ease 0.48s forwards" : "none",
+  }}
+>
+
+
+  <h1
+    className="text-gray-900 font-black mt-4 leading-none tracking-tight"
+    style={{
+      fontFamily: "'Playfair Display', serif",
+      fontSize: "clamp(2rem, 5.5vw, 2.25rem)",
+      letterSpacing: "-0.02em",
+    }}
+  >
+    AGPH Books Store
+  </h1>
+
+
+  <h2
+    className="text-gray-800 font-bold leading-tight mt-5 tracking-tight"
+    style={{
+      fontFamily: "'Playfair Display', serif",
+      fontSize: "clamp(1.1rem, 2.8vw, 1.55rem)",
+      fontStyle: "italic",
+      marginBottom: "18px",
+      maxWidth: screenSize === "mobile" ? "min(90vw, 360px)" : "600px",
+    }}
+  >
+    India's Premier Destination for Every Genre
+  </h2>
+
+  <p
+    className="text-gray-400 leading-relaxed"
+    style={{
+      fontFamily: "'DM Sans', sans-serif",
+      fontSize: "clamp(0.72rem, 1.3vw, 0.875rem)",
+      fontWeight: 400,
+      marginBottom: "36px",
+      maxWidth: screenSize === "mobile" ? "min(88vw, 640px)" : "820px",
+      lineHeight: 1.75,
+    }}
+  >
+    AGPH Books Store has been a trusted name in India since 2022, offering
+    everything from essential academic resources and authoritative texts to
+    engaging fiction, non-fiction, and children's books, carefully curated
+    for every reader.
+  </p>
+
+  {/* CTA row */}
+  <div className="flex items-center gap-3">
+    <Link href="/product-category/agph">
+      <button
+        className="group flex cursor-pointer items-center gap-3 text-white font-semibold rounded-full transition-all duration-200 hover:-translate-y-0.5 hover:shadow-2xl active:scale-95"
         style={{
-          marginTop: screenSize === "mobile" ? 60 : 32,
-          opacity: 0,
-          animation: visible ? "textFade 0.75s ease 0.48s forwards" : "none",
+          fontFamily: "'DM Sans', sans-serif",
+          fontSize: 14,
+          letterSpacing: "0.04em",
+          padding: "10px 22px 10px 10px",
+          background: "linear-gradient(145deg, #374151, #111827)",
+          boxShadow: "0 8px 24px rgba(0,0,0,0.22)",
         }}
       >
-        <h1
-          className="text-gray-900 mt-5 font-black leading-tight tracking-tight"
-          style={{
-            fontFamily: "'Playfair Display', serif",
-            fontSize: "clamp(1.5rem, 4.5vw, 3.0rem)",
-            marginBottom: 10,
-          }}
+        <span
+          className="flex items-center justify-center rounded-full bg-white/15 transition-transform duration-200 group-hover:rotate-6"
+          style={{ width: 32, height: 32 }}
         >
-          Trusted Academic Publications
-        </h1>
-
-        <p
-          className="text-gray-500 leading-relaxed"
-          style={{
-            fontFamily: "'DM Sans', sans-serif",
-            fontSize: "clamp(0.875rem, 1.4vw, 1rem)",
-            fontWeight: 300,
-            marginBottom: 28,
-            maxWidth: screenSize === "mobile" ? "min(88vw, 340px)" : "680px",
-          }}
-        >
-       AGPH Books Store is India's Trusted Academic Publications platform since 2022, 
-       offering curated academic resources for students, researchers, and professionals.
-        </p>
-
-        {/* CTA */}
-        <Link href="/product-category/agph">
-          <button
-            className="flex cursor-pointer items-center gap-2.5 text-white font-semibold rounded-full transition-all duration-200 hover:-translate-y-0.5 hover:brightness-110 active:scale-95"
-            style={{
-              fontFamily: "'DM Sans', sans-serif",
-              fontSize: 14,
-              letterSpacing: "0.03em",
-              padding: "11px 26px",
-              background: "linear-gradient(135deg, #4b5563, #1f2937)",
-              boxShadow: "0 6px 20px rgba(0,0,0,0.25)",
-            }}
-          >
-            <span
-              className="flex items-center justify-center rounded-full"
-              style={{ width: 30, height: 30, background: "rgba(255,255,255,0.15)" }}
-            >
-              <svg viewBox="0 0 24 24" className="w-4 h-4 fill-white">
-                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15zm2.5-2.5H18v3H6.5A.5.5 0 0 1 6 19.5a.5.5 0 0 1 .5-.5zM8 7h8v1.5H8V7zm0 3.5h6V12H8v-1.5z" />
-              </svg>
-            </span>
-            Explore
-          </button>
-        </Link>
-      </div>
+          <svg viewBox="0 0 24 24" className="w-4 h-4 fill-white">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15zm2.5-2.5H18v3H6.5A.5.5 0 0 1 6 19.5a.5.5 0 0 1 .5-.5zM8 7h8v1.5H8V7zm0 3.5h6V12H8v-1.5z" />
+          </svg>
+        </span>
+        Explore
+      </button>
+    </Link>
+  </div>
+</div>
     </section>
   );
 }
