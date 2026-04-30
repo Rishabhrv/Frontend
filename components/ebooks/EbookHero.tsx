@@ -89,7 +89,7 @@ export default function EbookHero() {
       .then(setStats)
       .catch(() => setStats({ total_ebooks: 1500, total_authors: 320 }));
 
-    fetch(`${API_URL}/api/ebooks?limit=5&sort=newest`)
+    fetch(`${API_URL}/api/ebooks?limit=10&sort=newest`)
       .then((r) => r.json())
       .then(async (d) => {
         const candidates: FeaturedBook[] = d.ebooks ?? [];
