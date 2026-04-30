@@ -448,7 +448,7 @@ export default function BookstoreHero() {
 
 
   <h1
-    className="text-gray-900 font-black mt-4 leading-none tracking-tight"
+    className="text-gray-900 font-black mt-6 leading-none tracking-tight"
     style={{
       fontFamily: "'Playfair Display', serif",
       fontSize: "clamp(2rem, 5.5vw, 2.25rem)",
@@ -469,7 +469,7 @@ export default function BookstoreHero() {
       maxWidth: screenSize === "mobile" ? "min(90vw, 360px)" : "600px",
     }}
   >
-    India's Premier Destination for Every Genre
+    India’s Ultimate Bookstore Experience
   </h2>
 
   <p

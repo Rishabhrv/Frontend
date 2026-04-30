@@ -222,22 +222,22 @@ export default function OrdersTable() {
                   </span>
                 </td>
 
-                {/* Shipping */}
-                <td className="px-4 py-3">
-                  {o.shipping_status ? (
-                    <div className="space-y-0.5">
-                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-medium capitalize ${shippingStyles[o.shipping_status] || "bg-gray-100 text-gray-600"}`}>
-                        {o.shipping_status.replace(/_/g, " ")}
-                      </span>
-                      {o.courier && <p className="text-gray-400 text-[11px]">{o.courier}</p>}
-                      {o.tracking_number && (
-                        <p className="font-mono text-[11px] text-blue-500">{o.tracking_number}</p>
-                      )}
-                    </div>
-                  ) : (
-                    <span className="text-gray-300 text-[11px]">—</span>
-                  )}
-                </td>
+{/* Shipping */}
+<td className="px-4 py-3">
+  {o.shipping_status && !["pending", "cancelled"].includes(o.status) ? (
+    <div className="space-y-0.5">
+      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-medium capitalize ${shippingStyles[o.shipping_status] || "bg-gray-100 text-gray-600"}`}>
+        {o.shipping_status.replace(/_/g, " ")}
+      </span>
+      {o.courier && <p className="text-gray-400 text-[11px]">{o.courier}</p>}
+      {o.tracking_number && (
+        <p className="font-mono text-[11px] text-blue-500">{o.tracking_number}</p>
+      )}
+    </div>
+  ) : (
+    <span className="text-gray-300 text-[11px]">—</span>
+  )}
+</td>
 
                 {/* Imprint badges */}
                 <td className="px-4 py-3">

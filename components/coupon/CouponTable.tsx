@@ -62,16 +62,33 @@ export default function CouponTable() {
     );
   };
 
-  const deleteCoupon = (id: number) => {
+const deleteCoupon = (id: number) => {
     setConfirmConfig({
       title: "Delete Coupon",
       message: "Are you sure you want to delete this coupon?",
       onConfirm: async () => {
-        await fetch(`${API_URL}/api/admin/coupons/${id}`, {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${localStorage.getItem("admin_token")}` },
-        });
-        fetchCoupons();
+        try {
+          const res = await fetch(`${API_URL}/api/admin/coupons/${id}`, {
+            method: "DELETE",
+            headers: { Authorization: `Bearer ${localStorage.getItem("admin_token")}` },
+          });
+          
+          const data = await res.json();
+
+          if (!res.ok) {
+            // Show the error message from the backend
+            setToastMsg(data.msg || "Failed to delete coupon.");
+            setToastOpen(true);
+          } else {
+            // Success
+            setToastMsg(data.msg);
+            setToastOpen(true);
+            fetchCoupons();
+          }
+        } catch (error) {
+          setToastMsg("An error occurred while deleting.");
+          setToastOpen(true);
+        }
       },
     });
     setConfirmOpen(true);
