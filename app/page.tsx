@@ -134,6 +134,7 @@ const schema = {
     <Bookrecommendationsection />
     <PopupAd pageType="home" />
     <TopBannerAd pageType="home" />
+    <ImageSlider />
 
       <CategoryBookSection
         title="Academic Books"
@@ -143,7 +144,7 @@ const schema = {
       />
 
       
-<ImageSlider />
+
 
 
       <CategoryBookSection

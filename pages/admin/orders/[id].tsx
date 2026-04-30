@@ -29,10 +29,17 @@ const UNIFIED_STATUSES = [
 
 /* Derive unified status from order + shipping data */
 function deriveUnifiedStatus(orderStatus: string, shippingStatus?: string): string {
+  // 1. Order-level blocks take absolute priority
+  if (orderStatus === "pending") return "pending";
+  if (orderStatus === "cancelled") return "cancelled";
+
+  // 2. Then check shipping progression
   if (shippingStatus === "delivered")        return "delivered";
   if (shippingStatus === "out_for_delivery") return "out_for_delivery";
   if (shippingStatus === "shipped")          return "shipped";
   if (shippingStatus === "confirmed")        return "confirmed";
+  
+  // 3. Fallback
   return orderStatus || "pending";
 }
 
@@ -353,8 +360,8 @@ export default function OrderDetailPage() {
             {/* ── RIGHT SIDEBAR (1/3) ── */}
             <div className="space-y-5">
 
-              {/* Shipping tracker — only when shipping has started */}
-              {shipping?.status && !isEbookOnly && (
+              {/* Shipping tracker — only when order is active and not pending/cancelled */}
+{shipping?.status && !isEbookOnly && !["pending", "cancelled"].includes(unifiedStatus) && (
                 <div className="bg-white border border-gray-200 rounded-xl p-5">
                   <h3 className="text-sm font-semibold text-gray-700 border-b border-gray-100 pb-2 mb-4">Shipment Progress</h3>
                   <ShippingTracker current={shipping.status} />

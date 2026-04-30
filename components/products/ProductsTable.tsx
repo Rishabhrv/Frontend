@@ -14,6 +14,7 @@ type Product = {
   image: string;
   sku: string;
   stock: number;
+  book_id?: string | number;
   price: string;
   categories: string[];
   date: string;
@@ -199,19 +200,20 @@ export default function ProductsTable() {
   const [productType, setProductType] = useState("");
   const [imprint, setImprint] = useState("");
 
-  useEffect(() => {
+useEffect(() => {
     fetch(`${API_URL}/api/products/table-product`)
       .then(res => res.json())
       .then(data => {
         setProducts(data.map((p: any) => ({
           ...p,
           status:           p.status.toLowerCase(),
-          meta_title:       p.meta_title       || "",
+          book_id:          p.Book_id || p.book_id || "", // Added this line
+          meta_title:       p.meta_title      || "",
           meta_description: p.meta_description || "",
-          keywords:         p.keywords         || "",
+          keywords:         p.keywords        || "",
           description:      p.description      || "",
-          slug:             p.slug             || "",
-          imprints:         p.imprints         || [],
+          slug:             p.slug            || "",
+          imprints:         p.imprints        || [],
         })));
         setLoading(false);
       })
@@ -227,23 +229,31 @@ export default function ProductsTable() {
   /* ---------------- FILTER + SORT ---------------- */
 
 const filteredProducts = useMemo(() => {
-  let data = products.filter(p => {
-    if (activeTab !== "all" && p.status !== activeTab) return false;
-    if (search      && !p.name.toLowerCase().includes(search.toLowerCase())) return false;
-    if (category) {
-      if (category === "__none__") {
-        // If it has categories, exclude it (we only want empty arrays)
-        if (p.categories && p.categories.length > 0) return false;
-      } else if (!p.categories.includes(category)) {
-        return false;
+    let data = products.filter(p => {
+      if (activeTab !== "all" && p.status !== activeTab) return false;
+      
+      // Updated search logic to check both name and book_id
+      if (search) {
+        const query = search.toLowerCase();
+        const matchesName = p.name.toLowerCase().includes(query);
+        const matchesBookId = p.book_id ? String(p.book_id).toLowerCase().includes(query) : false;
+        if (!matchesName && !matchesBookId) return false;
       }
-    }
-    if (stockFilter === "instock"    && p.stock <= 0) return false;
-    if (stockFilter === "outofstock" && p.stock >  0) return false;
-if (productType && p.product_type !== productType) return false;
-if (imprint     && !p.imprints.includes(imprint))  return false;
-    return true;
-  });
+
+      if (category) {
+        if (category === "__none__") {
+          // If it has categories, exclude it (we only want empty arrays)
+          if (p.categories && p.categories.length > 0) return false;
+        } else if (!p.categories.includes(category)) {
+          return false;
+        }
+      }
+      if (stockFilter === "instock"    && p.stock <= 0) return false;
+      if (stockFilter === "outofstock" && p.stock >  0) return false;
+      if (productType && p.product_type !== productType) return false;
+      if (imprint     && !p.imprints.includes(imprint))  return false;
+      return true;
+    });
 
     const key = sortBy.key;
     if (key) {
@@ -567,7 +577,14 @@ if (imprint     && !p.imprints.includes(imprint))  return false;
                     </div>
                   </div>
                 </td>
-                <td className="px-6 py-4 text-gray-500">{product.sku}</td>
+                <td className="px-6 py-4 text-gray-500">
+                  <span className="block">{product.sku}</span>
+                  {product.book_id && (
+                    <span className="block text-xs text-gray-400 mt-0.5">
+                      ID: {product.book_id}
+                    </span>
+                  )}
+                </td>
                 <td className="px-6 py-4 whitespace-nowrap"><StockBadge stock={product.stock} /></td>
                 <td className="px-6 py-4 font-medium">{product.price}</td>
                 <td className="px-6 py-4 text-gray-500">{product.categories.join(", ")}</td>

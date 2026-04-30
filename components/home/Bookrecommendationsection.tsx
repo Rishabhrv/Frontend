@@ -239,14 +239,13 @@ export default function BookCategoriesHero() {
                   >
                     {cat.shortLabel}
                   </h2>
-                  <div className="bch-underline hidden md:block" style={{ background: cat.accentColor }} />
+                  <div className="bch-underline hidden md:block bg-gray-900" />
                   
                   {/* Hide detailed description on mobile to save vertical space */}
                   <div className="mt-2 md:mt-3 space-y-2">
                     <p className="text-gray-500 text-xs leading-relaxed line-clamp-2 md:line-clamp-none">{cat.description}</p>
                     <span
-                      className="inline-flex items-center gap-1 text-xs font-semibold"
-                      style={{ color: cat.accentColor }}
+                      className="inline-flex items-center gap-1 text-sm font-semibold text-gray-900"
                     >
                       Browse <ChevronRight size={12} strokeWidth={2.5} />
                     </span>

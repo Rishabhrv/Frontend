@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import BookCard from "@/components/books/BookCard";
-import { Star, SlidersHorizontal, X } from "lucide-react";
+import { Star, SlidersHorizontal, X, ChevronRight, ChevronDown } from "lucide-react";
 import TopBannerAd from "../ads/TopBannerAd";
 import SidebarAd from "../ads/SidebarAd";
 import BottomBannerAd from "../ads/BottomBannerAd";
@@ -53,6 +53,15 @@ export default function CategoryPage() {
   // Mobile sidebar state
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeFilterTab, setActiveFilterTab] = useState("categories");
+  const [visibleCategoryCounts, setVisibleCategoryCounts] = useState<Record<number, number>>({});
+  const [expandedCategories, setExpandedCategories] = useState<Record<number, boolean>>({});
+
+  const toggleCategory = (parentId: number) => {
+  setExpandedCategories((prev) => ({
+    ...prev,
+    [parentId]: !prev[parentId],
+  }));
+};
 
   useEffect(() => {
     if (!slug) return;
@@ -190,34 +199,78 @@ export default function CategoryPage() {
         </div>
       </div>
 
-      {/* Categories */}
-      <div>
-        <h2 className="font-serif text-base mb-3">Categories</h2>
-        <ul className="space-y-2">
-          {(groupedCategories[0] || []).map((parent: any) => (
-            <li key={parent.id}>
-              <div className="flex justify-between items-center font-medium">
-                <a href={`/product-category/${parent.slug}`} className="hover:underline">
-                  {parent.name}
-                </a>
-                <span className="text-xs text-gray-400">({parent.product_count})</span>
-              </div>
-              {groupedCategories[parent.id] && (
-                <ul className="mt-1 ml-4 space-y-1 pl-1">
-                  {groupedCategories[parent.id].map((child: any) => (
-                    <li key={child.id} className="flex justify-between items-center text-sm">
-                      <a href={`/product-category/${child.slug}`} className="hover:underline">
-                        {child.name}
-                      </a>
-                      <span className="text-xs text-gray-400">({child.product_count})</span>
-                    </li>
-                  ))}
-                </ul>
+{/* Categories */}
+<div>
+  <h2 className="font-serif text-base mb-3">Categories</h2>
+  <ul className="space-y-2">
+    {(groupedCategories[0] || []).map((parent: any) => {
+      const children = groupedCategories[parent.id] || [];
+      const visibleCount = visibleCategoryCounts[parent.id] || 5;
+      const isExpanded = expandedCategories[parent.id];
+
+      return (
+        <li key={parent.id}>
+          <div className="flex justify-between items-center font-medium">
+            <div className="flex items-center gap-1.5">
+              {/* Dropdown Toggle Icon */}
+              {children.length > 0 ? (
+                <button
+                  onClick={() => toggleCategory(parent.id)}
+                  className="p-1 -ml-1 text-gray-400 hover:text-black cursor-pointer transition"
+                >
+                  {isExpanded ? (
+                    <ChevronDown className="w-4 h-4" />
+                  ) : (
+                    <ChevronRight className="w-4 h-4" />
+                  )}
+                </button>
+              ) : (
+                /* Spacer for alignment if no children */
+                <span className="w-4 h-4 ml-1" />
               )}
-            </li>
-          ))}
-        </ul>
-      </div>
+              
+              <a href={`/product-category/${parent.slug}`} className="hover:underline">
+                {parent.name}
+              </a>
+            </div>
+            <span className="text-xs text-gray-400">({parent.product_count})</span>
+          </div>
+          
+          {/* Only show children if the parent is expanded */}
+          {children.length > 0 && isExpanded && (
+            <ul className="mt-1 ml-6 space-y-1 pl-1 border-l border-gray-100">
+              {children.slice(0, visibleCount).map((child: any) => (
+                <li key={child.id} className="flex justify-between items-center text-sm">
+                  <a href={`/product-category/${child.slug}`} className="hover:underline text-gray-600">
+                    {child.name}
+                  </a>
+                  <span className="text-xs text-gray-400">({child.product_count})</span>
+                </li>
+              ))}
+              
+              {/* See More Button */}
+              {children.length > visibleCount && (
+                <li>
+                  <button
+                    onClick={() =>
+                      setVisibleCategoryCounts((prev) => ({
+                        ...prev,
+                        [parent.id]: visibleCount + 5,
+                      }))
+                    }
+                    className="text-xs mt-1 py-1 underline text-gray-500 hover:text-black cursor-pointer transition"
+                  >
+                    See more
+                  </button>
+                </li>
+              )}
+            </ul>
+          )}
+        </li>
+      );
+    })}
+  </ul>
+</div>
 
       {/* Rating Filter */}
       <div>
@@ -448,32 +501,54 @@ export default function CategoryPage() {
                   </div>
                 )}
 
-                {/* Categories */}
-                {activeFilterTab === "categories" && (
-                  <div>
-                    <p className="font-semibold text-xs uppercase tracking-wide text-gray-400 mb-3">Categories</p>
-                    <ul className="space-y-2">
-                      {(groupedCategories[0] || []).map((parent: any) => (
-                        <li key={parent.id}>
-                          <div className="flex justify-between items-center font-medium py-1">
-                            <a href={`/product-category/${parent.slug}`} className="hover:underline">{parent.name}</a>
-                            <span className="text-xs text-gray-400">({parent.product_count})</span>
-                          </div>
-                          {groupedCategories[parent.id] && (
-                            <ul className="ml-3 space-y-1 border-l border-gray-200 pl-3 mt-1">
-                              {groupedCategories[parent.id].map((child: any) => (
-                                <li key={child.id} className="flex justify-between items-center py-1">
-                                  <a href={`/product-category/${child.slug}`} className="hover:underline text-gray-600">{child.name}</a>
-                                  <span className="text-xs text-gray-400">({child.product_count})</span>
-                                </li>
-                              ))}
-                            </ul>
-                          )}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+                {/* Categories (Mobile Drawer) */}
+                  {activeFilterTab === "categories" && (
+                    <div>
+                      <p className="font-semibold text-xs uppercase tracking-wide text-gray-400 mb-3">Categories</p>
+                      <ul className="space-y-2">
+                        {(groupedCategories[0] || []).map((parent: any) => {
+                          const children = groupedCategories[parent.id] || [];
+                          const visibleCount = visibleCategoryCounts[parent.id] || 5;
+                  
+                          return (
+                            <li key={parent.id}>
+                              <div className="flex justify-between items-center font-medium py-1">
+                                <a href={`/product-category/${parent.slug}`} className="hover:underline">{parent.name}</a>
+                                <span className="text-xs text-gray-400">({parent.product_count})</span>
+                              </div>
+                              
+                              {children.length > 0 && (
+                                <ul className="ml-3 space-y-1 border-l border-gray-200 pl-3 mt-1">
+                                  {children.slice(0, visibleCount).map((child: any) => (
+                                    <li key={child.id} className="flex justify-between items-center py-1">
+                                      <a href={`/product-category/${child.slug}`} className="hover:underline text-gray-600">{child.name}</a>
+                                      <span className="text-xs text-gray-400">({child.product_count})</span>
+                                    </li>
+                                  ))}
+                  
+                                  {children.length > visibleCount && (
+                                    <li>
+                                      <button
+                                        onClick={() =>
+                                          setVisibleCategoryCounts((prev) => ({
+                                            ...prev,
+                                            [parent.id]: visibleCount + 5,
+                                          }))
+                                        }
+                                        className="text-xs mt-1 py-1 underline text-gray-500 hover:text-black cursor-pointer transition"
+                                      >
+                                        See more
+                                      </button>
+                                    </li>
+                                  )}
+                                </ul>
+                              )}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  )}
 
                 {/* Price */}
                 {activeFilterTab === "price" && (
