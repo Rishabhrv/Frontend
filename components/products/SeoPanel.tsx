@@ -37,6 +37,9 @@ const stripHtml = (html: string) =>
 const wordCount = (text: string) =>
   text.trim().split(/\s+/).filter(Boolean).length;
 
+const escapeRegExp = (text: string) => 
+  text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 type TabType = "seo" | "readability";
 
 const Dot = ({ pass }: { pass: boolean }) => (
@@ -63,14 +66,18 @@ export default function SeoPanel({
 
   const kp2 = useMemo(() => (keywords.split(",")[1] || "").toLowerCase().trim(), [keywords]);
 
-  const kpCount = useMemo(() => {
+const kpCount = useMemo(() => {
     if (!kp || !plainDesc) return 0;
-    return (plainDesc.toLowerCase().match(new RegExp(kp, "gi")) || []).length;
+    // 👇 Escape the user input before making it a Regex
+    const safeKp = escapeRegExp(kp);
+    return (plainDesc.toLowerCase().match(new RegExp(safeKp, "gi")) || []).length;
   }, [kp, plainDesc]);
 
   const kp2Count = useMemo(() => {
     if (!kp2 || !plainDesc) return 0;
-    return (plainDesc.toLowerCase().match(new RegExp(kp2, "gi")) || []).length;
+    // 👇 Escape the user input before making it a Regex
+    const safeKp2 = escapeRegExp(kp2);
+    return (plainDesc.toLowerCase().match(new RegExp(safeKp2, "gi")) || []).length;
   }, [kp2, plainDesc]);
 
   const kp2density = useMemo(() => words > 0 ? (kp2Count / words) * 100 : 0, [kp2Count, words]);
@@ -270,7 +277,7 @@ export default function SeoPanel({
       {tab === "seo" && (
         <div className="divide-y divide-gray-100">
 
-          {/* Focus keyphrase */}
+{/* Focus keyphrase */}
           <div className="px-4 py-4 space-y-1">
             <label className="block text-xs font-semibold text-gray-700">
               Focus keyphrase <span className="text-red-500">*</span>
@@ -278,7 +285,11 @@ export default function SeoPanel({
             <input
               type="text"
               value={keywords}
-              onChange={(e) => onKeywordsChange(e.target.value)}
+              onChange={(e) => {
+                // 👇 Updated regex with 'u' flag for Unicode support
+                const sanitizedValue = e.target.value.replace(/[^\p{L}\p{M}0-9\s,\-()–—]/gu, "");
+                onKeywordsChange(sanitizedValue);
+              }}
               placeholder="e.g. 35 Inspiring Stories"
               className={`w-full border rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 ${errors.keywords ? "border-red-400 bg-red-50" : "border-gray-300"}`}
             />

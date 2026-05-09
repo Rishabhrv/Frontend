@@ -94,7 +94,7 @@ export default function ReviewSection({ productId }: Props) {
 
       {/* ── Heading ── */}
       <div className="flex items-center gap-2 mb-8">
-        <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Customer Reviews</h2>
+        <h2 className="text-2xl font-bold font-serif text-gray-900 tracking-tight">Customer Reviews</h2>
         <span className="text-sm text-gray-400 mt-0.5">({total})</span>
       </div>
 

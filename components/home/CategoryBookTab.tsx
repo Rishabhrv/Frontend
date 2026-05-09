@@ -361,7 +361,7 @@ export default function CategoryBookSection() {
           className="text-2xl sm:text-3xl md:text-4xl font-black text-gray-900 leading-tight"
           style={{ fontFamily: "'Playfair Display', serif" }}
         >
-          Find Your Next E-Book Read
+          Discover Your Next E-Book
         </h2>
       </div>
 

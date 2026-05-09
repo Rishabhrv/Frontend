@@ -331,9 +331,9 @@ export default function SingleProductPage({ product }: { product: Product }) {
       ? Math.round(((product.ebook_price - product.ebook_sell_price) / product.ebook_price) * 100)
       : 0;
 
-  const descriptionWords = product.description.split(" ");
-  const shortDescription = descriptionWords.slice(0, 200).join(" ");
-  const isLongDescription = descriptionWords.length > 200;
+// Strip HTML tags to get an accurate word count for the Read More button logic
+  const plainTextDesc = product.description ? product.description.replace(/<[^>]+>/g, '') : "";
+  const isLongDescription = plainTextDesc.split(" ").length > 150; // Adjusted threshold
 
   const getShortBio = (text: string, limit = 100) => {
     const words = text.split(" ");
@@ -655,19 +655,21 @@ export default function SingleProductPage({ product }: { product: Product }) {
         </div>
       </div>
 
-      {/* ── DESCRIPTION ── */}
+{/* ── DESCRIPTION ── */}
       <div className="mt-10 sm:mt-14 border-y border-gray-300 py-6 sm:py-8 px-5 xl:px-1">
-        <h2 className="text-lg sm:text-xl font-semibold mb-3">Description</h2>
+        <h2 className="text-lg sm:text-xl font-serif font-semibold mb-4">Description</h2>
         <div
-          className="text-gray-700 text-xs sm:text-sm leading-relaxed text-justify prose prose-sm max-w-none"
+          className={`text-gray-700 leading-relaxed text-justify prose max-w-none transition-all duration-300 ${
+            showFullDesc ? "" : "line-clamp-[12] overflow-hidden"
+          } [&>p]:mb-4  [&>p]:text-base sm:[&>p]:text-sm [&>p]:leading-relaxed [&>h1]:text-xl [&>h1]:font-serif [&>h1]:font-bold [&>h1]:mt-6 [&>h1]:mb-2 [&>h2]:text-lg [&>h2]:font-serif [&>h2]:font-bold [&>h2]:mt-6 [&>h2]:mb-2 [&>h3]:text-base [&>h3]:font-serif [&>h3]:font-bold [&>h3]:mt-5 [&>h3]:mb-2 [&>strong]:font-semibold [&>ul]:list-disc [&>ul]:ml-5 [&>ul]:mb-4`}
           dangerouslySetInnerHTML={{
-            __html: showFullDesc || !isLongDescription ? product.description : shortDescription + "...",
+            __html: product.description,
           }}
         />
         {isLongDescription && (
           <button
             onClick={() => setShowFullDesc(!showFullDesc)}
-            className="mt-2 text-xs sm:text-sm font-medium text-black hover:underline cursor-pointer"
+            className="mt-3 text-sm sm:text-base font-semibold text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
           >
             {showFullDesc ? "Read Less" : "Read More"}
           </button>
@@ -677,7 +679,7 @@ export default function SingleProductPage({ product }: { product: Product }) {
       {/* ── ATTRIBUTES ── */}
       {product.attributes?.length > 0 && (
         <div className="mt-8 sm:mt-10 px-5 xl:px-1">
-          <h2 className="text-lg sm:text-xl font-semibold mb-2">Product Details</h2>
+          <h2 className="text-lg sm:text-xl font-serif font-semibold mb-2">Product Details</h2>
           <div>
             {product.attributes.map((a, i) => (
               <div key={i} className="py-1.5 text-xs sm:text-sm flex gap-2">
@@ -706,7 +708,7 @@ export default function SingleProductPage({ product }: { product: Product }) {
       {/* ── SHIPPING ── */}
       {(product.weight || product.length) && (
         <div className="mt-5 border-b border-gray-300 pb-8 sm:pb-10 px-5 xl:px-1">
-          <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">Shipping Details</h2>
+          <h2 className="text-lg sm:text-xl font-serif font-semibold mb-3 sm:mb-4">Shipping Details</h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 text-xs sm:text-sm">
             {product.weight && <div>Weight: {product.weight} kg</div>}
             {product.length && <div>Length: {product.length} cm</div>}
@@ -716,48 +718,57 @@ export default function SingleProductPage({ product }: { product: Product }) {
         </div>
       )}
 
-      {/* ── AUTHORS ── */}
+{/* ── AUTHORS ── */}
       {product.authors?.length > 0 && (
         <div className="mt-8 sm:mt-10 px-5 xl:px-1">
-          <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">About the author</h2>
-          <div className="space-y-4">
-            {product.authors.map((a) => (
-              <div key={a.id} className="flex items-start gap-3 sm:gap-4 rounded p-2 sm:p-3">
-                <div className="flex-shrink-0 w-14 h-14 sm:w-20 sm:h-20">
-                  <Link href={`/author/${a.slug}`}>
-                    <Image
-                      src={a.image ? `${API_URL}${a.image}` : `/default-author.png`}
-                      width={80} height={80}
-                      className="w-14 h-14 sm:w-20 sm:h-20 rounded-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
-                      unoptimized alt={a.name}
-                    />
-                  </Link>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <Link
-                    href={`/author/${a.slug}`}
-                    className="font-medium text-sm sm:text-base block hover:underline hover:text-black transition-colors"
-                  >
-                    {a.name}
-                  </Link>
-                  {a.bio && (
-                    <p className="text-xs sm:text-sm text-gray-600 mt-1 leading-relaxed break-words">
-                      {expandedAuthors[a.id]
-                        ? a.bio
-                        : getShortBio(a.bio, 60) + (a.bio.split(" ").length > 60 ? "..." : "")}
-                    </p>
-                  )}
-                  {a.bio && a.bio.split(" ").length > 60 && (
-                    <button
-                      onClick={() => setExpandedAuthors((prev) => ({ ...prev, [a.id]: !prev[a.id] }))}
-                      className="mt-1 text-xs sm:text-sm font-medium text-black hover:underline"
+          <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6">About the Author</h2>
+          <div className="space-y-6">
+            {product.authors.map((a) => {
+              const isLongBio = a.bio && a.bio.split(" ").length > 40;
+              
+              return (
+                <div key={a.id} className="flex items-start gap-4 sm:gap-6  rounded-lg p-4 sm:p-5 border border-gray-100">
+                  <div className="flex-shrink-0 w-16 h-16 sm:w-24 sm:h-24">
+                    <Link href={`/author/${a.slug}`}>
+                      <Image
+                        src={a.image ? `${API_URL}${a.image}` : `/default-author.png`}
+                        width={96} height={96}
+                        className="w-13 h-13 sm:w-18 sm:h-18 rounded-full object-cover shadow-sm cursor-pointer hover:opacity-80 transition-opacity"
+                        unoptimized alt={a.name}
+                      />
+                    </Link>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <Link
+                      href={`/author/${a.slug}`}
+                      className="font-semibold font-serif text-base sm:text-lg block hover:underline hover:text-blue-600 transition-colors mb-1"
                     >
-                      {expandedAuthors[a.id] ? "Read less" : "Read more"}
-                    </button>
-                  )}
+                      {a.name}
+                    </Link>
+                    {a.bio && (
+                      <div className="relative">
+                        <p 
+                          // 👇 Add whitespace-pre-wrap right here
+                          className={`whitespace-pre-wrap text-sm text-gray-600 leading-relaxed break-words text-justify ${
+                            expandedAuthors[a.id] ? "" : "line-clamp-3 overflow-hidden"
+                          }`}
+                        >
+                          {a.bio}
+                        </p>
+                        {isLongBio && (
+                          <button
+                            onClick={() => setExpandedAuthors((prev) => ({ ...prev, [a.id]: !prev[a.id] }))}
+                            className="mt-2 text-sm font-semibold text-blue-600 hover:text-blue-800 hover:underline"
+                          >
+                            {expandedAuthors[a.id] ? "Read less" : "Read more"}
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
