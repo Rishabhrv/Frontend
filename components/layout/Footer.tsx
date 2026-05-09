@@ -103,7 +103,7 @@ const Footer = () => {
               <Image src="/images/logo/agph2-200x121.webp" alt="AGPH Store Logo" width={130} height={63} priority />
             </Link>
             <p className="text-white text-xs leading-relaxed mb-4 text-justify">
-              At AGPH Books Store, we believe every book carries the power to inspire, educate, and transform. With over 3 years of dedicated experience in the publishing industry, we've proudly brought more than 1,500 books to life across diverse genres, supported 2,500+ authors, and reached readers across the globe with over 50,000 copies sold.
+              At AGPH Books Store, we believe every book carries the power to inspire, educate, and transform. With years of dedicated experience in the publishing industry, we've proudly brought more than 1,500 books to life across diverse genres, supported 2,500+ authors, and reached readers across the globe with over 50,000 copies sold.
             </p>
             <div className="inline-flex self-start items-center px-3 py-1.5 rounded-full border border-gray-200 bg-gray-50 text-[10px] tracking-[0.2em] uppercase text-gray-500 mb-5">
               Read · Publish · Grow

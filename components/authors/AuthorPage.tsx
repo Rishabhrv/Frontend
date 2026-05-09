@@ -246,15 +246,14 @@ export default function AuthorPage({ params }: Props) {
               {/* Bio */}
               {author.bio ? (
                 <div>
-                  <p
+                  <div
                     ref={bioRef}
-                    className={`text-gray-500 text-[15px] leading-[1.85] transition-all ${
-                      bioExpanded ? "" : "line-clamp-5"
-                    }`}
+                    className={`whitespace-pre-wrap text-gray-500 text-[15px] leading-[1.85] justify-text transition-all max-w-none ${
+                      bioExpanded ? "" : "line-clamp-5 overflow-hidden"
+                    } [&>p]:mb-4`}
                     style={{ fontFamily: "Garamond, Georgia, serif" }}
-                  >
-                    {author.bio}
-                  </p>
+                    dangerouslySetInnerHTML={{ __html: author.bio }}
+                  />
                   {bioOverflows && (
                     <button
                       onClick={() => setBioExpanded(!bioExpanded)}
