@@ -4,7 +4,8 @@ import { useRouter } from "next/navigation";
 type PageKey =
   | "products" | "orders"   | "category" | "subject"
   | "author"   | "users"    | "reviews"  | "shipping"
-  | "subscriptions" | "payment" | "coupons" | "ads";
+  | "subscriptions" | "payment" | "coupons" | "ads"
+  | "settings" ;
 
 interface PermissionsResponse {
   pages: PageKey[];
