@@ -7,7 +7,8 @@ import { usePermissions } from "@/hooks/usePermissions";
 type PageKey =
   | "products" | "orders"   | "category" | "subject"
   | "author"   | "users"    | "reviews"  | "shipping"
-  | "subscriptions" | "payment" | "coupons" | "ads";
+  | "subscriptions" | "payment" | "coupons" | "ads"
+  | "settings" ;
 
 interface AdminGuardProps {
   pageKey: PageKey;

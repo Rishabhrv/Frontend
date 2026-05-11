@@ -6,6 +6,8 @@ import Sidebar from "@/components/admin/Sidebar";
 import Header from "@/components/admin/Header";
 import AlertPopup from "@/components/Popups/AlertPopup";
 import AdminGuard  from "@/components/admin/AdminGuard";
+import { ReceiptData } from "@/utils/generateReceipt";
+import { ReceiptButtons } from "@/components/orders/Receiptbuttons";
 
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
@@ -99,6 +101,8 @@ function ShippingTracker({ current }: { current: string }) {
   );
 }
 
+
+
 /* ══════════════════════════════════════════════════════════ */
 export default function OrderDetailPage() {
   const { query, back } = useRouter();
@@ -171,6 +175,8 @@ export default function OrderDetailPage() {
     }
   };
 
+  
+
   if (!data) {
     return (
       <div className="flex h-screen items-center justify-center text-gray-400 text-sm gap-2">
@@ -187,6 +193,8 @@ export default function OrderDetailPage() {
   const ebookItems     = items.filter((i: any) => i.format === "ebook");
   const paperbackItems = items.filter((i: any) => i.format === "paperback");
   const isEbookOnly    = paperbackItems.length === 0 && ebookItems.length > 0; // ← ADD
+  const receiptData: ReceiptData = { order, customer, billing, shipping, items };
+
 
   const labelCls = "block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1";
   const inputCls = "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition";
@@ -208,6 +216,7 @@ export default function OrderDetailPage() {
             <div className="flex items-center gap-3 flex-wrap">
               <h1 className="text-xl font-bold text-gray-800">Order #{order.id}</h1>
               <Badge value={unifiedStatus} />
+              <ReceiptButtons receiptData={receiptData} items={items} unifiedStatus={unifiedStatus} />
 
               <span className="text-xs text-gray-400 ml-auto">
                 Placed {formatDateTime(order.created_at)}
@@ -359,9 +368,8 @@ export default function OrderDetailPage() {
 
             {/* ── RIGHT SIDEBAR (1/3) ── */}
             <div className="space-y-5">
-
-              {/* Shipping tracker — only when order is active and not pending/cancelled */}
-{shipping?.status && !isEbookOnly && !["pending", "cancelled"].includes(unifiedStatus) && (
+              {/* Shipping tracker — only when order is active and not pending/cancelled */} 
+                {shipping?.status && !isEbookOnly && !["pending", "cancelled"].includes(unifiedStatus) && (
                 <div className="bg-white border border-gray-200 rounded-xl p-5">
                   <h3 className="text-sm font-semibold text-gray-700 border-b border-gray-100 pb-2 mb-4">Shipment Progress</h3>
                   <ShippingTracker current={shipping.status} />

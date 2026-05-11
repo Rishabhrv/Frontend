@@ -15,7 +15,8 @@ import { usePermissions } from "@/hooks/usePermissions";
 type PageKey =
   | "products" | "orders"   | "category" | "subject"
   | "author"   | "users"    | "reviews"  | "shipping"
-  | "subscriptions" | "payment" | "coupons" | "ads";
+  | "subscriptions" | "payment" | "coupons" | "ads" 
+  | "settings";
 
 interface NavItem {
   key: PageKey;
@@ -37,6 +38,8 @@ const NAV_ITEMS: NavItem[] = [
   { key: "payment",       label: "Payment",      icon: BadgeIndianRupee,             href: "/admin/payment/PaymentPage",           pathPrefix: "/admin/payment"        },
   { key: "coupons",       label: "Coupons",      icon: BadgePercent,                 href: "/admin/coupon/CouponPage",             pathPrefix: "/admin/coupon"         },
   { key: "ads",           label: "Ads",          icon: Megaphone,                    href: "/admin/ads/AdPage",                    pathPrefix: "/admin/ads"            },
+  { key: "settings",      label: "Settings",     icon: ShieldOff,                    href: "/admin/settings/SettingsPage",         pathPrefix: "/admin/settings"       },
+
 ];
 
 export default function Sidebar() {
