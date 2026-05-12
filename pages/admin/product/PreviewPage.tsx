@@ -32,8 +32,9 @@ export default function AdminPreviewPage() {
   const [searching, setSearching] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [bookReady, setBookReady] = useState(false);
-  const [mainImage, setMainImage] = useState<string | null>(null);
   const [showCover, setShowCover] = useState(true);
+  const [mainImage, setMainImage] = useState<string | null>(null);
+  const [ebookCover, setEbookCover] = useState<string | null>(null);
 
   useEffect(() => {
     document.title = `Preview — ${title || "E-Book"} | Admin`;
@@ -48,7 +49,10 @@ export default function AdminPreviewPage() {
       .then((r) => r.json())
       .then((d) => {
         setTitle(d.title || "");
+        
+        // ✅ Store BOTH images in state
         if (d.main_image) setMainImage(`${API_URL}${d.main_image}`);
+        if (d.ebook_cover) setEbookCover(`${API_URL}${d.ebook_cover}`);
       })
       .catch(() => {});
   }, [slug]);
@@ -241,6 +245,8 @@ export default function AdminPreviewPage() {
   };
 
   if (!slug) return null;
+
+  const activeCover = pageMode === "single" ? mainImage : (ebookCover || mainImage);
 
   return (
     <div className="fixed inset-0 flex bg-[#1e1e1e] text-white">
@@ -514,10 +520,10 @@ export default function AdminPreviewPage() {
           </div>
 
           {/* COVER OVERLAY */}
-          {showCover && mainImage && !loading && (
+          {showCover && activeCover && !loading && (
             <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-[#1e1e1e]">
               <img 
-                src={mainImage} 
+                src={activeCover} 
                 alt="Book Cover" 
                 className="max-h-[75vh] w-auto shadow-2xl mb-8 rounded-r-md border border-white/10"
               />
@@ -542,8 +548,9 @@ export default function AdminPreviewPage() {
             <ChevronLeft />
           </button>
 
+          {/* ✅ Fixed this button to check for activeCover instead of mainImage */}
           <button onClick={() => {
-              if (showCover && mainImage) setShowCover(false);
+              if (showCover && activeCover) setShowCover(false);
               else viewRef.current?.next();
             }}
             className="absolute right-8 top-1/2 -translate-y-1/2 bg-white text-black rounded-full p-3 shadow-xl cursor-pointer hover:bg-gray-100 transition-colors z-50">

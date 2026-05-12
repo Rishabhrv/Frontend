@@ -5,17 +5,11 @@ import { useParams } from "next/navigation";
 import {
   ChevronLeft,
   ChevronRight,
-  Moon,
-  Sun,
   Menu,
   Plus,
   Minus,
-  BookOpen,
-  StickyNote,
   Search,
-  List,
   Bookmark,
-  BookmarkCheck,
   TextInitial,
   Type,
   X,
@@ -26,12 +20,15 @@ import { faBookmark as regularBookmark } from "@fortawesome/free-regular-svg-ico
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
-
 export default function EpubReaderPage() {
   const { slug } = useParams() as { slug: string };
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const viewRef = useRef<any>(null);
+
+  // ✅ Refs for reliable navigation tracking (Prevents the Cover Glitch)
+  const isAtFirstPageRef = useRef(true);
+  const navState = useRef({ showCover: true, activeCover: null as string | null });
 
   const [title, setTitle] = useState("");
   const [progress, setProgress] = useState(0);
@@ -59,9 +56,19 @@ export default function EpubReaderPage() {
   const [currentPage, setCurrentPage] = useState<number | null>(null);
   const [totalPages, setTotalPages] = useState<number | null>(null);
   const [nextPage, setNextPage] = useState<number | null>(null);
-    const [mainImage, setMainImage] = useState<string | null>(null);
-    const [showCover, setShowCover] = useState(true);
+  
+  // ✅ Distinct image states
+  const [mainImage, setMainImage] = useState<string | null>(null);
+  const [ebookCover, setEbookCover] = useState<string | null>(null);
+  const [showCover, setShowCover] = useState(true);
 
+  // ✅ Dynamic active cover selection
+  const activeCover = pageMode === "single" ? mainImage : (ebookCover || mainImage);
+
+  // ✅ Keep navState in sync
+  useEffect(() => {
+    navState.current = { showCover, activeCover };
+  }, [showCover, activeCover]);
 
   /* ================= DETECT MOBILE ================= */
   useEffect(() => {
@@ -140,7 +147,9 @@ export default function EpubReaderPage() {
       .then((r) => r.json())
       .then((d) => {
         setTitle(d.title || "");
+        // ✅ Store BOTH images in state
         if (d.main_image) setMainImage(`${API_URL}${d.main_image}`);
+        if (d.ebook_cover) setEbookCover(`${API_URL}${d.ebook_cover}`);
       })
       .catch(() => {});
   }, [slug]);
@@ -170,16 +179,18 @@ export default function EpubReaderPage() {
 
       view.addEventListener("relocate", async (e: any) => {
         setProgress(Math.round(e.detail.fraction * 100));
+        // ✅ Track first page robustly
+        isAtFirstPageRef.current = e.detail.atStart === true || e.detail.location?.atStart === true || e.detail.fraction <= 0.001;
+
         const cfi = e.detail.cfi;
         if (!cfi) return;
         setCurrentCfi(cfi);
-            const loc = e.detail.location;
-            if (loc) {
-              setCurrentPage(loc.current ?? null);
-              setNextPage(loc.next ?? null);        // ← add this
-              setTotalPages(loc.total ?? null);
-            }
-        const token = localStorage.getItem("token");
+        const loc = e.detail.location;
+        if (loc) {
+          setCurrentPage(loc.current ?? null);
+          setNextPage(loc.next ?? null);
+          setTotalPages(loc.total ?? null);
+        }
         try {
           await fetch(`${API_URL}/api/my-books/${slug}/progress`, {
             method: "POST",
@@ -190,7 +201,6 @@ export default function EpubReaderPage() {
         if (!annotationsApplied) {
           annotationsApplied = true;
           try {
-            const token = localStorage.getItem("token");
             const res = await fetch(`${API_URL}/api/my-books/${slug}/bookmarks`, {
               headers: { Authorization: `Bearer ${token}` },
             });
@@ -205,7 +215,6 @@ export default function EpubReaderPage() {
 
       await view.open(url);
       try {
-        const token = localStorage.getItem("token");
         const res = await fetch(`${API_URL}/api/my-books/continue`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -240,12 +249,16 @@ export default function EpubReaderPage() {
         if (!doc) return;
         doc.documentElement.style.fontSize = `${fontSize}%`;
         doc.documentElement.style.fontFamily = fontFamily;
-        const style = doc.createElement("style");
+        let style = doc.getElementById("foliate-custom-css");
+        if (!style) {
+          style = doc.createElement("style");
+          style.id = "foliate-custom-css";
+          doc.head.appendChild(style);
+        }
         style.innerHTML = `
           html, body, p, div, span, li, blockquote { line-height: ${lineHeight} !important; }
           * { -webkit-user-select: none !important; -moz-user-select: none !important; user-select: none !important; }
         `;
-        doc.head.appendChild(style);
         const blockEvent = (e: Event) => e.preventDefault();
         doc.addEventListener("copy", blockEvent);
         doc.addEventListener("cut", blockEvent);
@@ -256,7 +269,7 @@ export default function EpubReaderPage() {
         });
       });
     };
-    applyTypography();
+    setTimeout(applyTypography, 100);
     viewRef.current.addEventListener("load", applyTypography);
     return () => viewRef.current?.removeEventListener("load", applyTypography);
   }, [fontSize, fontFamily, lineHeight, bookReady]);
@@ -309,22 +322,31 @@ export default function EpubReaderPage() {
     setIsBookmarked(bookmarks.some((b) => cfi.startsWith(b.cfi) || b.cfi.startsWith(cfi)));
   }, [bookmarks]);
 
-  /* ================= KEYBOARD + WHEEL NAV ================= */
- useEffect(() => {
-    const handleNext = () => {
-      setShowCover((prev) => {
-        if (prev) return false;
-        viewRef.current?.next();
-        return false;
-      });
-    }; 
-    const handlePrev = () => {
-      if (viewRef.current?.location?.start?.index === 0) {
-        setShowCover(true);
-      } else {
-        viewRef.current?.prev();
-      }
-    }; 
+  /* ================= NAVIGATION HANDLERS ================= */
+  // ✅ Centralized logic exactly like the admin panel fix
+  const handleNext = () => {
+    const { showCover, activeCover } = navState.current;
+    if (showCover && activeCover) {
+      setShowCover(false);
+    } else {
+      viewRef.current?.next();
+    }
+  };
+
+  const handlePrev = () => {
+    const { showCover } = navState.current;
+    if (showCover) return; 
+
+    const isAtStart = isAtFirstPageRef.current || viewRef.current?.location?.atStart;
+    if (isAtStart) {
+      setShowCover(true); 
+    } else {
+      viewRef.current?.prev(); 
+    }
+  };
+
+  /* ================= KEYBOARD + TOUCH ================= */
+  useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "ArrowRight" || e.key === "ArrowDown") handleNext();
       else if (e.key === "ArrowLeft" || e.key === "ArrowUp") handlePrev();
@@ -340,15 +362,14 @@ export default function EpubReaderPage() {
     };
   }, []);
 
-  /* ================= TOUCH SWIPE NAV ================= */
   useEffect(() => {
     let touchStartX = 0;
     const handleTouchStart = (e: TouchEvent) => { touchStartX = e.touches[0].clientX; };
     const handleTouchEnd = (e: TouchEvent) => {
       const diff = touchStartX - e.changedTouches[0].clientX;
       if (Math.abs(diff) > 50) {
-        if (diff > 0) viewRef.current?.next();
-        else viewRef.current?.prev();
+        if (diff > 0) handleNext();
+        else handlePrev();
       }
     };
     window.addEventListener("touchstart", handleTouchStart, { passive: true });
@@ -366,7 +387,6 @@ export default function EpubReaderPage() {
     setSidebarOpen(true);
   };
 
-  /* ── Bookmark click handler (shared between mobile top bar & desktop) ── */
   const handleBookmarkClick = () => {
     const location = viewRef.current?.lastLocation;
     if (!location?.cfi) return;
@@ -377,7 +397,6 @@ export default function EpubReaderPage() {
     setNoteModalOpen(true);
   };
 
-  /* ── Sidebar panel icon list ── */
   const panelIcons = [
     { id: "search" as const, icon: <Search size={16} />, label: "Search" },
     { id: "toc" as const, icon: <Type size={16} />, label: "Contents" },
@@ -390,9 +409,7 @@ export default function EpubReaderPage() {
       className="fixed z-150 inset-0 flex flex-col bg-[#1e1e1e] text-white"
       style={{ userSelect: "none", WebkitUserSelect: "none" }}
     >
-      {/* ========================================================
-          MOBILE TOP BAR  (visible only on <md)
-      ======================================================== */}
+      {/* MOBILE TOP BAR */}
       <div className="md:hidden flex items-center justify-between px-3 py-2 bg-[#141414] border-b border-white/5 shrink-0">
         <button
           onClick={() => setSidebarOpen((v) => !v)}
@@ -417,12 +434,10 @@ export default function EpubReaderPage() {
         </div>
       </div>
 
-      {/* ========================================================
-          MAIN BODY: sidebar + reader
-      ======================================================== */}
+      {/* MAIN BODY: sidebar + reader */}
       <div className="flex flex-1 min-h-0 relative">
 
-        {/* ── MOBILE BACKDROP ── */}
+        {/* MOBILE BACKDROP */}
         {sidebarOpen && isMobile && (
           <div
             className="md:hidden fixed inset-0 bg-black/60 z-30"
@@ -430,7 +445,7 @@ export default function EpubReaderPage() {
           />
         )}
 
-        {/* ===== SIDEBAR ===== */}
+        {/* SIDEBAR */}
         <div
           className={`
             fixed md:relative
@@ -506,7 +521,7 @@ export default function EpubReaderPage() {
 
               <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10">
 
-                {/* ── SEARCH ── */}
+                {/* SEARCH */}
                 {panel === "search" && (
                   <div className="p-4">
                     <div className="relative mb-4">
@@ -557,7 +572,7 @@ export default function EpubReaderPage() {
                   </div>
                 )}
 
-                {/* ── TOC ── */}
+                {/* TOC */}
                 {panel === "toc" && (
                   <div className="py-2">
                     <button
@@ -582,7 +597,7 @@ export default function EpubReaderPage() {
                   </div>
                 )}
 
-                {/* ── BOOKMARKS ── */}
+                {/* BOOKMARKS */}
                 {panel === "bookmarks" && (
                   <div className="p-4">
                     <div className="flex items-center justify-between mb-4">
@@ -637,7 +652,7 @@ export default function EpubReaderPage() {
                   </div>
                 )}
 
-                {/* ── TYPOGRAPHY ── */}
+                {/* TYPOGRAPHY */}
                 {panel === "typography" && (
                   <div className="p-4 space-y-5">
                     <div>
@@ -737,7 +752,7 @@ export default function EpubReaderPage() {
           )}
         </div>
 
-        {/* ===== READER AREA ===== */}
+        {/* READER AREA */}
         <div className="flex-1 flex flex-col relative min-w-0">
           <div className="flex-1 relative flex items-center justify-center overflow-hidden">
             {loading && (
@@ -746,7 +761,7 @@ export default function EpubReaderPage() {
               </div>
             )}
 
-            {/* Fullscreen button — desktop only */}
+            {/* Fullscreen button */}
             <button
               onClick={toggleFullscreen}
               title="Full Screen"
@@ -755,10 +770,10 @@ export default function EpubReaderPage() {
               ⛶
             </button>
 
-            {/* ── BOOK CONTAINER WRAPPER ── */}
+            {/* BOOK CONTAINER WRAPPER */}
             <div className="relative p-[3px] w-full h-full flex items-center justify-center">
 
-              {/* Blur overlay on focus loss */}
+              {/* Blur overlay */}
               {isBlurred && (
                 <div
                   className="absolute inset-0 z-50 flex flex-col items-center justify-center rounded"
@@ -772,24 +787,23 @@ export default function EpubReaderPage() {
                 </div>
               )}
 
-               {showCover && mainImage && !loading && (
-            <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-[#1e1e1e]">
-              <img 
-                src={mainImage} 
-                alt="Book Cover" 
-                className="max-h-[75vh] w-auto shadow-2xl mb-8 rounded-r-md border border-white/10"
-              />
-            </div>
-          )}
+              {/* ✅ SHOW COVER LOGIC */}
+              {showCover && activeCover && !loading && (
+                <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-[#171717]">
+                  <img 
+                    src={activeCover} 
+                    alt="Book Cover" 
+                    className="max-h-[85vh] w-auto mb-8  "
+                  />
+                </div>
+              )}
 
-              {/* Double-page divider — desktop only */}
+              {/* Double-page divider */}
               {pageMode === "double" && !isMobile && (
                 <div className="pointer-events-none absolute top-4 bottom-4 left-1/2 -translate-x-1/2 w-px bg-gray-300 z-30 my-10" />
               )}
 
-              {/* ── THE READER + BOOKMARK BUTTON WRAPPER ──
-                  Bookmark is positioned inside the reader bounds (top-right corner)
-              */}
+              {/* Foliate reader wrapper */}
               <div
                 className={`
                   relative
@@ -798,7 +812,7 @@ export default function EpubReaderPage() {
                   lg:w-[900px] lg:h-[90vh]
                 `}
               >
-                {/* Bookmark button — desktop only, anchored inside the reader top-right */}
+                {/* Bookmark button */}
                 <button
                   onClick={handleBookmarkClick}
                   className="hidden md:flex absolute top-0 right-3 z-40 cursor-pointer transition-all"
@@ -839,33 +853,22 @@ export default function EpubReaderPage() {
               </div>
             </div>
 
-            {/* ── PREV / NEXT — desktop side buttons ── */}
-            <button onClick={() => {
-              if (viewRef.current?.location?.start?.index === 0) setShowCover(true);
-              else viewRef.current?.prev();
-            }}
-            className="absolute left-8 top-1/2 -translate-y-1/2 bg-white text-black rounded-full p-3 shadow-xl cursor-pointer hover:bg-gray-100 transition-colors z-50">
+            {/* PREV / NEXT DESKTOP BUTTONS */}
+            <button onClick={handlePrev}
+            className="absolute left-8 hidden md:flex top-1/2 -translate-y-1/2 bg-white text-black rounded-full p-3 shadow-xl cursor-pointer hover:bg-gray-100 transition-colors z-50">
             <ChevronLeft />
           </button>
 
-          <button onClick={() => {
-              if (showCover && mainImage) setShowCover(false);
-              else viewRef.current?.next();
-            }}
-            className="absolute right-8 top-1/2 -translate-y-1/2 bg-white text-black rounded-full p-3 shadow-xl cursor-pointer hover:bg-gray-100 transition-colors z-50">
+          <button onClick={handleNext}
+            className="absolute right-8 hidden md:flex top-1/2 -translate-y-1/2 bg-white text-black rounded-full p-3 shadow-xl cursor-pointer hover:bg-gray-100 transition-colors z-50">
             <ChevronRight />
           </button>
           </div>
 
-          {/* ========================================================
-              MOBILE BOTTOM BAR — prev/next + quick panel icons
-          ======================================================== */}
+          {/* MOBILE BOTTOM BAR */}
           <div className="md:hidden flex items-center justify-between px-4 py-3 bg-[#141414] border-t border-white/5 shrink-0">
             <button
-              onClick={() => {
-              if (viewRef.current?.location?.start?.index === 0) setShowCover(true);
-              else viewRef.current?.prev();
-            }}
+              onClick={handlePrev}
               className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 text-white active:bg-white/20 transition-colors cursor-pointer"
             >
               <ChevronLeft size={20} />
@@ -888,10 +891,7 @@ export default function EpubReaderPage() {
             </div>
 
             <button
-              onClick={() => {
-              if (showCover && mainImage) setShowCover(false);
-              else viewRef.current?.next();
-            }}
+              onClick={handleNext}
               className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 text-white active:bg-white/20 transition-colors cursor-pointer"
             >
               <ChevronRight size={20} />
@@ -900,9 +900,7 @@ export default function EpubReaderPage() {
         </div>
       </div>
 
-      {/* ========================================================
-          NOTE / BOOKMARK MODAL
-      ======================================================== */}
+      {/* NOTE / BOOKMARK MODAL */}
       {noteModalOpen && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 px-4">
           <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl border border-gray-100">

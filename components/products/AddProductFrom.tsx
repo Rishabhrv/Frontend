@@ -140,6 +140,8 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
   const [mainImageUrl, setMainImageUrl] = useState<string | null>(null);
   const [imprintFilter, setImprintFilter] = useState<"agph" | "agclassics">("agph");
   const [bookId, setBookId] = useState("");
+  const [ebookCoverFile, setEbookCoverFile] = useState<File | null>(null);
+  const [existingEbookCover, setExistingEbookCover] = useState<string | null>(null);
 
 
   // ── Unsaved-changes guard ────────────────────────────────────────
@@ -293,6 +295,9 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
           setExistingEbook(`${API_URL}${data.ebook_path}`);
           setExistingEbookType(data.ebook_type);
         }
+        if (data.ebook_cover) {
+          setExistingEbookCover(`${API_URL}${data.ebook_cover}`);
+        }
         setEbookPrice(data.ebook_price ?? "");
         setEbookSellPrice(data.ebook_sell_price ?? "");
         setBookId(data.book_id ? String(data.book_id) : "");
@@ -396,6 +401,9 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
     formData.append("keywords", keywords);
     formData.append("subjects", JSON.stringify(selectedSubjects));
     formData.append("book_id", bookId);
+    if (ebookCoverFile) {
+      formData.append("ebook_cover", ebookCoverFile);
+    }
     if (productId) formData.append("product_id", String(productId));
     try {
       const res = await fetch(`${API_URL}/api/products/convert-doc`, {
@@ -464,6 +472,9 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
       if (galleryData.newUrls?.length) {
         formData.append("galleryUrls", JSON.stringify(galleryData.newUrls));
       }
+    }
+    if (ebookCoverFile) {
+      formData.append("ebook_cover", ebookCoverFile);
     }
     formData.append("subjects", JSON.stringify(selectedSubjects));
 
@@ -654,11 +665,12 @@ useEffect(() => {
             </div>
           </div>
 
-          {/* E-BOOK FILE */}
+          {/* E-BOOK FILE AND COVER */}
           {(productType === "ebook" || productType === "both") && (
             <div className="bg-white rounded-xl border border-gray-300 p-6">
-              <h2 className="mb-4 font-medium text-gray-700">E-book File</h2>
-              <div className="grid grid-cols-2 gap-4 mb-4">
+              <h2 className="mb-4 font-medium text-gray-700">E-book Assets</h2>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
                   <label className="block text-sm mb-1">E-book Price {isPublishing && <Req />}</label>
                   <input type="number" placeholder="₹0.00"
@@ -675,61 +687,108 @@ useEffect(() => {
                 </div>
               </div>
 
-              {existingEbook && !ebookFile && (
-                <div className="flex justify-between">
-                  <div className="text-sm text-green-700">
-                    📘 Existing file:
-                    <a href={existingEbook} target="_blank" className="ml-1 underline text-blue-600">View / Download</a>
+              <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6 mt-6">
+                {/* LEFT SIDE: E-BOOK FILE */}
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="block text-sm font-medium">E-book Document {isPublishing && <Req />}</label>
+                    {existingEbook && !ebookFile && (
+                      <div className="text-sm text-green-700">
+                        <a href={existingEbook} target="_blank" className="underline text-blue-600">View File</a>
+                        {mode === "edit" && existingEbookType === "epub" && (
+                          <button type="button" onClick={handlePreview} className="ml-2 p-1 bg-gray-800 text-white rounded hover:bg-gray-700 cursor-pointer inline-flex items-center">
+                            <Eye width={14} height={14} />
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  {mode === "edit" && existingEbookType === "epub" && !ebookFile && (
-                    <div className="mt-3">
-                      <button type="button" onClick={handlePreview}
-                        className="p-1 m-1 bg-gray-800 text-white rounded hover:bg-gray-700 cursor-pointer">
-                        <Eye width={20} height={20} />
+
+                  <label className="cursor-pointer block">
+                    <div className={`flex cursor-pointer h-40 w-full flex-col items-center justify-center rounded-lg border-2 border-dashed bg-gray-50 text-center hover:border-blue-500 overflow-hidden transition-colors ${errors.ebookFile ? "border-red-400" : "border-gray-300"}`}>
+                      <div className="text-gray-500">
+                        <Upload className="mx-auto mb-2 h-6 w-6" />
+                        <p className="text-sm">
+                          {ebookFile ? ebookFile.name : existingEbook ? "Replace e-book document" : "Upload DOCX or EPUB"}
+                        </p>
+                      </div>
+                    </div>
+                    <input type="file" accept=".doc,.docx,.epub" hidden
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const ext = file.name.split(".").pop()?.toLowerCase();
+                        setNeedsConversion(ext === "doc" || ext === "docx");
+                        setEbookFile(file);
+                        clearError("ebookFile");
+                      }} />
+                  </label>
+                  {errors.ebookFile && <p className="text-red-500 text-xs mt-1">{errors.ebookFile}</p>}
+
+                  {needsConversion && ebookFile && !convertedFilePath && (
+                    <div className="mt-3 text-center">
+                      <button type="button" disabled={isConverting} onClick={handleConvert}
+                        className="px-4 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700 disabled:opacity-50 cursor-pointer">
+                        {isConverting ? "Converting..." : "Convert to EPUB"}
+                      </button>
+                    </div>
+                  )}
+                  {convertedFilePath && (
+                    <div className="mt-3 text-center">
+                      <button type="button"
+                        onClick={() => router.push(`/admin/product/TempPreviewPage?temp=${convertedFilePath}&slug=${slug}`)}
+                        className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 cursor-pointer">
+                        Preview Converted EPUB
                       </button>
                     </div>
                   )}
                 </div>
-              )}
 
-              <label className="cursor-pointer block">
-                <div className={`flex items-center justify-center border-2 border-dashed rounded-lg p-6 text-center hover:border-blue-500 ${errors.ebookFile ? "border-red-400" : "border-gray-300"}`}>
-                  <div className="text-gray-500">
-                    <Upload className="mx-auto mb-2 h-6 w-6" />
-                    <p className="text-sm">
-                      {ebookFile ? ebookFile.name : existingEbook ? "Replace e-book file" : "Drag & drop file or browse"}
-                    </p>
+                {/* RIGHT SIDE: E-BOOK COVER */}
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="block text-sm font-medium">E-book Cover Image</label>
+                    {existingEbookCover && !ebookCoverFile && (
+                      <div className="text-sm text-green-700">
+                        <a href={existingEbookCover} target="_blank" className="underline text-blue-600">View Cover</a>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="w-full">
+                    <label className="cursor-pointer block">
+                      <div className={`flex cursor-pointer h-40 w-full flex-col items-center justify-center rounded-lg border-2 border-dashed bg-gray-50 text-center hover:border-blue-500 overflow-hidden transition-colors border-gray-300`}>
+                        {(ebookCoverFile || existingEbookCover) ? (
+                          <img 
+                            src={ebookCoverFile ? URL.createObjectURL(ebookCoverFile) : existingEbookCover!} 
+                            alt="Ebook cover" 
+                            className="h-full w-full object-cover" 
+                          />
+                        ) : (
+                          <>
+                            <span className="text-sm text-gray-500">Upload E-book Cover</span>
+                            <span className="mt-1 text-xs text-gray-400">JPG, PNG</span>
+                          </>
+                        )}
+                      </div>
+                      <input type="file" accept="image/*" hidden
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          setEbookCoverFile(file);
+                        }} />
+                    </label>
+                    {(ebookCoverFile || existingEbookCover) && (
+                      <button type="button"
+                        onClick={() => { setEbookCoverFile(null); setExistingEbookCover(null); }}
+                        className="mt-2 text-xs text-red-500 hover:underline w-full text-center cursor-pointer">
+                        Remove cover
+                      </button>
+                    )}
                   </div>
                 </div>
-                <input type="file" accept=".doc,.docx,.epub" hidden
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    const ext = file.name.split(".").pop()?.toLowerCase();
-                    setNeedsConversion(ext === "doc" || ext === "docx");
-                    setEbookFile(file);
-                    clearError("ebookFile");
-                  }} />
-              </label>
-              {errors.ebookFile && <p className="text-red-500 text-xs mt-1">{errors.ebookFile}</p>}
 
-              {needsConversion && ebookFile && !convertedFilePath && (
-                <div className="mt-3">
-                  <button type="button" disabled={isConverting} onClick={handleConvert}
-                    className="px-4 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700 disabled:opacity-50 cursor-pointer">
-                    {isConverting ? "Converting..." : "Convert to EPUB"}
-                  </button>
-                </div>
-              )}
-              {convertedFilePath && (
-                <div className="mt-3">
-                  <button type="button"
-                    onClick={() => router.push(`/admin/product/TempPreviewPage?temp=${convertedFilePath}&slug=${slug}`)}
-                    className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 cursor-pointer">
-                    Preview Converted EPUB
-                  </button>
-                </div>
-              )}
+              </div>
             </div>
           )}
 
