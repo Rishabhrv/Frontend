@@ -10,6 +10,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 export default function TempPreviewPage() {
   const searchParams = useSearchParams();
   const tempFile = searchParams?.get("temp") ?? "";
+  const slug = searchParams?.get("slug") ?? "";
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const viewRef = useRef<any>(null);
@@ -29,6 +30,11 @@ export default function TempPreviewPage() {
   const [searching, setSearching] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [bookReady, setBookReady] = useState(false);
+  const [showCover, setShowCover] = useState(true);
+  const [mainImage, setMainImage] = useState<string | null>(null);
+  const [ebookCover, setEbookCover] = useState<string | null>(null);
+  
+  
 
   useEffect(() => { document.title = "Temp Preview | Admin Panel"; }, []);
 
@@ -37,47 +43,79 @@ export default function TempPreviewPage() {
   }, []);
 
   /* ================= LOAD BOOK ================= */
-  useEffect(() => {
-    if (!tempFile || !containerRef.current) return;
-    let destroyed = false;
+ /* ================= LOAD BOOK ================= */
+useEffect(() => {
+  if (!tempFile || !containerRef.current) return;
+  let destroyed = false;
 
-    const loadBook = async () => {
-      setLoading(true);
-      setBookReady(false);
+  const loadBook = async () => {
+    setLoading(true);
+    setBookReady(false);
+
+    try {
+      // 1. Ensure the library is loaded first
+      if (typeof window !== "undefined") {
+        await import("@/lib/foliate/view.js");
+      }
+
+      // 2. Wait for the browser to recognize the custom element
+      await customElements.whenDefined("foliate-view");
 
       const res = await fetch(`${API_URL}${tempFile}`);
-      if (!res.ok) { console.error("Temp file not found"); setLoading(false); return; }
+      if (!res.ok) throw new Error("Temp file not found");
 
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       if (destroyed) return;
 
+      // 3. Create and append
       const view = document.createElement("foliate-view") as any;
       containerRef.current!.innerHTML = "";
       containerRef.current!.appendChild(view);
       viewRef.current = view;
 
+      // 4. Setup listeners
       view.addEventListener("relocate", (e: any) => {
         setProgress(Math.round(e.detail.fraction * 100));
       });
 
+      // 5. Now .open() will definitely exist
       await view.open(url);
       view.goTo(0);
 
       setToc(view.book?.toc || []);
-      setLoading(false);
       setBookReady(true);
-    };
+    } catch (err) {
+      console.error("Error loading book:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    loadBook();
+  loadBook();
 
-    return () => {
-      destroyed = true;
-      setBookReady(false);
-      viewRef.current?.close?.();
-      viewRef.current?.remove?.();
-    };
-  }, [tempFile]);
+  return () => {
+    destroyed = true;
+    setBookReady(false);
+    viewRef.current?.close?.();
+    viewRef.current?.remove?.();
+  };
+}, [tempFile]);
+
+
+    useEffect(() => {
+      if (!slug) return;
+      fetch(`${API_URL}/api/admin/ebooksperview/${slug}/meta`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("admin_token")}` },
+      })
+      .then((r) => r.json())
+      .then((d) => {
+        // ✅ Store BOTH images in state
+        if (d.main_image) setMainImage(`${API_URL}${d.main_image}`);
+        if (d.ebook_cover) setEbookCover(`${API_URL}${d.ebook_cover}`);
+      })
+        .catch(() => {});
+    }, [slug]);
 
   /* ================= TYPOGRAPHY ================= */
   useEffect(() => {
@@ -140,17 +178,34 @@ export default function TempPreviewPage() {
   }, [pageMode]);
 
   /* ================= KEYBOARD + SCROLL ================= */
-  useEffect(() => {
+useEffect(() => {
+    const handleNext = () => {
+      setShowCover((prev) => {
+        if (prev) return false;
+        viewRef.current?.next();
+        return false;
+      });
+    }; 
+    const handlePrev = () => {
+      if (viewRef.current?.location?.start?.index === 0) {
+        setShowCover(true);
+      } else {
+        viewRef.current?.prev();
+      }
+    }; 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "ArrowRight" || e.key === "ArrowDown") viewRef.current?.next();
-      else if (e.key === "ArrowLeft" || e.key === "ArrowUp") viewRef.current?.prev();
+      if (e.key === "ArrowRight" || e.key === "ArrowDown") handleNext();
+      else if (e.key === "ArrowLeft" || e.key === "ArrowUp") handlePrev();
     };
     const handleWheel = (e: WheelEvent) => {
-      e.deltaY > 0 ? viewRef.current?.next() : viewRef.current?.prev();
-    };
+      e.deltaY > 0 ? handleNext() : handlePrev();
+    }; 
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("wheel", handleWheel);
-    return () => { window.removeEventListener("keydown", handleKeyDown); window.removeEventListener("wheel", handleWheel); };
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("wheel", handleWheel);
+    };
   }, []);
 
   const toggleFullscreen = () => {
@@ -159,6 +214,8 @@ export default function TempPreviewPage() {
   };
 
   if (!tempFile) return null;
+
+  const activeCover = pageMode === "single" ? mainImage : (ebookCover || mainImage);
 
   return (
     <div className="fixed inset-0 flex bg-[#1e1e1e] text-white">
@@ -432,6 +489,17 @@ export default function TempPreviewPage() {
             </button>
           </div>
 
+           {/* COVER OVERLAY */}
+          {showCover && activeCover && !loading && (
+            <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-[#1e1e1e]">
+              <img 
+                src={activeCover} 
+                alt="Book Cover" 
+                className="max-h-[75vh] w-auto shadow-2xl mb-8 rounded-r-md border border-white/10"
+              />
+            </div>
+          )}
+
           <div className="relative p-[3px]">
             {pageMode === "double" && (
               <div className="pointer-events-none absolute top-4 bottom-4 left-1/2 -translate-x-1/2 w-px bg-gray-300 z-30" />
@@ -442,13 +510,20 @@ export default function TempPreviewPage() {
             />
           </div>
 
-          <button onClick={() => viewRef.current?.prev()}
-            className="absolute left-8 top-1/2 -translate-y-1/2 bg-white text-black rounded-full p-3 shadow-xl cursor-pointer hover:bg-gray-100 transition-colors">
+          <button onClick={() => {
+              if (viewRef.current?.location?.start?.index === 0) setShowCover(true);
+              else viewRef.current?.prev();
+            }}
+            className="absolute left-8 top-1/2 -translate-y-1/2 bg-white text-black rounded-full p-3 shadow-xl cursor-pointer hover:bg-gray-100 transition-colors z-50">
             <ChevronLeft />
           </button>
 
-          <button onClick={() => viewRef.current?.next()}
-            className="absolute right-8 top-1/2 -translate-y-1/2 bg-white text-black rounded-full p-3 shadow-xl cursor-pointer hover:bg-gray-100 transition-colors">
+          {/* ✅ Fixed this button to check for activeCover instead of mainImage */}
+          <button onClick={() => {
+              if (showCover && activeCover) setShowCover(false);
+              else viewRef.current?.next();
+            }}
+            className="absolute right-8 top-1/2 -translate-y-1/2 bg-white text-black rounded-full p-3 shadow-xl cursor-pointer hover:bg-gray-100 transition-colors z-50">
             <ChevronRight />
           </button>
         </div>
