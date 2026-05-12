@@ -59,6 +59,8 @@ export default function EpubReaderPage() {
   const [currentPage, setCurrentPage] = useState<number | null>(null);
   const [totalPages, setTotalPages] = useState<number | null>(null);
   const [nextPage, setNextPage] = useState<number | null>(null);
+    const [mainImage, setMainImage] = useState<string | null>(null);
+    const [showCover, setShowCover] = useState(true);
 
 
   /* ================= DETECT MOBILE ================= */
@@ -136,7 +138,10 @@ export default function EpubReaderPage() {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => r.json())
-      .then((d) => setTitle(d.title || ""))
+      .then((d) => {
+        setTitle(d.title || "");
+        if (d.main_image) setMainImage(`${API_URL}${d.main_image}`);
+      })
       .catch(() => {});
   }, [slug]);
 
@@ -305,15 +310,28 @@ export default function EpubReaderPage() {
   }, [bookmarks]);
 
   /* ================= KEYBOARD + WHEEL NAV ================= */
-  useEffect(() => {
+ useEffect(() => {
+    const handleNext = () => {
+      setShowCover((prev) => {
+        if (prev) return false;
+        viewRef.current?.next();
+        return false;
+      });
+    }; 
+    const handlePrev = () => {
+      if (viewRef.current?.location?.start?.index === 0) {
+        setShowCover(true);
+      } else {
+        viewRef.current?.prev();
+      }
+    }; 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "ArrowRight" || e.key === "ArrowDown") viewRef.current?.next();
-      else if (e.key === "ArrowLeft" || e.key === "ArrowUp") viewRef.current?.prev();
+      if (e.key === "ArrowRight" || e.key === "ArrowDown") handleNext();
+      else if (e.key === "ArrowLeft" || e.key === "ArrowUp") handlePrev();
     };
     const handleWheel = (e: WheelEvent) => {
-      if (e.deltaY > 0) viewRef.current?.next();
-      else viewRef.current?.prev();
-    };
+      e.deltaY > 0 ? handleNext() : handlePrev();
+    }; 
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("wheel", handleWheel);
     return () => {
@@ -754,6 +772,16 @@ export default function EpubReaderPage() {
                 </div>
               )}
 
+               {showCover && mainImage && !loading && (
+            <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-[#1e1e1e]">
+              <img 
+                src={mainImage} 
+                alt="Book Cover" 
+                className="max-h-[75vh] w-auto shadow-2xl mb-8 rounded-r-md border border-white/10"
+              />
+            </div>
+          )}
+
               {/* Double-page divider — desktop only */}
               {pageMode === "double" && !isMobile && (
                 <div className="pointer-events-none absolute top-4 bottom-4 left-1/2 -translate-x-1/2 w-px bg-gray-300 z-30 my-10" />
@@ -812,18 +840,21 @@ export default function EpubReaderPage() {
             </div>
 
             {/* ── PREV / NEXT — desktop side buttons ── */}
-            <button
-              onClick={() => viewRef.current?.prev()}
-              className="hidden md:flex absolute left-2 lg:left-8 top-1/2 -translate-y-1/2 bg-white text-black rounded-full p-2 lg:p-3 shadow-xl cursor-pointer z-10"
-            >
-              <ChevronLeft size={20} />
-            </button>
-            <button
-              onClick={() => viewRef.current?.next()}
-              className="hidden md:flex absolute right-2 lg:right-8 top-1/2 -translate-y-1/2 bg-white text-black rounded-full p-2 lg:p-3 shadow-xl cursor-pointer z-10"
-            >
-              <ChevronRight size={20} />
-            </button>
+            <button onClick={() => {
+              if (viewRef.current?.location?.start?.index === 0) setShowCover(true);
+              else viewRef.current?.prev();
+            }}
+            className="absolute left-8 top-1/2 -translate-y-1/2 bg-white text-black rounded-full p-3 shadow-xl cursor-pointer hover:bg-gray-100 transition-colors z-50">
+            <ChevronLeft />
+          </button>
+
+          <button onClick={() => {
+              if (showCover && mainImage) setShowCover(false);
+              else viewRef.current?.next();
+            }}
+            className="absolute right-8 top-1/2 -translate-y-1/2 bg-white text-black rounded-full p-3 shadow-xl cursor-pointer hover:bg-gray-100 transition-colors z-50">
+            <ChevronRight />
+          </button>
           </div>
 
           {/* ========================================================
@@ -831,7 +862,10 @@ export default function EpubReaderPage() {
           ======================================================== */}
           <div className="md:hidden flex items-center justify-between px-4 py-3 bg-[#141414] border-t border-white/5 shrink-0">
             <button
-              onClick={() => viewRef.current?.prev()}
+              onClick={() => {
+              if (viewRef.current?.location?.start?.index === 0) setShowCover(true);
+              else viewRef.current?.prev();
+            }}
               className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 text-white active:bg-white/20 transition-colors cursor-pointer"
             >
               <ChevronLeft size={20} />
@@ -854,7 +888,10 @@ export default function EpubReaderPage() {
             </div>
 
             <button
-              onClick={() => viewRef.current?.next()}
+              onClick={() => {
+              if (showCover && mainImage) setShowCover(false);
+              else viewRef.current?.next();
+            }}
               className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 text-white active:bg-white/20 transition-colors cursor-pointer"
             >
               <ChevronRight size={20} />

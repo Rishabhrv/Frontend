@@ -724,7 +724,7 @@ useEffect(() => {
               {convertedFilePath && (
                 <div className="mt-3">
                   <button type="button"
-                    onClick={() => router.push(`/admin/product/TempPreviewPage?temp=${convertedFilePath}`)}
+                    onClick={() => router.push(`/admin/product/TempPreviewPage?temp=${convertedFilePath}&slug=${slug}`)}
                     className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 cursor-pointer">
                     Preview Converted EPUB
                   </button>
