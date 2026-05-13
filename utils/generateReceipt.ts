@@ -210,7 +210,7 @@ function buildInvoice(o: ShellOpts): string {
           <div style="font-size:12px;font-weight:600;color:#000;margin-bottom:10px;">${brandSite}</div>
           <div style="font-size:13px;font-weight:500;color:#000;line-height:1.3;white-space:pre-line;">${brandAddress}</div>
           ${brandGSTIN ? `<div style="font-size:12px;font-weight:600;color:#000;margin-top:6px;">GSTIN: ${brandGSTIN}</div>` : ""}
-          <div style="font-size:13px;font-weight:600;color:#000;margin-top:6px;">Ph: ${brandPhone}</div>
+          <div style="font-size:13px;font-weight:600;color:#000;margin-top:6px;">Phone No: ${brandPhone}</div>
         </div>
       </td>
       
@@ -219,7 +219,7 @@ function buildInvoice(o: ShellOpts): string {
         <div style="padding:14px 16px;">
           <div style="font-size:18px;font-weight:800;color:#000;margin-bottom:6px;">${customer.name}</div>
           ${addrLines.map(l => `<div style="font-size:13px;font-weight:500;color:#000;line-height:1.3;">${l}</div>`).join("")}
-          <div style="font-size:13px;font-weight:600;color:#000;margin-top:10px;">Ph: ${customer.phone ?? "—"}</div>
+          <div style="font-size:13px;font-weight:600;color:#000;margin-top:10px;">Phone No: ${customer.phone ?? "—"}</div>
           <div style="font-size:13px;font-weight:600;color:#000;">${customer.email}</div>
         </div>
       </td>
@@ -266,7 +266,7 @@ function buildInvoice(o: ShellOpts): string {
 const STORE_ADDRESS =
   "First Floor, Susheela Bhawan,\nPriyadarshini Phase-3, 57,\nnear Meenakshi Planet City, Bagmugaliya,\nBhopal, Madhya Pradesh 462043";
 
-const STORE_PHONE = "+91-XXXXXXXXXX"; // replace with actual number
+const STORE_PHONE = "+91-9981933372"; // replace with actual number
 
 function agphReceiptHTML(d: ReceiptData): string {
   return buildInvoice({
