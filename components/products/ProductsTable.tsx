@@ -17,22 +17,38 @@ type Product = {
   book_id?: string | number;
   price: string;
   categories: string[];
-  date: string;
+  date: string; // created_at
+  updated_at: string; // NEW
   status: "published" | "draft" | "trash";
   slug: string;
   description: string;
   meta_title: string;
   meta_description: string;
   keywords: string;
-  product_type: "ebook" | "physical" | "both";  // already exists, just ensure it's typed
+  product_type: "ebook" | "physical" | "both"; 
   imprints: string[]; 
 };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
 /* ═══════════════════════════════════════════════════════════════
-   SHARED SCORE LOGIC
+   HELPERS & SHARED LOGIC
    ═══════════════════════════════════════════════════════════════ */
+
+const formatDateTimeIST = (dateString: string) => {
+  if (!dateString) return "";
+  const d = new Date(dateString);
+  if (isNaN(d.getTime())) return dateString; // Fallback if invalid
+  return d.toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+};
 
 const stripHtml = (html: string) =>
   html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
@@ -175,7 +191,7 @@ function SeoCell({ product }: { product: Product }) {
 export default function ProductsTable() {
   const [search,      setSearch]      = useState("");
   const [bulkAction,  setBulkAction]  = useState("");
-  const [bulkCategoryId, setBulkCategoryId] = useState<number | "">("");  // ← NEW
+  const [bulkCategoryId, setBulkCategoryId] = useState<number | "">(""); 
   const [category,    setCategory]    = useState("");
   const [stockFilter, setStockFilter] = useState("");
   const [activeTab,   setActiveTab]   = useState<"all" | "published" | "draft" | "trash">("published");
@@ -186,7 +202,7 @@ export default function ProductsTable() {
   });
 
   const [products,       setProducts]       = useState<Product[]>([]);
-  const [allCategories,  setAllCategories]  = useState<{ id: number; name: string }[]>([]);  // ← changed to objects
+  const [allCategories,  setAllCategories]  = useState<{ id: number; name: string }[]>([]); 
   const [loading,        setLoading]        = useState(true);
   const [selectedIds,    setSelectedIds]    = useState<number[]>([]);
   const [toastOpen,      setToastOpen]      = useState(false);
@@ -200,20 +216,21 @@ export default function ProductsTable() {
   const [productType, setProductType] = useState("");
   const [imprint, setImprint] = useState("");
 
-useEffect(() => {
+  useEffect(() => {
     fetch(`${API_URL}/api/products/table-product`)
       .then(res => res.json())
       .then(data => {
         setProducts(data.map((p: any) => ({
           ...p,
           status:           p.status.toLowerCase(),
-          book_id:          p.Book_id || p.book_id || "", // Added this line
+          book_id:          p.Book_id || p.book_id || "", 
           meta_title:       p.meta_title      || "",
           meta_description: p.meta_description || "",
           keywords:         p.keywords        || "",
           description:      p.description      || "",
           slug:             p.slug            || "",
           imprints:         p.imprints        || [],
+          updated_at:       p.updated_at      || "", // Mapped updated_at
         })));
         setLoading(false);
       })
@@ -228,7 +245,7 @@ useEffect(() => {
 
   /* ---------------- FILTER + SORT ---------------- */
 
-const filteredProducts = useMemo(() => {
+  const filteredProducts = useMemo(() => {
     let data = products.filter(p => {
       if (activeTab !== "all" && p.status !== activeTab) return false;
       
@@ -487,25 +504,25 @@ const filteredProducts = useMemo(() => {
           </select>
 
           <select
-  value={productType}
-  onChange={e => setProductType(e.target.value)}
-  className="rounded border px-2 py-1 text-sm border-gray-300"
->
-  <option value="">All types</option>
-  <option value="ebook">E-Book</option>
-  <option value="physical">Physical</option>
-  <option value="both">Both</option>
-</select>
+            value={productType}
+            onChange={e => setProductType(e.target.value)}
+            className="rounded border px-2 py-1 text-sm border-gray-300"
+          >
+            <option value="">All types</option>
+            <option value="ebook">E-Book</option>
+            <option value="physical">Physical</option>
+            <option value="both">Both</option>
+          </select>
 
-<select
-  value={imprint}
-  onChange={e => setImprint(e.target.value)}
-  className="rounded border px-2 py-1 text-sm border-gray-300"
->
-  <option value="">All imprints</option>
-  <option value="agph">AGPH</option>
-  <option value="agclassics">AG Classics</option>
-</select>
+          <select
+            value={imprint}
+            onChange={e => setImprint(e.target.value)}
+            className="rounded border px-2 py-1 text-sm border-gray-300"
+          >
+            <option value="">All imprints</option>
+            <option value="agph">AGPH</option>
+            <option value="agclassics">AG Classics</option>
+          </select>
         </div>
 
         <div className="flex items-center gap-2">
@@ -529,25 +546,25 @@ const filteredProducts = useMemo(() => {
                   checked={paginatedProducts.length > 0 && selectedIds.length === paginatedProducts.length}
                   onChange={e => setSelectedIds(e.target.checked ? paginatedProducts.map(p => p.id) : [])} />
               </th>
-              <th className="px-6 py-4 text-left cursor-pointer select-none" onClick={() => handleSort("name")}>
+              <th className="px-3 py-4 text-left cursor-pointer select-none" onClick={() => handleSort("name")}>
                 Product <SortIcon active={sortBy.key === "name"} direction={sortBy.direction} />
               </th>
-              <th className="px-6 py-4 text-left cursor-pointer select-none" onClick={() => handleSort("sku")}>
+              <th className="px-3 py-4 text-left cursor-pointer select-none" onClick={() => handleSort("sku")}>
                 SKU <SortIcon active={sortBy.key === "sku"} direction={sortBy.direction} />
               </th>
-              <th className="px-6 py-4 text-left cursor-pointer select-none" onClick={() => handleSort("stock")}>
+              <th className="px-3 py-4 text-left cursor-pointer select-none" onClick={() => handleSort("stock")}>
                 Stock <SortIcon active={sortBy.key === "stock"} direction={sortBy.direction} />
               </th>
-              <th className="px-6 py-4 text-left cursor-pointer select-none" onClick={() => handleSort("price")}>
+              <th className="px-3 py-4 text-left cursor-pointer select-none" onClick={() => handleSort("price")}>
                 Price <SortIcon active={sortBy.key === "price"} direction={sortBy.direction} />
               </th>
-              <th className="px-6 py-4 text-left">Categories</th>
-              <th className="px-6 py-4 text-left text-xs whitespace-nowrap"
+              <th className="px-3 py-4 text-left">Categories</th>
+              <th className="px-3 py-4 text-left text-xs whitespace-nowrap"
                 title="Left = SEO (17 checks) · Right = Readability (7 checks). Hover for score.">
-                SEO | Readability
+                SEO / Readability
               </th>
-              <th className="px-6 py-4 text-left cursor-pointer select-none" onClick={() => handleSort("date")}>
-                Date <SortIcon active={sortBy.key === "date"} direction={sortBy.direction} />
+              <th className="px-5 py-4 text-left cursor-pointer select-none" onClick={() => handleSort("date")}>
+                Dates <SortIcon active={sortBy.key === "date"} direction={sortBy.direction} />
               </th>
             </tr>
           </thead>
@@ -561,7 +578,7 @@ const filteredProducts = useMemo(() => {
                       prev.includes(product.id) ? prev.filter(id => id !== product.id) : [...prev, product.id]
                     )} />
                 </td>
-                <td className="px-6 py-4">
+                <td className="px-3 py-4">
                   <div className="flex items-center gap-3">
                     <img src={`${API_URL}${product.image}`} alt={product.name}
                       className="h-12 w-12 rounded object-cover" />
@@ -577,7 +594,7 @@ const filteredProducts = useMemo(() => {
                     </div>
                   </div>
                 </td>
-                <td className="px-6 py-4 text-gray-500">
+                <td className="px-3 py-4 text-gray-500">
                   <span className="block">{product.sku}</span>
                   {product.book_id && (
                     <span className="block text-xs text-gray-400 mt-0.5">
@@ -585,11 +602,22 @@ const filteredProducts = useMemo(() => {
                     </span>
                   )}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap"><StockBadge stock={product.stock} /></td>
-                <td className="px-6 py-4 font-medium">{product.price}</td>
-                <td className="px-6 py-4 text-gray-500">{product.categories.join(", ")}</td>
-                <td className="px-6 py-4"><SeoCell product={product} /></td>
-                <td className="px-6 py-4 text-xs text-gray-500">{product.date}</td>
+                <td className="px-3 py-4 whitespace-nowrap"><StockBadge stock={product.stock} /></td>
+                <td className="px-3 py-4 font-medium">{product.price}</td>
+                <td className="px-3 py-4 text-gray-500">{product.categories.join(", ")}</td>
+                <td className="px-3 py-4"><SeoCell product={product} /></td>
+                <td className="px-5 py-4 text-[11px] text-gray-500 whitespace-nowrap">
+                  <div className="mb-1">
+                    <span className="font-medium text-gray-700">Created:</span><br/>
+                    {formatDateTimeIST(product.date)}
+                  </div>
+                  {product.updated_at && (
+                    <div>
+                      <span className="font-medium text-gray-700">Updated:</span><br/>
+                      {formatDateTimeIST(product.updated_at)}
+                    </div>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
