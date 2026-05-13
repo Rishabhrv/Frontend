@@ -27,7 +27,6 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { key: "orders",        label: "Orders",       icon: ShoppingCart,                 href: "/admin/orders/OrdersPage",             pathPrefix: "/admin/orders"         },
   { key: "category",      label: "Category",     icon: Layers,                       href: "/admin/category/addcategories",        pathPrefix: "/admin/category"       },
   { key: "subject",       label: "Subject",      icon: AlignVerticalDistributeStart, href: "/admin/subject/SubjectPage",           pathPrefix: "/admin/subject"        },
   { key: "author",        label: "Book Authors", icon: LibraryBig,                   href: "/admin/author/productauthortable",     pathPrefix: "/admin/author"         },
@@ -44,12 +43,21 @@ const NAV_ITEMS: NavItem[] = [
 
 export default function Sidebar() {
   const pathname = usePathname() ?? "";
-  const [openMenu, setOpenMenu] = useState<"products" | null>(null);
+
+  const [openMenu, setOpenMenu] = useState<"products" | "orders" | null>(null);
+  
   const { can, loading } = usePermissions();
 
   useEffect(() => {
-    if (pathname.startsWith("/admin/product")) setOpenMenu("products");
-    else setOpenMenu(null);
+    if (pathname.startsWith("/admin/product")) {
+      setOpenMenu("products");
+    } 
+    else if (pathname.startsWith("/admin/order")) {
+      setOpenMenu("orders");
+    } 
+    else {
+      setOpenMenu(null);
+    }
   }, [pathname]);
 
   if (loading) {
@@ -95,6 +103,29 @@ export default function Sidebar() {
               label="Add Product"
               href="/admin/product/AddProduct"
               active={pathname === "/admin/product/AddProduct"}
+            />
+          </SidebarItem>
+        )}
+
+        {/* orders */}
+        {can("orders") && (
+          <SidebarItem
+            icon={<ShoppingCart size={18} />}
+            label="Orders"
+            isOpen={openMenu === "orders"}
+            onClick={() =>
+              setOpenMenu(openMenu === "orders" ? null : "orders")
+            }
+          >
+            <SubItem
+              label="Orders List"
+              href="/admin/orders/OrdersPage"
+              active={pathname === "/admin/orders/OrdersPage"}
+            />
+            <SubItem
+              label="Abandoned Cart"
+              href="/admin/orders/AbandonedCartPage"
+              active={pathname === "/admin/orders/AbandonedCartPage"}
             />
           </SidebarItem>
         )}
