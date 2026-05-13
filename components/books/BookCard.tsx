@@ -8,7 +8,7 @@ import {
   addToGuestCart,
   isInGuestWishlist,
   toggleGuestWishlist,
-} from "@/utils/guestStorage";   // ← adjust import path to match your project
+} from "@/utils/guestStorage";
 
 type Book = {
   id: number;
@@ -34,18 +34,32 @@ type BookCardProps = {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
+// Helper function to ensure the token is actually valid
+const isValidToken = (token: string | null) => {
+  return token && token !== "null" && token !== "undefined" && token.trim() !== "";
+};
+
 const BookCard = ({ book, visibleCount, forceFormat }: BookCardProps) => {
-  const [liked,        setLiked]        = useState(false);
-  const [addedToCart,  setAddedToCart]  = useState(false);
+  const [liked, setLiked] = useState(false);
+  const [addedToCart, setAddedToCart] = useState(false);
 
   // ── Wishlist: check server (logged-in) or localStorage (guest) ────────────
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (token) {
+    
+    if (isValidToken(token)) {
       fetch(`${API_URL}/api/wishlist/check/${book.id}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
-        .then((r) => (r.ok ? r.json() : { liked: false }))
+        .then((r) => {
+          if (r.status === 401) {
+            // Token is invalid/expired. Clear it so other components stop trying to use it.
+            localStorage.removeItem("token");
+            window.dispatchEvent(new Event("auth-change"));
+            return { liked: false };
+          }
+          return r.ok ? r.json() : { liked: false };
+        })
         .then((d) => setLiked(!!d.liked))
         .catch(() => setLiked(false));
     } else {
@@ -56,7 +70,8 @@ const BookCard = ({ book, visibleCount, forceFormat }: BookCardProps) => {
   // Keep guest wishlist icon in sync when updated from another component
   useEffect(() => {
     const sync = () => {
-      if (!localStorage.getItem("token")) setLiked(isInGuestWishlist(book.id));
+      const token = localStorage.getItem("token");
+      if (!isValidToken(token)) setLiked(isInGuestWishlist(book.id));
     };
     window.addEventListener("guest-wishlist-change", sync);
     return () => window.removeEventListener("guest-wishlist-change", sync);
@@ -67,29 +82,38 @@ const BookCard = ({ book, visibleCount, forceFormat }: BookCardProps) => {
     e.preventDefault();
     const token = localStorage.getItem("token");
 
-    if (token) {
+    if (isValidToken(token)) {
       // Logged-in: sync with server
       try {
-        const res  = await fetch(`${API_URL}/api/wishlist/${book.id}`, {
-          method:  "POST",
+        const res = await fetch(`${API_URL}/api/wishlist/${book.id}`, {
+          method: "POST",
           headers: { Authorization: `Bearer ${token}` },
         });
+        
+        if (res.status === 401) {
+          localStorage.removeItem("token");
+          window.dispatchEvent(new Event("auth-change"));
+          throw new Error("Unauthorized");
+        }
+        
         if (!res.ok) throw new Error();
         const data = await res.json();
         setLiked(data.status === "added");
         window.dispatchEvent(new Event("wishlist-change"));
-      } catch { console.log("Wishlist failed silently"); }
+      } catch { 
+        console.log("Wishlist failed silently"); 
+      }
     } else {
       // Guest: persist to localStorage
       const nowLiked = toggleGuestWishlist({
-        id:           book.id,
-        title:        book.title,
-        slug:         book.slug,
-        sell_price:   book.sell_price,
-        image:        book.image,
-        author:       book.author,
+        id: book.id,
+        title: book.title,
+        slug: book.slug,
+        sell_price: book.sell_price,
+        image: book.image,
+        author: book.author,
         product_type: book.product_type,
-        stock:        book.stock,
+        stock: book.stock,
       });
       setLiked(nowLiked);
     }
@@ -97,39 +121,52 @@ const BookCard = ({ book, visibleCount, forceFormat }: BookCardProps) => {
 
   // ── Determine format ──────────────────────────────────────────────────────
   const getCartFormat = (): "ebook" | "paperback" => {
-    if (forceFormat)                  return forceFormat;
-    if (book.product_type === "ebook")    return "ebook";
+    if (forceFormat) return forceFormat;
+    if (book.product_type === "ebook") return "ebook";
     if (book.product_type === "physical") return "paperback";
     return book.stock > 0 ? "paperback" : "ebook";
   };
 
   // ── Add to cart ───────────────────────────────────────────────────────────
   const addToCart = async () => {
-    const token  = localStorage.getItem("token");
+    const token = localStorage.getItem("token");
     const format = getCartFormat();
 
-    if (token) {
+    if (isValidToken(token)) {
       // Logged-in: sync with server
       try {
-        const res  = await fetch(`${API_URL}/api/cart/add`, {
-          method:  "POST",
+        const res = await fetch(`${API_URL}/api/cart/add`, {
+          method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-          body:    JSON.stringify({ product_id: book.id, format, quantity: 1 }),
+          body: JSON.stringify({ product_id: book.id, format, quantity: 1 }),
         });
+        
+        if (res.status === 401) {
+          localStorage.removeItem("token");
+          window.dispatchEvent(new Event("auth-change"));
+          throw new Error("Unauthorized");
+        }
+
         const data = await res.json();
-        if (!res.ok) { if (data.msg === "OUT_OF_STOCK") return; throw new Error(); }
+        if (!res.ok) { 
+          if (data.msg === "OUT_OF_STOCK") return; 
+          throw new Error(); 
+        }
         window.dispatchEvent(new Event("cart-change"));
-      } catch { console.error("Add to cart failed"); return; }
+      } catch { 
+        console.error("Add to cart failed"); 
+        return; 
+      }
     } else {
       // Guest: persist to localStorage
       addToGuestCart({
-        product_id:        book.id,
+        product_id: book.id,
         format,
-        title:             book.title,
-        slug:              book.slug,
-        image:             book.image,
-        price:             format === "ebook" ? (book.ebook_sell_price ?? book.sell_price) : book.sell_price,
-        stock:             book.stock,
+        title: book.title,
+        slug: book.slug,
+        image: book.image,
+        price: format === "ebook" ? (book.ebook_sell_price ?? book.sell_price) : book.sell_price,
+        stock: book.stock,
         category_imprints: undefined,
       });
     }
@@ -139,16 +176,16 @@ const BookCard = ({ book, visibleCount, forceFormat }: BookCardProps) => {
   };
 
   // ── Derived display values ────────────────────────────────────────────────
-  const isEbookOnly       = book.product_type === "ebook";
-  const displaySellPrice  = isEbookOnly ? book.ebook_sell_price : book.sell_price;
-  const displayMrp        = isEbookOnly ? book.ebook_price      : book.price;
-  const showDiscount      = displayMrp && displaySellPrice && displayMrp > displaySellPrice;
-  const discountPercent   = showDiscount
+  const isEbookOnly = book.product_type === "ebook";
+  const displaySellPrice = isEbookOnly ? book.ebook_sell_price : book.sell_price;
+  const displayMrp = isEbookOnly ? book.ebook_price : book.price;
+  const showDiscount = displayMrp && displaySellPrice && displayMrp > displaySellPrice;
+  const discountPercent = showDiscount
     ? Math.round(((displayMrp - displaySellPrice) / displayMrp) * 100)
     : 0;
 
   const isOutOfStock = book.product_type === "physical" && book.stock === 0;
-  const isDisabled   = addedToCart || isOutOfStock;
+  const isDisabled = addedToCart || isOutOfStock;
 
   return (
     <div className="flex-shrink-0 px-1 my-2" style={{ width: `${100 / visibleCount}%` }}>

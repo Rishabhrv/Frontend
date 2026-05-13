@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "AGPH Books Store",
   description:
-    "AGPH Store is India's leading self-publishing company in Bhopal, helping authors publish books with expert services since 2022.",
+    "AGPH Store is India's leading self-publishing company in Bhopal, helping authors publish books with expert services since years.",
 };
 
 export default function RootLayout({
