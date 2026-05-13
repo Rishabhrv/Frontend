@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import AccountSlider from "./AccountSlider";
 import { usePathname } from "next/navigation";
-import { getGuestCart } from "@/utils/guestStorage"; // ← add this
+import { getGuestCart } from "@/utils/guestStorage";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
@@ -31,6 +31,7 @@ const Header = () => {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<{ products: any[]; authors: any[] }>({ products: [], authors: [] });
   const [showSearch, setShowSearch] = useState(false);
+  const [isSearching, setIsSearching] = useState(false); // <-- Added isSearching state
   const [cartCount, setCartCount] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -55,13 +56,26 @@ const Header = () => {
     return () => window.removeEventListener("open-account-slider", openSlider);
   }, []);
 
+  /* ── search logic with loading state ── */
   useEffect(() => {
-    if (query.length < 2) { setResults({ products: [], authors: [] }); return; }
+    if (query.length < 2) { 
+      setResults({ products: [], authors: [] }); 
+      return; 
+    }
+    
+    setIsSearching(true); // Start loading
+
     const delay = setTimeout(() => {
       fetch(`${API_URL}/api/search?q=${query}`)
         .then(res => { if (!res.ok) throw new Error("Search failed"); return res.json(); })
-        .then(data => setResults({ products: data.products || [], authors: data.authors || [] }))
-        .catch(() => setResults({ products: [], authors: [] }));
+        .then(data => {
+          setResults({ products: data.products || [], authors: data.authors || [] });
+          setIsSearching(false); // Stop loading on success
+        })
+        .catch(() => {
+          setResults({ products: [], authors: [] });
+          setIsSearching(false); // Stop loading on error
+        });
     }, 300);
     return () => clearTimeout(delay);
   }, [query]);
@@ -95,14 +109,14 @@ const Header = () => {
   useEffect(() => {
     fetchUser();
     fetchCartCount();
-    window.addEventListener("auth-change",       fetchUser);
-    window.addEventListener("auth-change",       fetchCartCount);
-    window.addEventListener("cart-change",       fetchCartCount);
+    window.addEventListener("auth-change", fetchUser);
+    window.addEventListener("auth-change", fetchCartCount);
+    window.addEventListener("cart-change", fetchCartCount);
     window.addEventListener("guest-cart-change", fetchCartCount); // ← guest updates
     return () => {
-      window.removeEventListener("auth-change",       fetchUser);
-      window.removeEventListener("auth-change",       fetchCartCount);
-      window.removeEventListener("cart-change",       fetchCartCount);
+      window.removeEventListener("auth-change", fetchUser);
+      window.removeEventListener("auth-change", fetchCartCount);
+      window.removeEventListener("cart-change", fetchCartCount);
       window.removeEventListener("guest-cart-change", fetchCartCount);
     };
   }, []);
@@ -124,7 +138,7 @@ const Header = () => {
     );
   };
 
-  const sharedSearchProps = { query, setQuery, showSearch, setShowSearch, results, highlightMatch };
+  const sharedSearchProps = { query, setQuery, showSearch, setShowSearch, results, highlightMatch, isSearching };
 
   return (
     <>
@@ -314,10 +328,16 @@ type SearchBoxProps = {
   setShowSearch: (v: boolean) => void;
   results: { products: any[]; authors: any[] };
   highlightMatch: (text: string, query: string) => any;
+  isSearching: boolean;
 };
 
-const SearchBox = ({ query, setQuery, showSearch, setShowSearch, results, highlightMatch }: SearchBoxProps) => {
+const SearchBox = ({ query, setQuery, showSearch, setShowSearch, results, highlightMatch, isSearching }: SearchBoxProps) => {
   const API_URL = process.env.NEXT_PUBLIC_API_URL!;
+  
+  // Only show the dropdown if search is focused and query has 2+ characters
+  const shouldShowDropdown = showSearch && query.length >= 2;
+  const hasNoResults = results.products.length === 0 && results.authors.length === 0;
+
   return (
     <div className="relative w-full">
       <input
@@ -335,33 +355,50 @@ const SearchBox = ({ query, setQuery, showSearch, setShowSearch, results, highli
         />
       )}
 
-      {showSearch && ((results.products?.length ?? 0) > 0 || (results.authors?.length ?? 0) > 0) && (
+      {/* DROPDOWN LOGIC */}
+      {shouldShowDropdown && (
         <div className="absolute top-full mt-2 w-full bg-white border border-gray-300 rounded-lg shadow-xl max-h-[420px] overflow-y-auto z-50">
-          {results.authors.length > 0 && (
-            <div className="p-3">
-              <p className="text-xs font-semibold text-gray-500 mb-2">Authors</p>
-              {results.authors.map((a: any) => (
-                <Link key={a.id} href={`/author/${a.slug}`} onClick={() => setShowSearch(false)}
-                  className="flex items-center gap-3 p-2 rounded hover:bg-gray-100">
-                  <span className="text-sm font-medium">{highlightMatch(a.name, query)}</span>
-                </Link>
-              ))}
+          
+          {isSearching ? (
+            <div className="p-4 text-sm text-center text-gray-500">
+              Searching...
             </div>
-          )}
-          {results.products.length > 0 && (
-            <div className="p-3">
-              <p className="text-xs font-semibold text-gray-500 mb-2">Products</p>
-              {results.products.map((p: any) => (
-                <Link key={p.id} href={`/product/${p.slug}`} onClick={() => setShowSearch(false)}
-                  className="flex items-center gap-3 p-2 rounded hover:bg-gray-100">
-                  <img src={`${API_URL}${p.main_image}`} className="h-12 w-10 border border-gray-200 rounded object-cover" alt={p.title} />
-                  <div className="leading-tight">
-                    <p className="text-sm font-medium">{highlightMatch(p.title, query)}</p>
-                    <p className="text-xs text-gray-500">{p.author}</p>
-                  </div>
-                </Link>
-              ))}
-            </div>
+          ) : (
+            <>
+              {results.authors.length > 0 && (
+                <div className="p-3">
+                  <p className="text-xs font-semibold text-gray-500 mb-2">Authors</p>
+                  {results.authors.map((a: any) => (
+                    <Link key={a.id} href={`/author/${a.slug}`} onClick={() => setShowSearch(false)}
+                      className="flex items-center gap-3 p-2 rounded hover:bg-gray-100">
+                      <span className="text-sm font-medium">{highlightMatch(a.name, query)}</span>
+                    </Link>
+                  ))}
+                </div>
+              )}
+              {results.products.length > 0 && (
+                <div className="p-3">
+                  <p className="text-xs font-semibold text-gray-500 mb-2">Products</p>
+                  {results.products.map((p: any) => (
+                    <Link key={p.id} href={`/product/${p.slug}`} onClick={() => setShowSearch(false)}
+                      className="flex items-center gap-3 p-2 rounded hover:bg-gray-100">
+                      <img src={`${API_URL}${p.main_image}`} className="h-12 w-10 border border-gray-200 rounded object-cover" alt={p.title} />
+                      <div className="leading-tight">
+                        <p className="text-sm font-medium">{highlightMatch(p.title, query)}</p>
+                        <p className="text-xs text-gray-500">{p.author}</p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+              
+              {/* NO RESULTS FOUND MESSAGE */}
+              {hasNoResults && (
+                <div className="p-4 text-sm text-center text-gray-500">
+                  No result found for &quot;<span className="font-semibold text-gray-800">{query}</span>&quot;
+                </div>
+              )}
+            </>
           )}
         </div>
       )}

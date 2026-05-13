@@ -8,7 +8,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "AGPH Books Store",
     short_name: "AGPH Books",
     description:
-      "AGPH Books Store is India's leading self-publishing company in Bhopal, helping authors publish books with expert services since 2022.",
+      "AGPH Books Store is India's leading self-publishing company in Bhopal, helping authors publish books with expert services since years.",
     start_url: "/",
     scope: "/",
     display: "standalone",

@@ -9,14 +9,15 @@ import {
   removeFromGuestWishlist,
   addToGuestCart,
   GuestWishlistItem,
-} from "@/utils/guestStorage";   // ← adjust to your import path
+} from "@/utils/guestStorage";
 
 type WishlistItem = {
   id: number;
   title: string;
   slug: string;
   sell_price: number;
-  main_image: string;   // relative path  /uploads/...
+  ebook_sell_price?: number; // Added to support ebook pricing
+  main_image: string;
   author?: string;
   product_type: "ebook" | "physical" | "both";
   stock: number;
@@ -28,9 +29,9 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 const imgSrc = (src: string) => (src.startsWith("http") ? src : `${API_URL}${src}`);
 
 export default function WishlistPage() {
-  const [items,     setItems]     = useState<WishlistItem[]>([]);
-  const [addingId,  setAddingId]  = useState<number | null>(null);
-  const [isGuest,   setIsGuest]   = useState(false);
+  const [items, setItems] = useState<WishlistItem[]>([]);
+  const [addingId, setAddingId] = useState<number | null>(null);
+  const [isGuest, setIsGuest] = useState(false);
 
   // ── Load wishlist ─────────────────────────────────────────────────────────
   const loadWishlist = () => {
@@ -39,15 +40,16 @@ export default function WishlistPage() {
     if (!token) {
       // Guest: read from localStorage
       setIsGuest(true);
-      const guestItems = getGuestWishlist().map((g: GuestWishlistItem) => ({
-        id:           g.id,
-        title:        g.title,
-        slug:         g.slug,
-        sell_price:   g.sell_price,
-        main_image:   g.image,
-        author:       g.author,
+      const guestItems = getGuestWishlist().map((g: any) => ({
+        id: g.id,
+        title: g.title,
+        slug: g.slug,
+        sell_price: g.sell_price,
+        ebook_sell_price: g.ebook_sell_price, // Fetch ebook price from guest storage if available
+        main_image: g.image,
+        author: g.author,
         product_type: g.product_type,
-        stock:        g.stock,
+        stock: g.stock,
       }));
       setItems(guestItems);
       return;
@@ -63,10 +65,10 @@ export default function WishlistPage() {
 
   useEffect(() => {
     loadWishlist();
-    window.addEventListener("wishlist-change",       loadWishlist);
+    window.addEventListener("wishlist-change", loadWishlist);
     window.addEventListener("guest-wishlist-change", loadWishlist);
     return () => {
-      window.removeEventListener("wishlist-change",       loadWishlist);
+      window.removeEventListener("wishlist-change", loadWishlist);
       window.removeEventListener("guest-wishlist-change", loadWishlist);
     };
   }, []);
@@ -82,7 +84,7 @@ export default function WishlistPage() {
     }
 
     await fetch(`${API_URL}/api/wishlist/remove/${productId}`, {
-      method:  "DELETE",
+      method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
     });
     loadWishlist();
@@ -90,15 +92,19 @@ export default function WishlistPage() {
 
   // ── Get format ────────────────────────────────────────────────────────────
   const getCartFormat = (item: WishlistItem): "ebook" | "paperback" => {
-    if (item.product_type === "ebook")    return "ebook";
+    if (item.product_type === "ebook") return "ebook";
     if (item.product_type === "physical") return "paperback";
     return item.stock > 0 ? "paperback" : "ebook";
   };
 
   // ── Add to bag ────────────────────────────────────────────────────────────
   const addToCart = async (item: WishlistItem) => {
-    const token  = localStorage.getItem("token");
+    const token = localStorage.getItem("token");
     const format = getCartFormat(item);
+    
+    // Select the correct price based on format
+    const activePrice = format === "ebook" ? (item.ebook_sell_price ?? item.sell_price) : item.sell_price;
+
     setAddingId(item.id);
 
     try {
@@ -107,28 +113,28 @@ export default function WishlistPage() {
         addToGuestCart({
           product_id: item.id,
           format,
-          title:      item.title,
-          slug:       item.slug,
-          image:      item.main_image,
-          price:      item.sell_price,
-          stock:      item.stock,
+          title: item.title,
+          slug: item.slug,
+          image: item.main_image,
+          price: activePrice,
+          stock: item.stock,
         });
         removeFromGuestWishlist(item.id);
         loadWishlist();
         return;
       }
 
-      const res  = await fetch(`${API_URL}/api/cart/add`, {
-        method:  "POST",
+      const res = await fetch(`${API_URL}/api/cart/add`, {
+        method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body:    JSON.stringify({ product_id: item.id, format, quantity: 1 }),
+        body: JSON.stringify({ product_id: item.id, format, quantity: 1 }),
       });
       const data = await res.json();
       if (!res.ok) { if (data.msg === "OUT_OF_STOCK") return; throw new Error(); }
       window.dispatchEvent(new Event("cart-change"));
       removeItem(item.id);
     } catch { console.error("Add to cart failed"); }
-    finally   { setAddingId(null); }
+    finally { setAddingId(null); }
   };
 
   const today = new Date().toLocaleDateString("en-US", {
@@ -183,8 +189,13 @@ export default function WishlistPage() {
 
       <div className="border-t border-gray-300">
         {items.map((book) => {
-          const outOfStock = book.product_type === "physical" && book.stock === 0;
-          const isAdding   = addingId === book.id;
+          const format = getCartFormat(book);
+          const outOfStock = format === "paperback" && book.stock === 0;
+          const isAdding = addingId === book.id;
+          
+          // Determine price and label based on format
+          const displayPrice = format === "ebook" ? (book.ebook_sell_price ?? book.sell_price) : book.sell_price;
+          const formatLabel = format === "ebook" ? "Digital E-Book" : "Paperback Edition";
 
           return (
             <div
@@ -203,7 +214,7 @@ export default function WishlistPage() {
                 />
               </Link>
 
-              {/* TITLE + AUTHOR */}
+              {/* TITLE + AUTHOR + FORMAT */}
               <div className="flex-1 min-w-0">
                 <Link
                   href={`/product/${book.slug}`}
@@ -214,11 +225,15 @@ export default function WishlistPage() {
                 {book.author && (
                   <p className="text-xs sm:text-sm text-gray-500 mt-0.5">{book.author}</p>
                 )}
+                {/* Format Label */}
+                <p className="text-[11px] sm:text-xs text-gray-400 mt-1 italic">
+                  {formatLabel}
+                </p>
               </div>
 
               {/* PRICE */}
               <div className="shrink-0 font-semibold text-red-600 text-sm sm:text-base w-20 sm:w-24 text-right">
-                ₹{book.sell_price}
+                ₹{displayPrice}
               </div>
 
               {/* ADD TO BAG */}

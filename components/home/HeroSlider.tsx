@@ -483,7 +483,7 @@ export default function BookstoreHero() {
       lineHeight: 1.75,
     }}
   >
-    AGPH Books Store has been a trusted name in India since 2022, offering
+    AGPH Books Store has been a trusted name in India since years, offering
     everything from essential academic resources and authoritative texts to
     engaging fiction, non-fiction, and children's books, carefully curated
     for every reader.
