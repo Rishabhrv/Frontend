@@ -62,9 +62,10 @@ interface Review {
 
 /* ─── Page key type ─── */
 type PageKey =
-  | "products" | "orders"   | "category"      | "subject"
-  | "author"   | "users"    | "reviews"        | "shipping"
-  | "subscriptions" | "payment" | "coupons"    | "ads";
+  | "products"      | "orders"   | "category"     | "subject"
+  | "author"        | "users"    | "reviews"      | "shipping"
+  | "subscriptions" | "payment"  | "coupons"      | "ads"
+  | "analytics"     | "ebook-analytics";
 
 interface PageOption {
   key: PageKey;
@@ -86,6 +87,8 @@ const ALL_PAGES: PageOption[] = [
   { key: "payment",       label: "Payment",       description: "View payment history"                 },
   { key: "coupons",       label: "Coupons",       description: "Create and manage coupons"            },
   { key: "ads",           label: "Ads",           description: "Manage advertisements"               },
+  { key: "analytics",     label: "Analytics",     description: "View analytics and reports"            },
+  { key: "ebook-analytics", label: "EbookAnalytics", description: "View ebook analytics and reports"     },
 ];
 
 /* ─── Badge ─── */

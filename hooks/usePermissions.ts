@@ -5,7 +5,7 @@ type PageKey =
   | "products" | "orders"   | "category" | "subject"
   | "author"   | "users"    | "reviews"  | "shipping"
   | "subscriptions" | "payment" | "coupons" | "ads"
-  | "settings" ;
+  | "settings" | "analytics" | "ebook-analytics";
 
 interface PermissionsResponse {
   pages: PageKey[];
