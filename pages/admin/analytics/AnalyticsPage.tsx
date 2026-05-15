@@ -22,14 +22,14 @@ export default function AnalyticsPage() {
 
   return (
     <AdminGuard pageKey="analytics">
-      <div className="p-6 bg-gray-50 text-gray-700 min-h-screen font-sans">
+      <div className="bg-gray-50 text-gray-700 min-h-screen font-sans">
         <div className="flex">
           <Sidebar />
           <div className="flex flex-1 flex-col">
             <Header />
 
             {/* Global Dashboard Container */}
-            <div className="mt-4 flex flex-col gap-6">
+            <div className="mt-4 flex flex-col gap-6 p-5">
               
               {/* ── GLOBAL FILTER BAR ── */}
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
