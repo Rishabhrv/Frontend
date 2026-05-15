@@ -56,6 +56,8 @@ export default function EpubReaderPage() {
   const [currentPage, setCurrentPage] = useState<number | null>(null);
   const [totalPages, setTotalPages] = useState<number | null>(null);
   const [nextPage, setNextPage] = useState<number | null>(null);
+  const sessionStartTimeRef = useRef<number>(Date.now());
+  const totalActiveTimeRef = useRef<number>(0);
   
   // ✅ Distinct image states
   const [mainImage, setMainImage] = useState<string | null>(null);
@@ -81,6 +83,70 @@ export default function EpubReaderPage() {
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
   }, []);
+
+    // Time Tracking Effect
+  useEffect(() => {
+    // Helper to send the duration to your Express API
+    const sendTimeData = (timeInSeconds: number) => {
+      // Only send if they stayed for at least 5 seconds to avoid spamming 
+      // the DB on instant bounces
+      if (timeInSeconds < 5) return; 
+      
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      try {
+        fetch(`${API_URL}/api/my-books/${slug}/track-time`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ duration: timeInSeconds }),
+          // keepalive is critical here: it tells the browser to finish 
+          // sending this request even if the tab is completely closed
+          keepalive: true, 
+        });
+      } catch (error) {
+        console.error("Tracking failed", error);
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // Tab hidden (user switched tabs/minimized). Calculate time spent so far.
+        const timeSpent = Math.round((Date.now() - sessionStartTimeRef.current) / 1000);
+        totalActiveTimeRef.current += timeSpent;
+      } else {
+        // Tab is visible again. Reset the start timer.
+        sessionStartTimeRef.current = Date.now();
+      }
+    };
+
+    const handleBeforeUnload = () => {
+      // Tab is being closed or refreshed. Tally up final time.
+      if (!document.hidden) {
+        const timeSpent = Math.round((Date.now() - sessionStartTimeRef.current) / 1000);
+        totalActiveTimeRef.current += timeSpent;
+      }
+      sendTimeData(totalActiveTimeRef.current);
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+
+      // Component unmounting (user clicked a Next.js Link to leave the page)
+      if (!document.hidden) {
+        const timeSpent = Math.round((Date.now() - sessionStartTimeRef.current) / 1000);
+        totalActiveTimeRef.current += timeSpent;
+      }
+      sendTimeData(totalActiveTimeRef.current);
+    };
+  }, [slug]);
 
   /* ================= BLUR ON FOCUS LOSS ================= */
   useEffect(() => {

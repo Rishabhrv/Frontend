@@ -7,7 +7,7 @@ import {
   Box, Layers, ChevronDown, LibraryBig, Users, ShoppingCart,
   Truck, BadgeCheck, BadgeIndianRupee, BadgePercent,
   Megaphone, UserStar, AlignVerticalDistributeStart, ShieldOff,
-  LucideIcon,
+  LucideIcon, ChartArea, ChartLine,
 } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
 
@@ -16,7 +16,7 @@ type PageKey =
   | "products" | "orders"   | "category" | "subject"
   | "author"   | "users"    | "reviews"  | "shipping"
   | "subscriptions" | "payment" | "coupons" | "ads" 
-  | "settings";
+  | "settings" | "analytics" | "ebook-analytics";
 
 interface NavItem {
   key: PageKey;
@@ -27,17 +27,20 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { key: "category",      label: "Category",     icon: Layers,                       href: "/admin/category/addcategories",        pathPrefix: "/admin/category"       },
-  { key: "subject",       label: "Subject",      icon: AlignVerticalDistributeStart, href: "/admin/subject/SubjectPage",           pathPrefix: "/admin/subject"        },
-  { key: "author",        label: "Book Authors", icon: LibraryBig,                   href: "/admin/author/productauthortable",     pathPrefix: "/admin/author"         },
-  { key: "users",         label: "Users",        icon: Users,                        href: "/admin/users/UsersPage",               pathPrefix: "/admin/users"          },
-  { key: "reviews",       label: "Review",       icon: UserStar,                     href: "/admin/reviews/ReviewsPage",           pathPrefix: "/admin/reviews"        },
-  { key: "shipping",      label: "Shipping",     icon: Truck,                        href: "/admin/shipping/ShippingZone",         pathPrefix: "/admin/shipping"       },
-  { key: "subscriptions", label: "Subscription", icon: BadgeCheck,                   href: "/admin/subscriptions/SubscriptionPage",pathPrefix: "/admin/subscriptions" },
-  { key: "payment",       label: "Payment",      icon: BadgeIndianRupee,             href: "/admin/payment/PaymentPage",           pathPrefix: "/admin/payment"        },
-  { key: "coupons",       label: "Coupons",      icon: BadgePercent,                 href: "/admin/coupon/CouponPage",             pathPrefix: "/admin/coupon"         },
-  { key: "ads",           label: "Ads",          icon: Megaphone,                    href: "/admin/ads/AdPage",                    pathPrefix: "/admin/ads"            },
-  { key: "settings",      label: "Settings",     icon: ShieldOff,                    href: "/admin/settings/SettingsPage",         pathPrefix: "/admin/settings"       },
+  { key: "category",            label: "Category",          icon: Layers,                       href: "/admin/category/addcategories",                   pathPrefix: "/admin/category"             },
+  { key: "subject",             label: "Subject",           icon: AlignVerticalDistributeStart, href: "/admin/subject/SubjectPage",                      pathPrefix: "/admin/subject"              },
+  { key: "author",              label: "Book Authors",      icon: LibraryBig,                   href: "/admin/author/productauthortable",                pathPrefix: "/admin/author"               },
+  { key: "users",               label: "Users",             icon: Users,                        href: "/admin/users/UsersPage",                          pathPrefix: "/admin/users"                },
+  { key: "reviews",             label: "Review",            icon: UserStar,                     href: "/admin/reviews/ReviewsPage",                      pathPrefix: "/admin/reviews"              },
+  { key: "shipping",            label: "Shipping",          icon: Truck,                        href: "/admin/shipping/ShippingZone",                    pathPrefix: "/admin/shipping"             },
+  { key: "subscriptions",       label: "Subscription",      icon: BadgeCheck,                   href: "/admin/subscriptions/SubscriptionPage",           pathPrefix: "/admin/subscriptions"        },
+  { key: "payment",             label: "Payment",           icon: BadgeIndianRupee,             href: "/admin/payment/PaymentPage",                      pathPrefix: "/admin/payment"              },
+  { key: "coupons",             label: "Coupons",           icon: BadgePercent,                 href: "/admin/coupon/CouponPage",                        pathPrefix: "/admin/coupon"               },
+  { key: "ads",                 label: "Ads",               icon: Megaphone,                    href: "/admin/ads/AdPage",                               pathPrefix: "/admin/ads"                  },
+  { key: "settings",            label: "Settings",          icon: ShieldOff,                    href: "/admin/settings/SettingsPage",                    pathPrefix: "/admin/settings"             },
+  { key: "analytics",           label: "Analytics",         icon: ChartArea,                    href: "/admin/analytics/AnalyticsPage",                  pathPrefix: "/admin/analytics"            },
+  { key: "ebook-analytics",     label: "EbookAnalytics",    icon: ChartLine,                    href: "/admin/ebook-analytics/EbookAnalyticsPage",       pathPrefix: "/admin/ebook-analytics"      },
+
 
 ];
 

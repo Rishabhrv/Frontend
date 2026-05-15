@@ -140,6 +140,32 @@ const Header = () => {
 
   const sharedSearchProps = { query, setQuery, showSearch, setShowSearch, results, highlightMatch, isSearching };
 
+  
+useEffect(() => {
+  const trackVisit = async () => {
+    let sessionId = localStorage.getItem("guest_session_id");
+    if (!sessionId) {
+      sessionId = "guest_" + Math.random().toString(36).substring(2, 15);
+      localStorage.setItem("guest_session_id", sessionId);
+    }
+
+    const userId = user?.id || null;
+
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/analytics/track`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        // ADDED 'source' HERE 👇
+        body: JSON.stringify({ sessionId, userId, source: "apgh" }) 
+      });
+    } catch (error) {
+      // Fail silently
+    }
+  };
+
+  trackVisit();
+}, [user]);
+
   return (
     <>
       {/* ═══════════════════════════════════════
