@@ -21,7 +21,7 @@ interface CountryMeta { lat: number; lon: number; flag: string; short: string; }
 interface TooltipState { name: string; known: number; unknown: number; x: number; y: number; }
 interface SpikeMesh { mesh: THREE.Mesh; country: string; }
 interface StatCardProps { label: string; value: number; sub?: string; icon: React.ReactNode; }
-interface CountryRowProps { data: CountryData; maxTotal: number; rank: number; active: boolean; onHover: (name: string | null) => void; }
+interface CountryRowProps { data: CountryData; maxTotal: number; rank: number; active: boolean; onHover: (name: string | null) => void; onClick: (name: string) => void; }
 interface LiveTopCountry { country: string; count: number; }
 interface LiveData { onlineNow: number; activeLast30m: number; todayUnique: number; newVisitors: number; returningVisitors: number; topLiveCountries: LiveTopCountry[]; peakToday: number; }
 
@@ -233,10 +233,7 @@ const COUNTRY_META: Record<string, CountryMeta> = {
 };
 
 // ── Auto-Generate ISO Mapping ──────────────────────────────────────────────────
-// This automatically creates keys for both the full name ("India") and 
-// the ISO code ("IN") so your API can return either format without breaking the globe.
 const ISO_TO_NAME: Record<string, string> = {};
-
 Object.entries(COUNTRY_META).forEach(([fullName, meta]) => {
   COUNTRY_META[meta.short] = meta;
   ISO_TO_NAME[meta.short] = fullName;
@@ -358,14 +355,19 @@ function StatCard({ label, value, sub, icon }: StatCardProps) {
   );
 }
 
-function CountryRow({ data, maxTotal, rank, active, onHover }: CountryRowProps) {
+function CountryRow({ data, maxTotal, rank, active, onHover, onClick }: CountryRowProps) {
   const total = data.known + data.unknown;
   const pct = maxTotal > 0 ? (total / maxTotal) * 100 : 0;
   const knownPct = total > 0 ? (data.known / total) * 100 : 0;
   const meta = COUNTRY_META[data.name];
 
   return (
-    <div onMouseEnter={() => onHover(data.name)} onMouseLeave={() => onHover(null)} className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors cursor-default ${active ? "bg-blue-50" : "hover:bg-gray-50"}`}>
+    <div 
+      onClick={() => onClick(data.name)}
+      onMouseEnter={() => onHover(data.name)} 
+      onMouseLeave={() => onHover(null)} 
+      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors cursor-pointer ${active ? "bg-blue-50" : "hover:bg-gray-50"}`}
+    >
       <div className="text-xs text-gray-600 font-mono w-5 text-right shrink-0 font-medium">{String(rank).padStart(2, "0")}</div>
       <div className="text-base shrink-0 shadow-sm rounded-sm bg-white overflow-hidden leading-none">{meta?.flag || "🌐"}</div>
       <div className={`flex-[0_0_100px] text-xs font-medium truncate ${active ? 'text-blue-700' : 'text-gray-700'}`}>{displayName(data.name)}</div>
@@ -390,6 +392,9 @@ export default function AnalyticsComponent({ source, period }: AnalyticsComponen
   const raycaster     = useRef(new THREE.Raycaster());
   const mouse2D       = useRef(new THREE.Vector2(-9, -9));
   const cameraRef     = useRef<THREE.PerspectiveCamera | null>(null);
+  
+  // Track auto-navigation targets
+  const targetRotationRef = useRef<{ x: number; y: number; active: boolean }>({ x: 0, y: 0, active: false });
 
   const [data, setData]               = useState<RawRow[]>([]);
   const [loading, setLoading]         = useState<boolean>(true);
@@ -398,7 +403,7 @@ export default function AnalyticsComponent({ source, period }: AnalyticsComponen
   const [liveData, setLiveData]       = useState<LiveData>(MOCK_LIVE);
   const [liveLoaded, setLiveLoaded]   = useState(false);
 
-  // ── Fetch location data (re-runs on period & source prop change) ──────────────
+  // ── Fetch location data ─────────────────────────────────────────────────────
   const fetchLocations = useCallback(async () => {
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
@@ -417,7 +422,7 @@ export default function AnalyticsComponent({ source, period }: AnalyticsComponen
     fetchLocations();
   }, [fetchLocations]);
 
-  // ── Fetch live data (initial + every 30 s) ────────────────────────────────
+  // ── Fetch live data ───────────────────────────────────────────────────────
   const fetchLive = useCallback(async () => {
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
@@ -436,7 +441,7 @@ export default function AnalyticsComponent({ source, period }: AnalyticsComponen
         return;
       }
     } catch {}
-    setLiveLoaded(true); // keep mock
+    setLiveLoaded(true);
   }, [source]);
 
   useEffect(() => {
@@ -467,6 +472,22 @@ export default function AnalyticsComponent({ source, period }: AnalyticsComponen
 
   const maxTotal = useMemo(() => Math.max(...countries.map(c => c.known + c.unknown), 1), [countries]);
 
+  // ── Handle Right Side Row Clicking ─────────────────────────────────────────
+  const handleCountryClick = useCallback((countryName: string) => {
+    const meta = COUNTRY_META[countryName];
+    if (!meta) return;
+
+    // Convert Lat/Lon to Target Rotational Radians for the Globe
+    const targetX = (meta.lat) * (Math.PI / 180);
+    const targetY = -(meta.lon + 90) * (Math.PI / 180);
+
+    targetRotationRef.current = {
+      x: targetX,
+      y: targetY,
+      active: true
+    };
+  }, []);
+
   // ── Sync spike highlighting ────────────────────────────────────────────────
   useEffect(() => {
     spikesRef.current.forEach(({ mesh, country }) => {
@@ -477,7 +498,7 @@ export default function AnalyticsComponent({ source, period }: AnalyticsComponen
     });
   }, [highlight]);
 
-  // ── Three.js setup (runs once data is loaded) ─────────────────────────────
+  // ── Three.js setup ────────────────────────────────────────────────────────
   useEffect(() => {
     if (loading || !mountRef.current) return;
 
@@ -590,11 +611,36 @@ export default function AnalyticsComponent({ source, period }: AnalyticsComponen
     const animate = () => {
       frameRef.current = requestAnimationFrame(animate);
       frame++;
-      if (!ms.dragging) {
+
+      if (ms.dragging) {
+        // Cancel active clicking pans if the user grabs and interacts manually
+        targetRotationRef.current.active = false;
+        globeGroup.rotation.y += 0.0018;
+        ms.vel.x *= 0.92; ms.vel.y *= 0.92;
+        globeGroup.rotation.x += ms.vel.x; globeGroup.rotation.y += ms.vel.y;
+      } else if (targetRotationRef.current.active) {
+        // Run smooth programmatic rotation tracking
+        const target = targetRotationRef.current;
+        const currentY = globeGroup.rotation.y;
+        
+        // Prevent reverse-spinning on modular meridian limits
+        const diffY = ((target.y - currentY + Math.PI) % (Math.PI * 2)) - Math.PI;
+        const cleanTargetY = currentY + (diffY < -Math.PI ? diffY + Math.PI * 2 : diffY);
+
+        globeGroup.rotation.x += (target.x - globeGroup.rotation.x) * 0.08;
+        globeGroup.rotation.y += (cleanTargetY - globeGroup.rotation.y) * 0.08;
+
+        // Turn off when target threshold is reached
+        if (Math.abs(target.x - globeGroup.rotation.x) < 0.001 && Math.abs(cleanTargetY - globeGroup.rotation.y) < 0.001) {
+          target.active = false;
+        }
+      } else {
+        // Fallback standard rotation
         globeGroup.rotation.y += 0.0018;
         ms.vel.x *= 0.92; ms.vel.y *= 0.92;
         globeGroup.rotation.x += ms.vel.x; globeGroup.rotation.y += ms.vel.y;
       }
+
       globeGroup.rotation.x = Math.max(-0.9, Math.min(0.9, globeGroup.rotation.x));
       spikeMeshes.forEach(({ mesh }, i) => { const s = 1 + 0.06 * Math.sin(frame * 0.025 + i * 1.1); mesh.scale.set(s, 1, s); });
       raycaster.current.setFromCamera(mouse2D.current, camera);
@@ -610,7 +656,7 @@ export default function AnalyticsComponent({ source, period }: AnalyticsComponen
         container.style.cursor = "pointer";
       } else {
         if (lastHoveredName !== null) { lastHoveredName = null; setTooltip(null); }
-        container.style.cursor = "grab";
+        container.style.cursor = targetRotationRef.current.active ? "default" : "grab";
       }
       renderer.render(scene, camera);
     };
@@ -687,10 +733,11 @@ export default function AnalyticsComponent({ source, period }: AnalyticsComponen
             <div className="w-5 text-right shrink-0">#</div><div className="w-4 shrink-0" /><div className="flex-[0_0_100px]">Country</div><div className="flex-1">Share</div><div className="w-12 text-right shrink-0">Total</div>
           </div>
 
-          <div className="overflow-y-auto flex-1 p-2 space-y-1">
+          <div className="overflow-y-auto flex-1 p-2 space-y-1 max-h-50">
             {countries.map((c, i) => (
-              <CountryRow key={c.name} data={c} maxTotal={maxTotal} rank={i + 1} active={highlight === c.name || (tooltip !== null && tooltip.name === c.name)} onHover={setHighlight} />
+              <CountryRow key={c.name} data={c} maxTotal={maxTotal} rank={i + 1} active={highlight === c.name || (tooltip !== null && tooltip.name === c.name)} onHover={setHighlight} onClick={handleCountryClick} />
             ))}
+            
             {countries.length === 0 && <div className="text-center py-10 text-gray-600 text-sm">No geographic data found</div>}
           </div>
 
