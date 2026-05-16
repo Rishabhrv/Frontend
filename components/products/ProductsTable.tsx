@@ -30,6 +30,7 @@ type Product = {
 };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL!; // Added SITE_URL
 
 /* ═══════════════════════════════════════════════════════════════
    HELPERS & SHARED LOGIC
@@ -79,8 +80,27 @@ function calcSeoScore(p: Product): number {
   const density    = words > 0 ? (kpCount  / words) * 100 : 0;
   const kp2density = words > 0 ? (kp2Count / words) * 100 : 0;
 
+  // Extract links from description to count internal and outbound
+  let internalLinksCount = 0;
+  let outboundLinksCount = 0;
+  const baseDomain = SITE_URL ? SITE_URL.replace(/^https?:\/\//, '') : '';
+  const regex = /<a\s+(?:[^>]*?\s+)?href=(["'])(.*?)\1/gi;
+  let match;
+  
+  while ((match = regex.exec(p.description)) !== null) {
+    const href = match[2].toLowerCase();
+    if (href.startsWith('/') || href.startsWith('#') || href.startsWith('mailto:') || (baseDomain && href.includes(baseDomain))) {
+      internalLinksCount++;
+    } else if (href.startsWith('http')) {
+      outboundLinksCount++;
+    }
+  }
+
   const checks = [
-    true, true, true, true,
+    outboundLinksCount > 0, // Outbound links
+    true, // Keyphrase in image alt (ignored for table overview)
+    p.image ? true : false, // Images
+    internalLinksCount > 0, // Internal links
     kp ? bodyLower.slice(0, 200).includes(kp) : false,
     kp ? (density >= 0.5 && density <= 3) || (kp2density >= 0.5 && kp2density <= 3) : false,
     kp ? titleLower.includes(kp) : false,
@@ -189,17 +209,60 @@ function SeoCell({ product }: { product: Product }) {
    ═══════════════════════════════════════════════════════════════ */
 
 export default function ProductsTable() {
-  const [search,      setSearch]      = useState("");
-  const [bulkAction,  setBulkAction]  = useState("");
+  const [search,        setSearch]       = useState("");
+  const [bulkAction,    setBulkAction]   = useState("");
   const [bulkCategoryId, setBulkCategoryId] = useState<number | "">(""); 
-  const [category,    setCategory]    = useState("");
-  const [stockFilter, setStockFilter] = useState("");
-  const [activeTab,   setActiveTab]   = useState<"all" | "published" | "draft" | "trash">("published");
-  const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [sortBy, setSortBy] = useState<{ key: keyof Product | null; direction: "asc" | "desc" }>({
+  const [category,      setCategory]     = useState("");
+  const [stockFilter,   setStockFilter]  = useState("");
+  const [activeTab,     setActiveTab]    = useState<"all" | "published" | "draft" | "trash">("published");
+  const [rowsPerPage,   setRowsPerPage]  = useState(10);
+  const [currentPage,   setCurrentPage]  = useState(1);
+  const [sortBy,        setSortBy]       = useState<{ key: keyof Product | null; direction: "asc" | "desc" }>({
     key: null, direction: "asc",
   });
+  const [productType, setProductType] = useState("");
+  const [imprint, setImprint] = useState("");
+
+  /* ---------------- STATE PERSISTENCE ---------------- */
+  
+  // 1. Load saved filters from sessionStorage on initial render
+  useEffect(() => {
+    const savedFilters = sessionStorage.getItem("productsTableFilters");
+    if (savedFilters) {
+      try {
+        const parsed = JSON.parse(savedFilters);
+        if (parsed.search !== undefined) setSearch(parsed.search);
+        if (parsed.category !== undefined) setCategory(parsed.category);
+        if (parsed.stockFilter !== undefined) setStockFilter(parsed.stockFilter);
+        if (parsed.activeTab !== undefined) setActiveTab(parsed.activeTab);
+        if (parsed.rowsPerPage !== undefined) setRowsPerPage(parsed.rowsPerPage);
+        if (parsed.currentPage !== undefined) setCurrentPage(parsed.currentPage);
+        if (parsed.sortBy !== undefined) setSortBy(parsed.sortBy);
+        if (parsed.productType !== undefined) setProductType(parsed.productType);
+        if (parsed.imprint !== undefined) setImprint(parsed.imprint);
+      } catch (e) {
+        console.error("Failed to parse saved products table filters", e);
+      }
+    }
+  }, []);
+
+  // 2. Save filters to sessionStorage whenever they change
+  useEffect(() => {
+    const filtersToSave = {
+      search,
+      category,
+      stockFilter,
+      activeTab,
+      rowsPerPage,
+      currentPage,
+      sortBy,
+      productType,
+      imprint
+    };
+    sessionStorage.setItem("productsTableFilters", JSON.stringify(filtersToSave));
+  }, [search, category, stockFilter, activeTab, rowsPerPage, currentPage, sortBy, productType, imprint]);
+
+  /* ---------------- DATA STATES ---------------- */
 
   const [products,       setProducts]       = useState<Product[]>([]);
   const [allCategories,  setAllCategories]  = useState<{ id: number; name: string }[]>([]); 
@@ -213,8 +276,6 @@ export default function ProductsTable() {
   } | null>(null);
 
   const toast = (msg: string) => { setToastMsg(msg); setToastOpen(true); };
-  const [productType, setProductType] = useState("");
-  const [imprint, setImprint] = useState("");
 
   useEffect(() => {
     fetch(`${API_URL}/api/products/table-product`)
@@ -694,7 +755,7 @@ function Pagination({ currentPage, totalPages, onPageChange }: {
         ) : (
           <button
             key={`page-${page}`}
-            onClick={() => onPageChange(page)}
+            onClick={() => onPageChange(page as number)}
             className={`h-8 w-8 rounded cursor-pointer ${
               page === currentPage ? "bg-blue-600 text-white" : "hover:bg-gray-100"
             }`}

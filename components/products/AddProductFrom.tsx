@@ -265,11 +265,15 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
     }
   };
 
-  useEffect(() => {
+ useEffect(() => {
     if (mode !== "edit" || !productId) {
-      isInitialLoad.current = false;
+      // Delay tracking slightly so the initial blank render doesn't trigger it
+      setTimeout(() => {
+        isInitialLoad.current = false;
+      }, 100);
       return;
     }
+    
     fetch(`${API_URL}/api/products/${productId}`)
       .then((res) => res.json())
       .then((data) => {
@@ -301,9 +305,17 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
         setEbookPrice(data.ebook_price ?? "");
         setEbookSellPrice(data.ebook_sell_price ?? "");
         setBookId(data.book_id ? String(data.book_id) : "");
-        // Prefill done — now allow dirty tracking
-        isInitialLoad.current = false;
+        
+        // FIX: Wrap the tracker initialization in a timeout
+        // This gives React time to process the batch of state updates above
+        // before we tell the form to start watching for changes.
+        setTimeout(() => {
+          isInitialLoad.current = false;
+          setIsDirty(false); // Reset just in case it caught an intermediate render
+          isDirtyRef.current = false;
+        }, 100);
       });
+      
     fetchProductImages(productId);
   }, [mode, productId]);
 
@@ -859,6 +871,7 @@ useEffect(() => {
             onKeywordsChange={(v) => { setKeywords(v); clearError("keywords"); }}
             onSlugChange={(v) => { setSlug(v); clearError("slug"); }}
             productImages={productImages}
+            imprint={imprintFilter} // ← Pass the imprint down here!
             errors={{
               keywords: errors.keywords,
               metaTitle: errors.metaTitle,
