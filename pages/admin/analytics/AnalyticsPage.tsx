@@ -14,7 +14,7 @@ export type Period = "all" | "week" | "month";
 
 export default function AnalyticsPage() {
   const [source, setSource] = useState<Source>("all");
-  const [period, setPeriod] = useState<Period>("all");
+  const [period, setPeriod] = useState<Period>("month");
 
   useEffect(() => {
     document.title = "Manage Analytics | Admin Panel";
