@@ -28,7 +28,8 @@ type Props = {
   onKeywordsChange: (v: string) => void;
   onSlugChange?: (v: string) => void;
   productImages?: ProductImage[];
-  errors?: SeoErrors; // ← NEW
+  errors?: SeoErrors; 
+  imprint?: "agph" | "agclassics"; // ← NEW: Accept imprint prop
 };
 
 const stripHtml = (html: string) =>
@@ -46,7 +47,9 @@ const Dot = ({ pass }: { pass: boolean }) => (
   <span className={`mt-0.5 w-3 h-3 rounded-full shrink-0 ${pass ? "bg-green-500" : "bg-orange-400"}`} />
 );
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL!;
+// Define both URLs
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "";
+const AGCLASSIC_URL = process.env.NEXT_PUBLIC_AGCLASSIC_URL || "";
 
 export default function SeoPanel({
   title, slug, description, metaTitle, metaDescription,
@@ -54,6 +57,7 @@ export default function SeoPanel({
   onKeywordsChange, onSlugChange,
   productImages = [],
   errors = {},
+  imprint = "agph", // ← NEW: Default to agph
 }: Props) {
   const [tab, setTab] = useState<TabType>("seo");
   const [previewMode, setPreviewMode] = useState<"mobile" | "desktop">("mobile");
@@ -66,16 +70,40 @@ export default function SeoPanel({
 
   const kp2 = useMemo(() => (keywords.split(",")[1] || "").toLowerCase().trim(), [keywords]);
 
-const kpCount = useMemo(() => {
+  const kpCount = useMemo(() => {
     if (!kp || !plainDesc) return 0;
-    // 👇 Escape the user input before making it a Regex
     const safeKp = escapeRegExp(kp);
     return (plainDesc.toLowerCase().match(new RegExp(safeKp, "gi")) || []).length;
   }, [kp, plainDesc]);
 
+  // Extract all hrefs from the description HTML
+  const { internalLinksCount, outboundLinksCount } = useMemo(() => {
+    let internal = 0;
+    let outbound = 0;
+    
+    const regex = /<a\s+(?:[^>]*?\s+)?href=(["'])(.*?)\1/gi;
+    let match;
+    
+    // Choose base domain for internal link tracking based on imprint
+    const activeUrl = imprint === "agclassics" ? AGCLASSIC_URL : SITE_URL;
+    const baseDomain = activeUrl ? activeUrl.replace(/^https?:\/\//, '') : '';
+
+    while ((match = regex.exec(description)) !== null) {
+      const href = match[2].toLowerCase();
+      
+      if (href.startsWith('/') || href.startsWith('#') || href.startsWith('mailto:') || (baseDomain && href.includes(baseDomain))) {
+        internal++;
+      } 
+      else if (href.startsWith('http')) {
+        outbound++;
+      }
+    }
+    
+    return { internalLinksCount: internal, outboundLinksCount: outbound };
+  }, [description, imprint]); // ← Added imprint to dependencies
+
   const kp2Count = useMemo(() => {
     if (!kp2 || !plainDesc) return 0;
-    // 👇 Escape the user input before making it a Regex
     const safeKp2 = escapeRegExp(kp2);
     return (plainDesc.toLowerCase().match(new RegExp(safeKp2, "gi")) || []).length;
   }, [kp2, plainDesc]);
@@ -106,7 +134,14 @@ const kpCount = useMemo(() => {
     const density = words > 0 ? (kpCount / words) * 100 : 0;
 
     return [
-      { id: "outbound", label: "Outbound links", pass: true, msg: "Good job!" },
+      { 
+        id: "outbound", 
+        label: "Outbound links", 
+        pass: outboundLinksCount > 0, 
+        msg: outboundLinksCount > 0 
+          ? `Good job! You have ${outboundLinksCount} outbound link(s).` 
+          : "No outbound links appear in this page. Add some!" 
+      },
       {
         id: "img_alt", label: "Keyphrase in image alt attributes",
         pass: kp ? imagesWithKpInAlt.length > 0 : hasAnyImage && imagesWithoutAlt.length === 0,
@@ -129,7 +164,14 @@ const kpCount = useMemo(() => {
             ? `${totalImages} image${totalImages > 1 ? "s" : ""} found — all have alt text. Good job!`
             : `${totalImages} image${totalImages > 1 ? "s" : ""} found, but ${imagesWithoutAlt.length} ${imagesWithoutAlt.length > 1 ? "are" : "is"} missing alt text.`,
       },
-      { id: "internal_links", label: "Internal links", pass: true, msg: "You have enough internal links. Good job!" },
+      { 
+        id: "internal_links", 
+        label: "Internal links", 
+        pass: internalLinksCount > 0, 
+        msg: internalLinksCount > 0 
+          ? `You have ${internalLinksCount} internal link(s). Good job!` 
+          : "No internal links appear in this page, make sure to add some!" 
+      },
       {
         id: "kp_intro", label: "Keyphrase in introduction",
         pass: kp ? bodyLower.slice(0, 200).includes(kp) : false,
@@ -189,7 +231,7 @@ const kpCount = useMemo(() => {
         msg: (metaTitle || title).length >= 30 && (metaTitle || title).length <= 70 ? "Good job!" : `SEO title is ${(metaTitle || title).length} chars. Aim for 30–70.`,
       },
     ];
-  }, [kp, kp2, kp2Count, kp2density, metaTitle, metaDescription, slug, plainDesc, title, words, kpCount, h1Count, h2h3WithKp, totalImages, hasAnyImage, imagesWithKpInAlt, imagesWithAlt, imagesWithoutAlt]);
+  }, [kp, kp2, kp2Count, kp2density, metaTitle, metaDescription, slug, plainDesc, title, words, kpCount, h1Count, h2h3WithKp, totalImages, hasAnyImage, imagesWithKpInAlt, imagesWithAlt, imagesWithoutAlt, internalLinksCount, outboundLinksCount]);
 
   const goodChecks = seoChecks.filter(c => c.pass);
   const badChecks = seoChecks.filter(c => !c.pass);
@@ -231,10 +273,18 @@ const kpCount = useMemo(() => {
   const readScore = readabilityChecks.length ? Math.round((readGood.length / readabilityChecks.length) * 100) : 0;
   const readDotCls = readScore >= 70 ? "bg-green-500" : readScore >= 40 ? "bg-orange-400" : "bg-red-500";
 
+  // ── IMPRINT SPECIFIC DATA ── //
+  const isAgClassics = imprint === "agclassics";
+  const siteName = isAgClassics ? "AG Classics" : "AGPH Books Store";
+  const siteFavicon = isAgClassics ? "/images/logo/AGClaasiclogo2.png" : "/images/logo/AGPH-Logo-Black-600x290.webp"; // Assuming you have an agclassics icon, fallback defaults otherwise
+  
+  const baseUrl = isAgClassics ? AGCLASSIC_URL : SITE_URL;
+  const cleanBaseUrl = baseUrl ? baseUrl.replace(/^https?:\/\//, '') : (isAgClassics ? 'agclassics.in' : 'agphbooks.com');
+  
   const previewTitle = metaTitle || title || "Page Title";
   const previewSlug = slug || "page-slug";
   const previewDesc = metaDescription || plainDesc.slice(0, 155) || "Page description appears here…";
-  const previewUrl = `${SITE_URL}/product/${previewSlug}`;
+  const previewUrl = `${cleanBaseUrl}/product/${previewSlug}`;
 
   const titleLen = (metaTitle || title).length;
   const descLen = metaDescription.length;
@@ -243,7 +293,6 @@ const kpCount = useMemo(() => {
   const titleBarCls = titleLen < 30 ? "bg-orange-400" : titleLen <= 70 ? "bg-green-500" : "bg-red-500";
   const descBarCls = descLen < 120 ? "bg-orange-400" : descLen <= 160 ? "bg-green-500" : "bg-red-500";
 
-  // Check if any SEO field has an error — highlight the panel border
   const hasSeoError = !!(errors.keywords || errors.metaTitle || errors.slug || errors.metaDescription);
 
   return (
@@ -286,7 +335,6 @@ const kpCount = useMemo(() => {
               type="text"
               value={keywords}
               onChange={(e) => {
-                // 👇 Updated regex with 'u' flag for Unicode support
                 const sanitizedValue = e.target.value.replace(/[^\p{L}\p{M}0-9\s,\-()–—]/gu, "");
                 onKeywordsChange(sanitizedValue);
               }}
@@ -321,9 +369,9 @@ const kpCount = useMemo(() => {
               {previewMode === "mobile" ? (
                 <div className="max-w-xs">
                   <div className="flex items-center gap-2 mb-2">
-                    <Image /* eslint-disable-next-line @next/next/no-img-element */ src="/favicon.ico" alt="Site logo" width={24} height={24} className="rounded-sm" />
+                    <Image src={siteFavicon} alt={`${siteName} logo`} width={24} height={24} className="rounded-sm" />
                     <div>
-                      <p className="text-xs font-medium text-gray-800 leading-none">AGPH Books Store</p>
+                      <p className="text-xs font-medium text-gray-800 leading-none">{siteName}</p>
                       <p className="text-xs text-gray-500 leading-none mt-0.5">{previewUrl}</p>
                     </div>
                   </div>
