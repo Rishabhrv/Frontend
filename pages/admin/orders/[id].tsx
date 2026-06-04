@@ -94,10 +94,10 @@ function ShippingTracker({ current }: { current: string }) {
   );
 }
 
+
 /* ════════════════════════════════════════════════════════
    TIMELINE LOGIC & COMPONENT
 ════════════════════════════════════════════════════════ */
-
 const buildTimeline = (order: any, customer: any, shipping: any, logs: any[]) => {
   const events: any[] = [];
   const baseTime = new Date(order.created_at).getTime();
@@ -138,19 +138,26 @@ const buildTimeline = (order: any, customer: any, shipping: any, logs: any[]) =>
   if (logs && logs.length > 0) {
     logs.forEach((log) => {
       let details: any = {};
-      try { details = JSON.parse(log.details || '{}'); } catch(e){}
+      
+      // 🌟 FIX: Safely handle both String (Localhost) and Object (Live Server)
+      if (typeof log.details === 'string') {
+        try { details = JSON.parse(log.details); } catch(e) {}
+      } else if (typeof log.details === 'object' && log.details !== null) {
+        details = log.details;
+      }
 
       if (log.event_type === 'email_sent') {
-        // 🌟 Determine if the email was sent to the customer or the admin
         const isAdmin = details.recipient_type === 'admin';
-        const targetLabel = isAdmin 
-          ? `Admin (${details.recipient_email})` 
-          : `${details.recipient_email}`;
+        
+        // Fallback checks to ensure it NEVER says undefined
+        const emailLabel = details.recipient_email || customer.email || 'customer';
+        const targetLabel = isAdmin ? `Admin (${emailLabel})` : `${emailLabel}`;
+        const subjectLabel = details.subject || 'Order Update';
 
         events.push({
            id: `log_${log.id}`,
            timestamp: new Date(log.created_at),
-           title: `System sent a '${details.subject || 'Notification'}' email to ${targetLabel}.`,
+           title: `System sent a '${subjectLabel}' email to ${targetLabel}.`,
            desc: log.status === 'failed' ? `Failed: ${log.error_message}` : '',
            iconType: log.status === 'failed' ? 'error' : 'mail',
            isEmailLog: true,
