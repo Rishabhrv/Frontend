@@ -247,6 +247,7 @@ function SidebarItem({ icon, label, isOpen, badge, onClick, children }: SidebarI
       </button>
 
       {isOpen && <div className="ml-10 mt-1 space-y-1">{children}</div>}
+      
     </div>
   );
 }
