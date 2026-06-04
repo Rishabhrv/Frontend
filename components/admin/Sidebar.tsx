@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
 type PageKey =
   | "products" | "orders"   | "category" | "subject"
@@ -40,8 +41,6 @@ const NAV_ITEMS: NavItem[] = [
   { key: "settings",            label: "Settings",          icon: ShieldOff,                    href: "/admin/settings/SettingsPage",                    pathPrefix: "/admin/settings"             },
   { key: "analytics",           label: "Analytics",         icon: ChartArea,                    href: "/admin/analytics/AnalyticsPage",                  pathPrefix: "/admin/analytics"            },
   { key: "ebook-analytics",     label: "EbookAnalytics",    icon: ChartLine,                    href: "/admin/ebook-analytics/EbookAnalyticsPage",       pathPrefix: "/admin/ebook-analytics"      },
-
-
 ];
 
 export default function Sidebar() {
@@ -49,8 +48,13 @@ export default function Sidebar() {
 
   const [openMenu, setOpenMenu] = useState<"products" | "orders" | null>(null);
   
+  // Badge Counter States
+  const [newOrdersCount, setNewOrdersCount] = useState<number>(0);
+  const [pendingReviewsCount, setPendingReviewsCount] = useState<number>(0);
+  
   const { can, loading } = usePermissions();
 
+  // Highlight current category active tabs
   useEffect(() => {
     if (pathname.startsWith("/admin/product")) {
       setOpenMenu("products");
@@ -62,6 +66,26 @@ export default function Sidebar() {
       setOpenMenu(null);
     }
   }, [pathname]);
+
+  // Fetch count of items awaiting dispatch
+  useEffect(() => {
+    if (can("orders")) {
+      fetch(`${API_URL}/api/orders/count/new-confirmed`)
+        .then(res => res.json())
+        .then(data => setNewOrdersCount(data.count || 0))
+        .catch(err => console.error("Error fetching order count:", err));
+    }
+  }, [can, pathname]);
+
+  // Fetch count of pending reviews
+  useEffect(() => {
+    if (can("reviews")) {
+      fetch(`${API_URL}/api/reviews/count/pending`)
+        .then(res => res.json())
+        .then(data => setPendingReviewsCount(data.count || 0))
+        .catch(err => console.error("Error fetching reviews count:", err));
+    }
+  }, [can, pathname]);
 
   if (loading) {
     return (
@@ -76,8 +100,7 @@ export default function Sidebar() {
     );
   }
 
-  const noAccess =
-    !can("products") && NAV_ITEMS.every(({ key }) => !can(key));
+  const noAccess = !can("products") && NAV_ITEMS.every(({ key }) => !can(key));
 
   return (
     <aside className="hidden w-55 bg-white border-r border-gray-200 lg:block min-h-screen">
@@ -93,9 +116,7 @@ export default function Sidebar() {
             icon={<Box size={18} />}
             label="Products"
             isOpen={openMenu === "products"}
-            onClick={() =>
-              setOpenMenu(openMenu === "products" ? null : "products")
-            }
+            onClick={() => setOpenMenu(openMenu === "products" ? null : "products")}
           >
             <SubItem
               label="Product List"
@@ -110,20 +131,20 @@ export default function Sidebar() {
           </SidebarItem>
         )}
 
-        {/* orders */}
+        {/* ORDERS */}
         {can("orders") && (
           <SidebarItem
             icon={<ShoppingCart size={18} />}
             label="Orders"
             isOpen={openMenu === "orders"}
-            onClick={() =>
-              setOpenMenu(openMenu === "orders" ? null : "orders")
-            }
+            badge={newOrdersCount > 0 ? newOrdersCount : undefined}
+            onClick={() => setOpenMenu(openMenu === "orders" ? null : "orders")}
           >
             <SubItem
               label="Orders List"
               href="/admin/orders/OrdersPage"
               active={pathname === "/admin/orders/OrdersPage"}
+              badge={newOrdersCount > 0 ? newOrdersCount : undefined}
             />
             <SubItem
               label="Abandoned Cart"
@@ -142,6 +163,8 @@ export default function Sidebar() {
               active={pathname.startsWith(pathPrefix)}
               icon={<Icon size={18} />}
               label={label}
+              // Send badge ONLY for reviews if count > 0
+              badge={key === "reviews" && pendingReviewsCount > 0 ? pendingReviewsCount : undefined}
             />
           ) : null
         )}
@@ -151,9 +174,7 @@ export default function Sidebar() {
           <div className="mt-4 flex flex-col items-center gap-2 px-4 py-6 text-center text-gray-400">
             <ShieldOff size={28} />
             <p className="text-xs">
-              No pages assigned.
-              <br />
-              Contact super admin.
+              No pages assigned.<br />Contact super admin.
             </p>
           </div>
         )}
@@ -169,20 +190,25 @@ interface NavLinkProps {
   active: boolean;
   icon: React.ReactNode;
   label: string;
+  badge?: number;
 }
 
-function NavLink({ href, active, icon, label }: NavLinkProps) {
+function NavLink({ href, active, icon, label, badge }: NavLinkProps) {
   return (
     <Link
       href={href}
-      className={`mt-1 flex items-center gap-3 rounded-xl px-4 py-3 transition
-        ${active
-          ? "bg-blue-50 text-blue-600 font-medium"
-          : "text-gray-700 hover:bg-gray-100"
-        }`}
+      className={`mt-1 flex items-center justify-between rounded-xl px-4 py-3 transition
+        ${active ? "bg-blue-50 text-blue-600 font-medium" : "text-gray-700 hover:bg-gray-100"}`}
     >
-      {icon}
-      {label}
+      <div className="flex items-center gap-3 min-w-0 flex-1">
+        {icon}
+        <span className="truncate">{label}</span>
+      </div>
+      {badge !== undefined && (
+        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white shrink-0">
+          {badge}
+        </span>
+      )}
     </Link>
   );
 }
@@ -191,35 +217,36 @@ interface SidebarItemProps {
   icon: React.ReactNode;
   label: string;
   isOpen: boolean;
+  badge?: number;
   onClick: () => void;
   children?: React.ReactNode;
 }
 
-function SidebarItem({ icon, label, isOpen, onClick, children }: SidebarItemProps) {
+function SidebarItem({ icon, label, isOpen, badge, onClick, children }: SidebarItemProps) {
   return (
     <div className="mb-1">
       <button
         type="button"
         onClick={onClick}
         className={`flex w-full items-center justify-between rounded-xl px-4 py-3 transition cursor-pointer
-          ${isOpen
-            ? "bg-blue-50 text-blue-600"
-            : "text-gray-700 hover:bg-gray-100"
-          }`}
+          ${isOpen ? "bg-blue-50 text-blue-600" : "text-gray-700 hover:bg-gray-100"}`}
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
           {icon}
-          <span className="font-medium">{label}</span>
+          <span className="font-medium truncate">{label}</span>
+          {badge !== undefined && (
+            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white shrink-0">
+              {badge}
+            </span>
+          )}
         </div>
         <ChevronDown
           size={16}
-          className={`transition-transform ${isOpen ? "rotate-180" : ""}`}
+          className={`transition-transform flex-shrink-0 ${isOpen ? "rotate-180" : ""}`}
         />
       </button>
 
-      {isOpen && (
-        <div className="ml-10 mt-1 space-y-1">{children}</div>
-      )}
+      {isOpen && <div className="ml-10 mt-1 space-y-1">{children}</div>}
     </div>
   );
 }
@@ -228,19 +255,22 @@ interface SubItemProps {
   label: string;
   href: string;
   active?: boolean;
+  badge?: number;
 }
 
-function SubItem({ label, href, active }: SubItemProps) {
+function SubItem({ label, href, active, badge }: SubItemProps) {
   return (
     <Link
       href={href}
-      className={`block rounded-lg px-3 py-2 text-sm transition
-        ${active
-          ? "bg-blue-50 text-blue-600 font-medium"
-          : "text-gray-600 hover:bg-blue-50 hover:text-blue-600"
-        }`}
+      className={`flex items-center justify-between rounded-lg px-3 py-2 text-sm transition
+        ${active ? "bg-blue-50 text-blue-600 font-medium" : "text-gray-600 hover:bg-blue-50 hover:text-blue-600"}`}
     >
-      {label}
+      <span className="truncate">{label}</span>
+      {badge !== undefined && (
+        <span className="flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white shrink-0">
+          {badge}
+        </span>
+      )}
     </Link>
   );
 }
