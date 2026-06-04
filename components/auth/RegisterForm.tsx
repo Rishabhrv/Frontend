@@ -128,7 +128,7 @@ const RegisterForm = () => {
   };
 
   const inputCls =
-    "w-110 border border-gray-200 rounded-lg px-4 py-2.5 text-sm text-gray-800 " +
+    "w-full md:w-110 border border-gray-200 rounded-lg px-4 py-2.5 text-sm text-gray-800 " +
     "placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-black/10 " +
     "focus:border-gray-400 transition bg-white";
 
