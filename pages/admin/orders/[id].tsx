@@ -8,7 +8,7 @@ import AlertPopup from "@/components/Popups/AlertPopup";
 import AdminGuard  from "@/components/admin/AdminGuard";
 import { ReceiptData } from "@/utils/generateReceipt";
 import { ReceiptButtons } from "@/components/orders/Receiptbuttons";
-
+import { Mail, AlertCircle, CreditCard, Truck } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
@@ -20,35 +20,29 @@ const formatDateTime = (d: string) =>
 
 /* ─── Unified status config ─── */
 const UNIFIED_STATUSES = [
-  { value: "pending",          label: "Pending",            color: "bg-yellow-100 text-yellow-700",  emailSent: false },
-  { value: "paid",             label: "Paid",               color: "bg-green-100 text-green-700",    emailSent: false },
-  { value: "confirmed",        label: "Order Confirmed",    color: "bg-blue-100 text-blue-700",      emailSent: true  },
-  { value: "shipped",          label: "Shipped",            color: "bg-purple-100 text-purple-700",  emailSent: true  },
-  { value: "out_for_delivery", label: "Out for Delivery",   color: "bg-orange-100 text-orange-700",  emailSent: true  },
-  { value: "delivered",        label: "Delivered",          color: "bg-emerald-100 text-emerald-700",emailSent: true  },
-  { value: "cancelled",        label: "Cancelled",          color: "bg-red-100 text-red-600",        emailSent: true },
+  { value: "pending",          label: "Pending",            color: "bg-yellow-100 text-yellow-700",      emailSent: false },
+  { value: "paid",             label: "Paid",               color: "bg-green-100 text-green-700",        emailSent: false },
+  { value: "confirmed",        label: "Order Confirmed",    color: "bg-blue-100 text-blue-700",          emailSent: true  },
+  { value: "shipped",          label: "Shipped",            color: "bg-purple-100 text-purple-700",      emailSent: true  },
+  { value: "out_for_delivery", label: "Out for Delivery",   color: "bg-orange-100 text-orange-700",      emailSent: true  },
+  { value: "delivered",        label: "Delivered",          color: "bg-emerald-100 text-emerald-700",    emailSent: true  },
+  { value: "cancelled",        label: "Cancelled",          color: "bg-red-100 text-red-600",            emailSent: true },
 ];
 
-/* Derive unified status from order + shipping data */
 function deriveUnifiedStatus(orderStatus: string, shippingStatus?: string): string {
-  // 1. Order-level blocks take absolute priority
   if (orderStatus === "pending") return "pending";
   if (orderStatus === "cancelled") return "cancelled";
 
-  // 2. Then check shipping progression
   if (shippingStatus === "delivered")        return "delivered";
   if (shippingStatus === "out_for_delivery") return "out_for_delivery";
   if (shippingStatus === "shipped")          return "shipped";
   if (shippingStatus === "confirmed")        return "confirmed";
   
-  // 3. Fallback
   return orderStatus || "pending";
 }
 
-/* Whether this status needs courier + tracking */
 const NEEDS_SHIPPING_FIELDS = new Set(["shipped", "out_for_delivery", "delivered"]);
 
-/* ─── Badge ─── */
 function Badge({ value }: { value: string }) {
   const cfg = UNIFIED_STATUSES.find(s => s.value === value);
   const cls = cfg?.color ?? "bg-gray-100 text-gray-600";
@@ -59,7 +53,6 @@ function Badge({ value }: { value: string }) {
   );
 }
 
-/* ─── Shipping step tracker ─── */
 const STEPS = [
   { key: "confirmed",        label: "Order Confirmed" },
   { key: "shipped",          label: "Shipped" },
@@ -101,23 +94,162 @@ function ShippingTracker({ current }: { current: string }) {
   );
 }
 
+/* ════════════════════════════════════════════════════════
+   TIMELINE LOGIC & COMPONENT
+════════════════════════════════════════════════════════ */
 
+const buildTimeline = (order: any, customer: any, shipping: any, logs: any[]) => {
+  const events: any[] = [];
+  const baseTime = new Date(order.created_at).getTime();
 
-/* ══════════════════════════════════════════════════════════ */
+  events.push({
+    id: 'order_placed',
+    timestamp: new Date(baseTime),
+    title: `Order confirmation email was sent to ${customer.name || customer.email}.`,
+    iconType: 'mail'
+  });
+  
+  if (order.payment_status === 'success') {
+    events.push({
+      id: 'order_payment',
+      timestamp: new Date(baseTime - 1000), 
+      title: `A ₹${order.total_amount} INR payment was processed on Cards, UPI, NB, Wallets by Razorpay.`,
+      desc: order.razorpay_payment_id ? `Payment ID: ${order.razorpay_payment_id}` : '',
+      iconType: 'payment'
+    });
+  }
+
+  events.push({
+    id: 'order_checkout',
+    timestamp: new Date(baseTime - 2000), 
+    title: `${customer.name || 'Customer'} placed this order on Online Store.`,
+    desc: `Checkout #${order.id}`,
+    iconType: 'dot'
+  });
+
+  if (shipping) {
+    if (shipping.confirmed_at) events.push({ id: 'ship_conf', timestamp: new Date(shipping.confirmed_at), title: 'This order was confirmed and is being prepared.', iconType: 'dot' });
+    if (shipping.shipped_at) events.push({ id: 'ship_ship', timestamp: new Date(shipping.shipped_at), title: `Shipment dispatched via ${shipping.courier || 'Courier'}.`, desc: shipping.tracking_number ? `Tracking ID: ${shipping.tracking_number}` : '', iconType: 'truck' });
+    if (shipping.out_for_delivery_at) events.push({ id: 'ship_ofd', timestamp: new Date(shipping.out_for_delivery_at), title: 'Shipment is out for delivery.', iconType: 'truck' });
+    if (shipping.delivered_at) events.push({ id: 'ship_del', timestamp: new Date(shipping.delivered_at), title: 'Shipment was successfully delivered.', iconType: 'dot' });
+  }
+
+  // 3. System Logs (Emails sent to BOTH customer and admin)
+  if (logs && logs.length > 0) {
+    logs.forEach((log) => {
+      let details: any = {};
+      try { details = JSON.parse(log.details || '{}'); } catch(e){}
+
+      if (log.event_type === 'email_sent') {
+        // 🌟 Determine if the email was sent to the customer or the admin
+        const isAdmin = details.recipient_type === 'admin';
+        const targetLabel = isAdmin 
+          ? `Admin (${details.recipient_email})` 
+          : `${details.recipient_email}`;
+
+        events.push({
+           id: `log_${log.id}`,
+           timestamp: new Date(log.created_at),
+           title: `System sent a '${details.subject || 'Notification'}' email to ${targetLabel}.`,
+           desc: log.status === 'failed' ? `Failed: ${log.error_message}` : '',
+           iconType: log.status === 'failed' ? 'error' : 'mail',
+           isEmailLog: true,
+           status: log.status
+        });
+      }
+    });
+  }
+
+  events.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+
+  const grouped: { date: string, items: any[] }[] = [];
+  let currentGroup: any = null;
+
+  events.forEach(ev => {
+     const dateStr = ev.timestamp.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+     if (!currentGroup || currentGroup.date !== dateStr) {
+        currentGroup = { date: dateStr, items: [] };
+        grouped.push(currentGroup);
+     }
+     currentGroup.items.push(ev);
+  });
+
+  return grouped;
+};
+
+function OrderTimeline({ order, customer, shipping, logs }: any) {
+  const groupedEvents = buildTimeline(order, customer, shipping, logs);
+
+  const getIcon = (type: string) => {
+    switch(type) {
+      case 'payment': return <CreditCard className="w-3.5 h-3.5 text-gray-500" />;
+      case 'truck': return <Truck className="w-3.5 h-3.5 text-blue-600" />;
+      case 'error': return <AlertCircle className="w-3.5 h-3.5 text-red-500" />;
+      case 'mail': return <Mail className="w-3.5 h-3.5 text-purple-600" />;
+      case 'dot': default: return <span className="w-2 h-2 bg-gray-500 rounded-full" />;
+    }
+  };
+
+  return (
+    <div className="px-6">
+      <h3 className="text-base font-semibold text-gray-800 mb-6">Timeline</h3>
+      <div className="space-y-6">
+        {groupedEvents.map((group, gIdx) => (
+          <div key={gIdx}>
+            <h4 className="text-xs font-bold text-gray-500 mb-4">{group.date}</h4>
+            
+            <div className="relative border-l border-gray-300 ml-2 space-y-6 pb-2">
+              {group.items.map((item: any, iIdx: number) => (
+                <div key={iIdx} className="relative pl-8">
+                  <span className="absolute -left-3 top-0 bg-[#f6f6f7] border border-gray-300 w-6 h-6 rounded-full flex items-center justify-center shadow-sm">
+                    {getIcon(item.iconType)}
+                  </span>
+                  
+                  <div className="flex justify-between items-start gap-4">
+                     <p className="text-sm text-gray-700 leading-snug">{item.title}</p>
+                     <span className="text-[11px] text-gray-500 whitespace-nowrap pt-0.5 font-medium">
+                        {item.timestamp.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                     </span>
+                  </div>
+                  {item.desc && (
+                     <p className={`text-xs mt-1 ${item.status === 'failed' ? 'text-red-500 font-medium' : 'text-gray-500'}`}>
+                        {item.desc}
+                     </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════
+   MAIN COMPONENT
+════════════════════════════════════════════════════════ */
 export default function OrderDetailPage() {
   const { query, back } = useRouter();
 
-  const [data, setData]               = useState<any>(null);
+  const [data, setData] = useState<any>(null);
   const [unifiedStatus, setUnifiedStatus] = useState("pending");
-  const [courier, setCourier]         = useState("");
-  const [tracking, setTracking]       = useState("");
-  const [saving, setSaving]           = useState(false);
-  const [toastOpen, setToastOpen]     = useState(false);
-  const [toastMsg, setToastMsg]       = useState("");
+  const [courier, setCourier] = useState("");
+  const [tracking, setTracking] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastMsg, setToastMsg] = useState("");
+
+  // Address Edit State Fields (Restricted to 5 fields)
+  const [isEditingAddress, setIsEditingAddress] = useState(false);
+  const [addressSaving, setAddressSaving] = useState(false);
+  const [addressForm, setAddressForm] = useState({
+    address: "", city: "", state: "", pincode: "", phone: ""
+  });
   
-        useEffect(() => {
-          document.title = "Manage Orders | Admin Panel";
-        }, []);
+  useEffect(() => {
+    document.title = "Manage Orders | Admin Panel";
+  }, []);
 
   useEffect(() => {
     if (!query.id) return;
@@ -130,6 +262,17 @@ export default function OrderDetailPage() {
         setUnifiedStatus(deriveUnifiedStatus(d.order.status, d.shipping?.status));
         setCourier(d.shipping?.courier || "");
         setTracking(d.shipping?.tracking_number || "");
+        
+        // Initialize Address Form
+        if (d.billing) {
+          setAddressForm({
+            address: d.billing.address || "",
+            city: d.billing.city || "",
+            state: d.billing.state || "",
+            pincode: d.billing.pincode || "",
+            phone: d.billing.phone || d.customer?.phone || ""
+          });
+        }
       });
   }, [query.id]);
 
@@ -146,7 +289,7 @@ export default function OrderDetailPage() {
       },
       body: JSON.stringify({
         unifiedStatus,
-        courier:         needsShipping ? courier : "",
+        courier:          needsShipping ? courier : "",
         tracking_number: needsShipping ? tracking : "",
       }),
     });
@@ -157,25 +300,54 @@ export default function OrderDetailPage() {
       : (json.msg || "Update failed."));
     setToastOpen(true);
 
-    // refresh local data so tracker updates
     if (res.ok) {
-      setData((prev: any) => ({
-        ...prev,
-        order: {
-          ...prev.order,
-          status: unifiedStatus,
-        },
-        shipping: needsShipping ? {
-          ...prev.shipping,
-          status:          unifiedStatus === "out_for_delivery" ? "out_for_delivery" : unifiedStatus,
-          courier:         needsShipping ? courier : prev.shipping?.courier,
-          tracking_number: needsShipping ? tracking : prev.shipping?.tracking_number,
-        } : prev.shipping,
-      }));
+      // Re-fetch data to get the newest logs for the timeline
+      fetch(`${API_URL}/api/admin/orders/${data.order.id}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("admin_token")}` }
+      })
+      .then(r => r.json())
+      .then(updatedData => {
+         setData(updatedData);
+         setUnifiedStatus(deriveUnifiedStatus(updatedData.order.status, updatedData.shipping?.status));
+      });
     }
   };
 
-  
+  const handleAddressSave = async () => {
+    setAddressSaving(true);
+    try {
+      const res = await fetch(`${API_URL}/api/admin/orders/${data.order.id}/address`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("admin_token")}`,
+        },
+        body: JSON.stringify(addressForm)
+      });
+      const json = await res.json();
+      setAddressSaving(false);
+
+      if (res.ok) {
+        setToastMsg("Shipping address details updated.");
+        setToastOpen(true);
+        setIsEditingAddress(false);
+        setData((prev: any) => ({
+          ...prev,
+          billing: {
+            ...prev.billing,
+            ...addressForm
+          }
+        }));
+      } else {
+        setToastMsg(json.msg || "Failed to update details.");
+        setToastOpen(true);
+      }
+    } catch (err) {
+      setAddressSaving(false);
+      setToastMsg("An error occurred during changes.");
+      setToastOpen(true);
+    }
+  };
 
   if (!data) {
     return (
@@ -189,12 +361,11 @@ export default function OrderDetailPage() {
     );
   }
 
-  const { order, customer, billing, shipping, items } = data;
+  const { order, customer, billing, shipping, items, logs } = data;
   const ebookItems     = items.filter((i: any) => i.format === "ebook");
   const paperbackItems = items.filter((i: any) => i.format === "paperback");
-  const isEbookOnly    = paperbackItems.length === 0 && ebookItems.length > 0; // ← ADD
+  const isEbookOnly    = paperbackItems.length === 0 && ebookItems.length > 0;
   const receiptData: ReceiptData = { order, customer, billing, shipping, items };
-
 
   const labelCls = "block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1";
   const inputCls = "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition";
@@ -235,10 +406,10 @@ export default function OrderDetailPage() {
             {/* ── LEFT (2/3) ── */}
             <div className="lg:col-span-2 space-y-5">
 
-              {/* Customer + Billing */}
+              {/* Customer + Shipping Address Block */}
               <div className="bg-white border border-gray-200 rounded-xl p-5 grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div>
-                  <h2 className="text-sm font-semibold text-gray-700 border-b border-gray-100 pb-2 mb-3">Customer</h2>
+                  <h2 className="text-sm font-semibold text-gray-700 border-b border-gray-100 pb-2 mb-3">Customer Profile</h2>
                   <div className="flex items-center gap-3 mb-3">
                     <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm shrink-0">
                       {customer.name?.[0]?.toUpperCase()}
@@ -251,16 +422,64 @@ export default function OrderDetailPage() {
                   <p className="text-xs text-gray-500">{customer.phone}</p>
                 </div>
 
+                {/* Shipping Address Column */}
                 <div>
-                  <h2 className="text-sm font-semibold text-gray-700 border-b border-gray-100 pb-2 mb-3">Shipping Address</h2>
-                  {billing?.address ? (
-                    <address className="not-italic text-sm text-gray-600 leading-relaxed">
-                      {billing.address}<br />
-                      {billing.city}, {billing.state} – {billing.pincode}<br />
-                      <span className="text-gray-400">{billing.country}</span>
-                    </address>
+                  <div className="flex justify-between items-center border-b border-gray-100 pb-2 mb-3">
+                    <h2 className="text-sm font-semibold text-gray-700">Shipping Address</h2>
+                    {!isEditingAddress && (
+                      <button 
+                        onClick={() => setIsEditingAddress(true)}
+                        className="text-xs font-semibold text-blue-600 hover:text-blue-800 transition cursor-pointer"
+                      >
+                        Edit Address
+                      </button>
+                    )}
+                  </div>
+
+                  {isEditingAddress ? (
+                    <div className="space-y-2">
+                      <div className="text-xs text-gray-400 font-medium mb-1">
+                        Modifying address details for: <span className="text-gray-700 font-bold">{billing?.first_name} {billing?.last_name}</span>
+                      </div>
+                      
+                      <textarea 
+                        placeholder="Street address" 
+                        rows={2} 
+                        className={inputCls} 
+                        value={addressForm.address} 
+                        onChange={e => setAddressForm({...addressForm, address: e.target.value})} 
+                      />
+                      <div className="grid grid-cols-2 gap-2">
+                        <input type="text" placeholder="City" className={inputCls} value={addressForm.city} onChange={e => setAddressForm({...addressForm, city: e.target.value})} />
+                        <input type="text" placeholder="State" className={inputCls} value={addressForm.state} onChange={e => setAddressForm({...addressForm, state: e.target.value})} />
+                      </div>
+                      <div>
+                        <input type="text" placeholder="PIN Code" maxLength={6} className={inputCls} value={addressForm.pincode} onChange={e => setAddressForm({...addressForm, pincode: e.target.value})} />
+                      </div>
+                      <div>
+                        <input type="text" placeholder="Phone Number" className={inputCls} value={addressForm.phone} onChange={e => setAddressForm({...addressForm, phone: e.target.value})} />
+                      </div>
+
+                      <div className="flex justify-end gap-2 pt-2 text-xs">
+                        <button onClick={() => setIsEditingAddress(false)} className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-md font-medium transition cursor-pointer">
+                          Cancel
+                        </button>
+                        <button onClick={handleAddressSave} disabled={addressSaving} className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium transition cursor-pointer disabled:opacity-50">
+                          {addressSaving ? "Saving..." : "Save"}
+                        </button>
+                      </div>
+                    </div>
                   ) : (
-                    <p className="text-sm text-gray-400">No address on file.</p>
+                    billing?.address ? (
+                      <address className="not-italic text-sm text-gray-600 leading-relaxed">
+                        <span className="font-semibold text-gray-800">{billing.first_name} {billing.last_name}</span><br />
+                        {billing.address}<br />
+                        {billing.city}, {billing.state} – {billing.pincode}<br />
+                        {billing.phone && <span className="text-xs text-gray-500 block mt-1">Contact: {billing.phone}</span>}
+                      </address>
+                    ) : (
+                      <p className="text-sm text-gray-400">No address on file.</p>
+                    )
                   )}
                 </div>
               </div>
@@ -339,7 +558,7 @@ export default function OrderDetailPage() {
                 </div>
               )}
 
-              {/* Order total */}
+              {/* Order total Summary */}
               <div className="bg-white border border-gray-200 rounded-xl p-5">
                 <div className="flex justify-between items-center text-sm text-gray-500 mb-4">
                   <span>Payment Status: </span>
@@ -368,8 +587,7 @@ export default function OrderDetailPage() {
 
             {/* ── RIGHT SIDEBAR (1/3) ── */}
             <div className="space-y-5">
-              {/* Shipping tracker — only when order is active and not pending/cancelled */} 
-                {shipping?.status && !isEbookOnly && !["pending", "cancelled"].includes(unifiedStatus) && (
+              {shipping?.status && !isEbookOnly && !["pending", "cancelled"].includes(unifiedStatus) && (
                 <div className="bg-white border border-gray-200 rounded-xl p-5">
                   <h3 className="text-sm font-semibold text-gray-700 border-b border-gray-100 pb-2 mb-4">Shipment Progress</h3>
                   <ShippingTracker current={shipping.status} />
@@ -395,15 +613,11 @@ export default function OrderDetailPage() {
               <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
                 <h3 className="text-sm font-semibold text-gray-700 border-b border-gray-100 pb-2">Update Order Status</h3>
 
-                {/* Single status selector */}
                 <div>
                   <label className={labelCls}>Status</label>
                   <select className={inputCls} value={unifiedStatus} onChange={e => setUnifiedStatus(e.target.value)}>
                     {UNIFIED_STATUSES
-                      .filter(s => isEbookOnly
-                        ? ["pending", "paid", "confirmed", "cancelled"].includes(s.value)
-                        : true
-                      )
+                      .filter(s => isEbookOnly ? ["pending", "paid", "confirmed", "cancelled"].includes(s.value) : true)
                       .map(s => (
                         <option key={s.value} value={s.value}>{s.label}</option>
                       ))
@@ -411,7 +625,6 @@ export default function OrderDetailPage() {
                   </select>
                 </div>
 
-                {/* Courier + Tracking — only shown when relevant */}
                 {needsShipping && (
                   <>
                     <div>
@@ -438,7 +651,6 @@ export default function OrderDetailPage() {
                   </>
                 )}
 
-                {/* Email notice */}
                 <p className="text-xs text-gray-400 flex items-center gap-1.5">
                   {selectedMeta.emailSent ? (
                     <>
@@ -472,6 +684,17 @@ export default function OrderDetailPage() {
 
             </div>
           </div>
+
+          {/* ── TIMELINE (BOTTOM) ── */}
+          <div className="mt-6">
+            <OrderTimeline 
+              order={order} 
+              customer={customer} 
+              shipping={shipping} 
+              logs={logs || []} 
+            />
+          </div>
+
         </div>
       </div>
 
