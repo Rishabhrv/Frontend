@@ -10,6 +10,7 @@ import { ReceiptData } from "@/utils/generateReceipt";
 import { ReceiptButtons } from "@/components/orders/Receiptbuttons";
 import { Mail, AlertCircle, CreditCard, Truck } from "lucide-react";
 
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
 const formatDateTime = (d: string) =>
@@ -50,6 +51,84 @@ function Badge({ value }: { value: string }) {
     <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${cls}`}>
       {value.replace(/_/g, " ")}
     </span>
+  );
+}
+
+const TL_CFG: Record<
+  string,
+  {
+    /* Icon badge */
+    iconBg: string;
+    iconText: string;
+    /* Card left-border colour (Tailwind class) */
+    cardBorder: string;
+    /* Type tag inside the card */
+    tagBg: string;
+    tagText: string;
+    tagLabel: string;
+  }
+> = {
+  mail: {
+    iconBg: "#EDE9FE",
+    iconText: "#7C3AED",
+    cardBorder: "border-l-violet-400",
+    tagBg: "#F5F3FF",
+    tagText: "#6D28D9",
+    tagLabel: "Email",
+  },
+  payment: {
+    iconBg: "#D1FAE5",
+    iconText: "#059669",
+    cardBorder: "border-l-emerald-400",
+    tagBg: "#ECFDF5",
+    tagText: "#065F46",
+    tagLabel: "Payment",
+  },
+  truck: {
+    iconBg: "#DBEAFE",
+    iconText: "#2563EB",
+    cardBorder: "border-l-blue-400",
+    tagBg: "#EFF6FF",
+    tagText: "#1D4ED8",
+    tagLabel: "Shipping",
+  },
+  error: {
+    iconBg: "#FEE2E2",
+    iconText: "#DC2626",
+    cardBorder: "border-l-red-400",
+    tagBg: "#FEF2F2",
+    tagText: "#B91C1C",
+    tagLabel: "Error",
+  },
+  dot: {
+    iconBg: "#F3F4F6",
+    iconText: "#6B7280",
+    cardBorder: "border-l-gray-300",
+    tagBg: "#F9FAFB",
+    tagText: "#374151",
+    tagLabel: "Update",
+  },
+};
+ 
+
+/* ─────────────────────────────────────────────────────────────
+   ICON BADGE
+───────────────────────────────────────────────────────────── */
+function TLIcon({ type }: { type: string }) {
+  const cfg = TL_CFG[type] ?? TL_CFG.dot;
+  return (
+    <div
+      className="relative z-10 flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center border-[2.5px] border-white shadow-md"
+      style={{ backgroundColor: cfg.iconBg, color: cfg.iconText }}
+    >
+      {type === "payment" && <CreditCard className="w-3.5 h-3.5" />}
+      {type === "truck"   && <Truck       className="w-3.5 h-3.5" />}
+      {type === "error"   && <AlertCircle className="w-3.5 h-3.5" />}
+      {type === "mail"    && <Mail        className="w-3.5 h-3.5" />}
+      {type === "dot"     && (
+        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: cfg.iconText }} />
+      )}
+    </div>
   );
 }
 
@@ -184,51 +263,154 @@ const buildTimeline = (order: any, customer: any, shipping: any, logs: any[]) =>
   return grouped;
 };
 
-function OrderTimeline({ order, customer, shipping, logs }: any) {
-  const groupedEvents = buildTimeline(order, customer, shipping, logs);
-
-  const getIcon = (type: string) => {
-    switch(type) {
-      case 'payment': return <CreditCard className="w-3.5 h-3.5 text-gray-500" />;
-      case 'truck': return <Truck className="w-3.5 h-3.5 text-blue-600" />;
-      case 'error': return <AlertCircle className="w-3.5 h-3.5 text-red-500" />;
-      case 'mail': return <Mail className="w-3.5 h-3.5 text-purple-600" />;
-      case 'dot': default: return <span className="w-2 h-2 bg-gray-500 rounded-full" />;
-    }
-  };
+export function OrderTimeline({
+  order,
+  customer,
+  shipping,
+  logs,
+}: {
+  order: any;
+  customer: any;
+  shipping: any;
+  logs: any[];
+}) {
+  const grouped = buildTimeline(order, customer, shipping, logs);
+  const totalEvents = grouped.reduce((n, g) => n + g.items.length, 0);
+  
+  // Single state to track if the entire timeline is expanded
+  const [isExpanded, setIsExpanded] = useState(false);
 
   return (
-    <div className="px-6">
-      <h3 className="text-base font-semibold text-gray-800 mb-6">Timeline</h3>
-      <div className="space-y-6">
-        {groupedEvents.map((group, gIdx) => (
-          <div key={gIdx}>
-            <h4 className="text-xs font-bold text-gray-500 mb-4">{group.date}</h4>
-            
-            <div className="relative border-l border-gray-300 ml-2 space-y-6 pb-2">
-              {group.items.map((item: any, iIdx: number) => (
-                <div key={iIdx} className="relative pl-8">
-                  <span className="absolute -left-3 top-0 bg-[#f6f6f7] border border-gray-300 w-6 h-6 rounded-full flex items-center justify-center shadow-sm">
-                    {getIcon(item.iconType)}
-                  </span>
-                  
-                  <div className="flex justify-between items-start gap-4">
-                     <p className="text-sm text-gray-700 leading-snug">{item.title}</p>
-                     <span className="text-[11px] text-gray-500 whitespace-nowrap pt-0.5 font-medium">
-                        {item.timestamp.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
-                     </span>
-                  </div>
-                  {item.desc && (
-                     <p className={`text-xs mt-1 ${item.status === 'failed' ? 'text-red-500 font-medium' : 'text-gray-500'}`}>
-                        {item.desc}
-                     </p>
-                  )}
+    <div className="overflow-hidden py-4 ">
+      {/* ── keyframes injected once ────────────────────────── */}
+      <style>{`
+        @keyframes tl-rise {
+          from { opacity: 0; transform: translateY(8px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .tl-row  { animation: tl-rise .3s ease both; }
+        .tl-card { transition: box-shadow .15s ease, transform .15s ease; }
+        .tl-card:hover {
+          box-shadow: 0 4px 18px rgba(0,0,0,.07);
+          transform: translateX(2px);
+        }
+      `}</style>
+
+      {/* ── Single Accordion Header ────────────────────────── */}
+      <button 
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full flex items-center justify-between p-5 cursor-pointer group focus:outline-none"
+      >
+        <div className="flex items-center gap-2">
+          <h3 className="text-sm font-semibold text-gray-700 group-hover:text-blue-600 transition-colors">
+            Activity Timeline
+          </h3>
+          <span className="text-[11px] bg-gray-100 text-gray-500 font-semibold px-2 py-0.5 rounded-full">
+            {totalEvents}
+          </span>
+        </div>
+        <svg
+          className={`w-4 h-4 text-gray-400 transition-transform duration-200 hover:text-blue-600 ${isExpanded ? "rotate-180" : ""}`}
+          fill="none" stroke="currentColor" viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {/* ── Body (Only renders if expanded) ────────────────── */}
+      {isExpanded && (
+        <div className="px-3 pb-5 pt-2 border-t border-gray-100 space-y-7 mt-2">
+          {grouped.map((group, gIdx) => (
+            <div key={gIdx}>
+
+              {/* Simple Date Separator */}
+              <div className="flex items-left gap-3 mb-4 px-5">
+                <span className="text-[9.5px] font-black uppercase tracking-[.14em] text-gray-400">
+                  {group.date}
+                </span>
+              </div>
+
+              {/* Events */}
+              <div className="relative ml-3">
+                {/* Vertical connector */}
+                <div
+                  className="absolute left-3 top-3.5 bottom-3.5 w-px"
+                  style={{ background: "linear-gradient(180deg,#e2e8f0 0%,#f1f5f9 100%)" }}
+                />
+
+                <div className="space-y-2.5">
+                  {group.items.map((item: any, iIdx: number) => {
+                    const cfg = TL_CFG[item.iconType] ?? TL_CFG.dot;
+
+                    return (
+                      <div
+                        key={iIdx}
+                        className="tl-row flex items-start gap-3"
+                        // Cascading animation delay across dates and items
+                        style={{ animationDelay: `${(gIdx * 5 + iIdx) * 45}ms` }}
+                      >
+                        {/* Icon node */}
+                        <TLIcon type={item.iconType} />
+
+                        {/* Card */}
+                        <div
+                          className={`tl-card flex-1 my-2 border-l-[3px] bg-white my-4 shadow-sm border border-gray-50
+                                      rounded-tl-none rounded-bl-none rounded-tr-lg rounded-br-lg
+                                      px-3.5 py-4 min-w-0 ${cfg.cardBorder}`}
+                          style={{ borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }}
+                        >
+                          <div className="flex items-start gap-2">
+
+                            {/* Type tag */}
+                            <span
+                              className="mt-[1px] shrink-0 text-[9px] font-black uppercase tracking-wider px-1.5 py-[2px] rounded"
+                              style={{ backgroundColor: cfg.tagBg, color: cfg.tagText }}
+                            >
+                              {cfg.tagLabel}
+                            </span>
+
+                            {/* Title + description */}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[12px] leading-snug text-black">
+                                {item.title}
+                              </p>
+                              {item.desc && (
+                                <p
+                                  className={`text-[11px] mt-1 font-mono tracking-tight ${
+                                    item.status === "failed"
+                                      ? "text-red-500 font-semibold"
+                                      : "text-gray-400"
+                                  }`}
+                                >
+                                  {item.desc}
+                                </p>
+                              )}
+                            </div>
+
+                            {/* Timestamp */}
+                            <time className="shrink-0 text-[10px] font-mono font-medium text-gray-900 whitespace-nowrap pt-[2px]">
+                              {item.timestamp.toLocaleTimeString("en-IN", {
+                                hour: "numeric",
+                                minute: "2-digit",
+                                hour12: true,
+                              })}
+                            </time>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              ))}
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+
+          {/* Empty state */}
+          {grouped.length === 0 && (
+            <p className="text-xs text-gray-400 text-center py-6">No timeline events yet.</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -590,6 +772,8 @@ export default function OrderDetailPage() {
                   <span>₹{order.total_amount}</span>
                 </div>
               </div>
+
+             
             </div>
 
             {/* ── RIGHT SIDEBAR (1/3) ── */}
@@ -692,15 +876,15 @@ export default function OrderDetailPage() {
             </div>
           </div>
 
-          {/* ── TIMELINE (BOTTOM) ── */}
-          <div className="mt-6">
-            <OrderTimeline 
-              order={order} 
-              customer={customer} 
-              shipping={shipping} 
-              logs={logs || []} 
-            />
-          </div>
+           {/* ── TIMELINE (BOTTOM) ── */}
+              <div className="mt-3 max-w-4xl">
+                <OrderTimeline 
+                  order={order} 
+                  customer={customer} 
+                  shipping={shipping} 
+                  logs={logs || []} 
+                />
+              </div>
 
         </div>
       </div>
