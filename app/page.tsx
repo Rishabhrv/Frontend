@@ -17,6 +17,8 @@ import Bookrecommendationsection from "@/components/home/Bookrecommendationsecti
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL;
 
+
+
 export const metadata: Metadata = {
   title:
     "AGPH Books Store | Buy Academic, Fiction & Non-Fiction Books Online",
