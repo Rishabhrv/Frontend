@@ -173,7 +173,6 @@ function ShippingTracker({ current }: { current: string }) {
   );
 }
 
-
 /* ════════════════════════════════════════════════════════
    TIMELINE LOGIC & COMPONENT
 ════════════════════════════════════════════════════════ */
@@ -181,13 +180,16 @@ const buildTimeline = (order: any, customer: any, shipping: any, logs: any[]) =>
   const events: any[] = [];
   const baseTime = new Date(order.created_at).getTime();
 
+  // 1. Checkout Event (Always happens when they reach Razorpay/payment page)
   events.push({
-    id: 'order_placed',
-    timestamp: new Date(baseTime),
-    title: `Order confirmation email was sent to ${customer.name || customer.email}.`,
-    iconType: 'mail'
+    id: 'order_checkout',
+    timestamp: new Date(baseTime - 2000), 
+    title: `${customer.name || 'Customer'} placed this order on Online Store.`,
+    desc: `Checkout #${order.id}`,
+    iconType: 'dot'
   });
-  
+
+  // 2. Payment Event (Only happens if payment is successful)
   if (order.payment_status === 'success') {
     events.push({
       id: 'order_payment',
@@ -198,13 +200,24 @@ const buildTimeline = (order: any, customer: any, shipping: any, logs: any[]) =>
     });
   }
 
-  events.push({
-    id: 'order_checkout',
-    timestamp: new Date(baseTime - 2000), 
-    title: `${customer.name || 'Customer'} placed this order on Online Store.`,
-    desc: `Checkout #${order.id}`,
-    iconType: 'dot'
-  });
+  // 3. Confirmation Email (Only happens if the order is NOT pending)
+  if (order.status !== 'pending' && order.status !== 'cancelled') {
+    events.push({
+      id: 'order_placed',
+      timestamp: new Date(baseTime),
+      title: `Order confirmation email was sent to ${customer.name || customer.email}.`,
+      iconType: 'mail'
+    });
+  } else if (order.status === 'pending') {
+    // Optional: Show a pending payment notice instead
+    events.push({
+      id: 'order_pending_notice',
+      timestamp: new Date(baseTime),
+      title: `Order is awaiting payment completion.`,
+      desc: "Customer abandoned checkout or payment failed.",
+      iconType: 'error'
+    });
+  }
 
   if (shipping) {
     if (shipping.confirmed_at) events.push({ id: 'ship_conf', timestamp: new Date(shipping.confirmed_at), title: 'This order was confirmed and is being prepared.', iconType: 'dot' });
@@ -213,12 +226,11 @@ const buildTimeline = (order: any, customer: any, shipping: any, logs: any[]) =>
     if (shipping.delivered_at) events.push({ id: 'ship_del', timestamp: new Date(shipping.delivered_at), title: 'Shipment was successfully delivered.', iconType: 'dot' });
   }
 
-  // 3. System Logs (Emails sent to BOTH customer and admin)
+  // 4. System Logs (Emails sent via Admin manual updates)
   if (logs && logs.length > 0) {
     logs.forEach((log) => {
       let details: any = {};
       
-      // 🌟 FIX: Safely handle both String (Localhost) and Object (Live Server)
       if (typeof log.details === 'string') {
         try { details = JSON.parse(log.details); } catch(e) {}
       } else if (typeof log.details === 'object' && log.details !== null) {
@@ -227,8 +239,6 @@ const buildTimeline = (order: any, customer: any, shipping: any, logs: any[]) =>
 
       if (log.event_type === 'email_sent') {
         const isAdmin = details.recipient_type === 'admin';
-        
-        // Fallback checks to ensure it NEVER says undefined
         const emailLabel = details.recipient_email || customer.email || 'customer';
         const targetLabel = isAdmin ? `Admin (${emailLabel})` : `${emailLabel}`;
         const subjectLabel = details.subject || 'Order Update';
@@ -354,7 +364,7 @@ export function OrderTimeline({
 
                         {/* Card */}
                         <div
-                          className={`tl-card flex-1 my-2 border-l-[3px] bg-white my-4 shadow-sm border border-gray-50
+                          className={`tl-card flex-1 my-2 border-l-[3px]  bg-white
                                       rounded-tl-none rounded-bl-none rounded-tr-lg rounded-br-lg
                                       px-3.5 py-4 min-w-0 ${cfg.cardBorder}`}
                           style={{ borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }}
