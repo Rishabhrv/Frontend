@@ -128,6 +128,11 @@ export default function Sidebar() {
               href="/admin/product/AddProduct"
               active={pathname === "/admin/product/AddProduct"}
             />
+            <SubItem
+              label="Ready To Go Products"
+              href="/admin/product/ReadytoGoProduct"
+              active={pathname === "/admin/product/ReadytoGoProduct"}
+            />
           </SidebarItem>
         )}
 

@@ -18,7 +18,7 @@ type Order = {
   imprints: string[];
 };
 
-const STATUS_TABS = ["all", "pending", "paid", "shipped", "completed", "cancelled", "failed"] as const;
+const STATUS_TABS = [ "paid", "shipped", "completed", "pending", "cancelled", "failed" , "all"] as const;
 
 const formatDate = (date: string) =>
   new Date(date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
@@ -45,7 +45,7 @@ export default function OrdersTable() {
   const [orders,    setOrders]    = useState<Order[]>([]);
   const [loading,   setLoading]   = useState(true);
   const [search,    setSearch]    = useState("");
-  const [statusTab, setStatusTab] = useState<(typeof STATUS_TABS)[number]>("all");
+  const [statusTab, setStatusTab] = useState<(typeof STATUS_TABS)[number]>("paid");
   const [imprint,   setImprint]   = useState("");
   const [page,      setPage]      = useState(1);
   const rowsPerPage = 15;
@@ -57,6 +57,7 @@ export default function OrdersTable() {
 
   const fetchOrders = async () => {
     try {
+
       const res = await fetch(`${API_URL}/api/admin/orders`, {
         headers: { Authorization: `Bearer ${localStorage.getItem("admin_token")}` },
       });

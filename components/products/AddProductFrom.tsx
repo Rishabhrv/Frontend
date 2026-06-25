@@ -85,10 +85,11 @@ const Req = () => <span className="text-red-500 ml-0.5">*</span>;
 // ── API URL ───────────────────────────────────────────────────────
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 const AGCLASSIC_URL = process.env.NEXT_PUBLIC_AGCLASSIC_URL!;
-
+const CRMSERVER_API_URL = process.env.NEXT_PUBLIC_CRMSERVER_API_URL!; // Add this line
 
 const CONFIRM_MSG =
   "You have unsaved changes. Are you sure you want to leave?\nYour changes will be lost.";
+
 
 // ─────────────────────────────────────────────────────────────────
 const AddProductFrom = ({ mode = "add", productId }: Props) => {
@@ -99,7 +100,9 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
   const [ebookSellPrice, setEbookSellPrice] = useState("");
   const [preview, setPreview] = useState<string | null>(null);
   const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
+  const [description, setDescription] = useState(
+    "<p><strong>About The Publisher:</strong></p><p>AGPH Books is a Professional Self Book Publishing House based in Central India, specializing in academic, professional, fiction, and non-fiction books in both print, digital and audio formats. The publishing house produces textbooks, research and reference works, biographies, self-help titles, children’s books, literary fiction, poetry, and general interest publications. With a transparent publishing process and strong digital distribution, AGPH Books ensures global availability through Google Books, Amazon, Flipkart, and its official website store, supporting authors and institutions in reaching a wide and diverse readership.</p>"
+  );
   const [price, setPrice] = useState("");
   const [sellPrice, setSellPrice] = useState("");
   const [stock, setStock] = useState("");
@@ -142,13 +145,11 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
   const [bookId, setBookId] = useState("");
   const [ebookCoverFile, setEbookCoverFile] = useState<File | null>(null);
   const [existingEbookCover, setExistingEbookCover] = useState<string | null>(null);
-
+  const [unlistedBookIds, setUnlistedBookIds] = useState<string[]>([]);
 
   // ── Unsaved-changes guard ────────────────────────────────────────
   const [isDirty, setIsDirty] = useState(false);
   const isInitialLoad = useRef(true);
-  // Ref mirror so all event listeners always read the latest value
-  // without needing to be torn down and re-registered on every change.
   const isDirtyRef = useRef(false);
   isDirtyRef.current = isDirty;
 
@@ -174,54 +175,43 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, []);
 
-  // 2️⃣  <Link> clicks — capture phase fires BEFORE Next.js sees the event,
-  //     so stopImmediatePropagation() truly cancels the navigation.
+  // 2️⃣  <Link> clicks 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       if (!isDirtyRef.current) return;
 
-      // Walk up the DOM to find the closest <a>
       const anchor = (e.target as HTMLElement).closest("a");
       if (!anchor) return;
 
       const href = anchor.getAttribute("href");
-      // Ignore hash-only links and the current page
       if (!href || href.startsWith("#") || href === window.location.pathname) return;
 
-      // Ask the user BEFORE Next.js starts the navigation
       const confirmed = window.confirm(CONFIRM_MSG);
       if (!confirmed) {
         e.preventDefault();
         e.stopPropagation();
-        e.stopImmediatePropagation(); // stops Next.js's own listener from firing
+        e.stopImmediatePropagation();
         return;
       }
 
-      // User confirmed — clear dirty so subsequent navigations don't re-ask
       isDirtyRef.current = false;
       setIsDirty(false);
     };
 
-    // true = capture phase: our handler runs before any bubble-phase listener
     document.addEventListener("click", handleClick, true);
     return () => document.removeEventListener("click", handleClick, true);
   }, []);
 
   // 3️⃣  Programmatic navigation: router.push() / router.replace()
-  //     Next.js calls pushState *after* rendering, so we patch it to guard
-  //     imperative navigations that don't come from a click (e.g. form submits
-  //     that call router.push directly, redirects, etc.)
   useEffect(() => {
     const originalPushState = window.history.pushState.bind(window.history);
     const originalReplaceState = window.history.replaceState.bind(window.history);
 
     const guard = (original: typeof originalPushState) =>
       (...args: Parameters<typeof originalPushState>) => {
-        // Allow navigation that happens right after a confirmed click
-        // (isDirtyRef will already be false at that point).
         if (isDirtyRef.current) {
           const confirmed = window.confirm(CONFIRM_MSG);
-          if (!confirmed) return; // abort — page stays, URL unchanged
+          if (!confirmed) return;
           isDirtyRef.current = false;
           setIsDirty(false);
         }
@@ -243,7 +233,6 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
       if (!isDirtyRef.current) return;
       const confirmed = window.confirm(CONFIRM_MSG);
       if (!confirmed) {
-        // Re-push the current URL so the address bar doesn't change
         window.history.pushState(null, "", window.location.href);
       } else {
         isDirtyRef.current = false;
@@ -267,7 +256,6 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
 
  useEffect(() => {
     if (mode !== "edit" || !productId) {
-      // Delay tracking slightly so the initial blank render doesn't trigger it
       setTimeout(() => {
         isInitialLoad.current = false;
       }, 100);
@@ -306,12 +294,9 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
         setEbookSellPrice(data.ebook_sell_price ?? "");
         setBookId(data.book_id ? String(data.book_id) : "");
         
-        // FIX: Wrap the tracker initialization in a timeout
-        // This gives React time to process the batch of state updates above
-        // before we tell the form to start watching for changes.
         setTimeout(() => {
           isInitialLoad.current = false;
-          setIsDirty(false); // Reset just in case it caught an intermediate render
+          setIsDirty(false);
           isDirtyRef.current = false;
         }, 100);
       });
@@ -319,7 +304,25 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
     fetchProductImages(productId);
   }, [mode, productId]);
 
-  if (productId) fetchProductImages(productId);
+ // Fetch unlisted books once on mount to allow instant typing validation
+  useEffect(() => {
+    const fetchUnlistedBooks = async () => {
+      try {
+        const res = await fetch(`${CRMSERVER_API_URL}/api/books/unlisted/agph`);
+        const data = await res.json();
+        
+        if (res.ok && data.status === "success" && data.data) {
+          // Extract only the IDs and store them as strings for easy comparison
+          const ids = data.data.map((book: any) => String(book.book_id));
+          setUnlistedBookIds(ids);
+        }
+      } catch (error) {
+        console.error("Failed to fetch unlisted books:", error);
+      }
+    };
+
+    fetchUnlistedBooks();
+  }, []);
 
   // ── Validation ──────────────────────────────────────────────────
   const validateForm = () => {
@@ -334,7 +337,9 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
       if (selectedCategories.length === 0)
         newErrors.categories = "At least one category is required";
 
-      if (!String(bookId).trim()) newErrors.bookId = "MIS Book ID is required";
+      if (imprintFilter === "agph" && !String(bookId).trim()) {
+        newErrors.bookId = "MIS Book ID is required";
+      }
 
       if (productType === "physical" || productType === "both") {
         if (!price) newErrors.price = "Cost price is required";
@@ -360,8 +365,6 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
       const authors = authorRef.current?.getAuthors() || [];
       if (authors.length === 0)
         newErrors.authors = "At least one author is required";
-
-      const galleryData = galleryRef.current?.getGalleryData();
 
       if (!keywords.trim()) newErrors.keywords = "Focus keyphrase is required";
       if (!metaTitle.trim()) newErrors.metaTitle = "SEO title is required";
@@ -490,8 +493,7 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
     }
     formData.append("subjects", JSON.stringify(selectedSubjects));
 
-    const url =
-      mode === "edit" ? `${API_URL}/api/products/${productId}` : `${API_URL}/api/products`;
+    const url = mode === "edit" ? `${API_URL}/api/products/${productId}` : `${API_URL}/api/products`;
     const method = mode === "edit" ? "PUT" : "POST";
     const res = await fetch(url, { method, body: formData });
     const data = await res.json();
@@ -500,6 +502,7 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
       setPopup({ open: true, type: "error", title: "Error", message: data.message || "Something went wrong" });
       return;
     }
+
 
     // Clear dirty so no guard fires after a successful save
     setIsDirty(false);
@@ -576,8 +579,8 @@ useEffect(() => {
             <div className="flex gap-6">
               <div className="flex-1 space-y-4">
                   <div className="flex gap-4">
-                    {/* 80% */}
-                    <div className="w-[80%]">
+                    {/* Make Title width dynamic based on imprint */}
+                    <div className={imprintFilter === "agph" ? "w-[80%]" : "w-full"}>
                       <label className="block text-sm mb-1">Product Title <Req /></label>
                       <input
                         type="text"
@@ -593,24 +596,42 @@ useEffect(() => {
                         <p className="text-red-500 text-xs mt-1">{errors.title}</p>
                       )}
                     </div>
-                    <div className="w-[20%]">
-                      <label className="block text-sm mb-1">
-                        MIS Book ID {isPublishing && <Req />}
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="e.g. 1583"
-                        className={`w-full rounded border px-3 py-2 text-sm ${errors.bookId ? "border-red-400" : ""}`}
-                        value={bookId}
-                        onChange={(e) => {
-                          setBookId(e.target.value);
-                          clearError("bookId");
-                        }}
-                      />
-                      {errors.bookId && (
-                        <p className="text-red-500 text-xs mt-1">{errors.bookId}</p>
-                      )}
-                    </div>
+                    
+                   {/* Only show MIS Book ID if imprint is AGPH */}
+                    {imprintFilter === "agph" && (
+                      <div className="w-[20%]">
+                        <label className="block text-sm mb-1">
+                          MIS Book ID {isPublishing && <Req />}
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g. 1583"
+                          className={`w-full rounded border px-3 py-2 text-sm ${errors.bookId ? "border-red-400" : ""}`}
+                          value={bookId}
+                          onChange={(e) => {
+                            const typedValue = e.target.value;
+                            setBookId(typedValue);
+                            clearError("bookId");
+
+                            // Instant Validation: Check against the loaded list
+                            if (typedValue.trim() && unlistedBookIds.includes(typedValue.trim())) {
+                              // Set the inline red error text
+                              setErrors((prev) => ({
+                                ...prev,
+                                bookId: 'Use the "Ready to Go" form for this book ID.',
+                              }));
+                              
+                              // Pop the toast notification
+                              setToastMsg(`Book ID ${typedValue} is prepared! Please go to the "Ready to Go" form to list it.`);
+                              setToastOpen(true);
+                            }
+                          }}
+                        />
+                        {errors.bookId && (
+                          <p className="text-red-500 text-xs mt-1">{errors.bookId}</p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 <div>
                   <label className="block text-sm mb-1">
@@ -905,12 +926,9 @@ useEffect(() => {
               <button type="button" onClick={() => setMediaModalOpen(true)} className="w-full">
                 <div className={`flex cursor-pointer h-60 w-full flex-col items-center justify-center rounded-lg border-2 border-dashed bg-gray-50 text-center hover:border-blue-500 overflow-hidden transition-colors ${errors.image ? "border-red-400" : "border-gray-300"}`}>
                   {preview ? (
-                    <img src={preview} alt={mainImageAlt || "Product image"} className="h-full w-full object-cover" />
+                    <img src={preview} alt={mainImageAlt || "Product image"} className="h-full w-full object-contain" />
                   ) : (
-                    <>
-                      <span className="text-sm text-gray-500">Upload Product Image</span>
-                      <span className="mt-1 text-xs text-gray-400">Click to open media library</span>
-                    </>
+                    <><span className="text-sm text-gray-500">Upload Product Image</span><span className="mt-1 text-xs text-gray-400">Click to open media library</span></>
                   )}
                 </div>
               </button>
@@ -966,45 +984,44 @@ useEffect(() => {
           </div>
 
           {/* CATEGORY */}
-          {/* CATEGORY */}
-<div className="bg-white rounded-xl border border-gray-300 p-4">
-  <h2 className="mb-3 font-medium text-gray-700">
-    Category {isPublishing && <Req />}
-  </h2>
+          <div className="bg-white rounded-xl border border-gray-300 p-4">
+            <h2 className="mb-3 font-medium text-gray-700">
+              Category {isPublishing && <Req />}
+            </h2>
 
-  {/* Imprint Filter Dropdown */}
-  <div className="mb-3">
-    <label className="block text-xs text-gray-500 mb-1">Filter by Imprint</label>
-    <select
-      value={imprintFilter}
-      onChange={(e) => setImprintFilter(e.target.value as "agph" | "agclassics")}
-      className="w-full rounded border px-3 py-1.5 text-sm bg-gray-50"
-    >
-      <option value="agph">AGPH</option>
-      <option value="agclassics">AG Classics</option>
-    </select>
-  </div>
+            {/* Imprint Filter Dropdown */}
+            <div className="mb-3">
+              <label className="block text-xs text-gray-500 mb-1">Filter by Imprint</label>
+              <select
+                value={imprintFilter}
+                onChange={(e) => setImprintFilter(e.target.value as "agph" | "agclassics")}
+                className="w-full rounded border px-3 py-1.5 text-sm bg-gray-50"
+              >
+                <option value="agph">AGPH</option>
+                <option value="agclassics">AG Classics</option>
+              </select>
+            </div>
 
-  <div className="max-h-56 overflow-y-auto space-y-2 bg-gray-50 p-5 rounded-lg">
-    {filteredCategoryTree.length > 0 ? (
-      filteredCategoryTree.map((cat) => (
-        <CategoryNode
-          key={cat.id}
-          category={cat}
-          selectedCategories={selectedCategories}
-          toggleCategory={toggleCategory}
-        />
-      ))
-    ) : (
-      <p className="text-xs text-gray-400 text-center py-2">
-        No categories found for this imprint
-      </p>
-    )}
-  </div>
-  {errors.categories && (
-    <p className="text-red-500 text-xs mt-2">{errors.categories}</p>
-  )}
-</div>
+            <div className="max-h-56 overflow-y-auto space-y-2 bg-gray-50 p-5 rounded-lg">
+              {filteredCategoryTree.length > 0 ? (
+                filteredCategoryTree.map((cat) => (
+                  <CategoryNode
+                    key={cat.id}
+                    category={cat}
+                    selectedCategories={selectedCategories}
+                    toggleCategory={toggleCategory}
+                  />
+                ))
+              ) : (
+                <p className="text-xs text-gray-400 text-center py-2">
+                  No categories found for this imprint
+                </p>
+              )}
+            </div>
+            {errors.categories && (
+              <p className="text-red-500 text-xs mt-2">{errors.categories}</p>
+            )}
+          </div>
 
           {/* SLUG */}
           {mode === "edit" && (
