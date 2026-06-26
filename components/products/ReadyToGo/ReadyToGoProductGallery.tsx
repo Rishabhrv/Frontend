@@ -11,7 +11,7 @@ import {
   SortableContext, useSortable, arrayMove, rectSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import MediaLibraryModal, { type MediaImage } from "../MediaLibraryModal";
+import ReadyToGoMediaLibraryModal, { type MediaImage } from "./ReadyToGoMediaLibraryModal"; 
 
 const CRMSERVER_API_URL = process.env.NEXT_PUBLIC_CRMSERVER_API_URL;
 type GalleryImage = {
@@ -56,6 +56,8 @@ function SortableImage({
     </div>
   );
 }
+
+
 
 const ReadyToGoProductGallery = forwardRef<any, Props>(({ initialGalleryUrls, bookId, error, onValidChange }, ref) => {
   const [images, setImages] = useState<GalleryImage[]>([]);
@@ -144,18 +146,27 @@ const ReadyToGoProductGallery = forwardRef<any, Props>(({ initialGalleryUrls, bo
     });
   };
 
-  const handleMediaSelect = async (media: MediaImage) => {
-    setImages((prev) => [
-      ...prev,
-      {
-        id: media.id,
-        preview: `${CRMSERVER_API_URL}${media.url}`,
-        isExisting: false,
-        url: media.url,
-      },
-    ]);
+  const handleMediaSelect = async (mediaData: MediaImage | MediaImage[]) => {
+    // Ensure we are working with an array
+    const selectedImages = Array.isArray(mediaData) ? mediaData : [mediaData];
+
+    const newGalleryImages = selectedImages.map((media) => ({
+      id: media.id,
+      preview: `${CRMSERVER_API_URL}${media.url}`,
+      isExisting: false,
+      url: media.url,
+    }));
+
+    setImages((prev) => [...prev, ...newGalleryImages]);
     onValidChange?.();
   };
+
+  // Transform existing gallery state images to pass into the modal
+  const externalGalleryImages = images.map((img, idx) => ({
+    id: String(img.id),
+    url: img.preview,
+    filename: img.file?.name || `Gallery Image ${idx + 1}.jpg`,
+  }));
 
   return (
     <>
@@ -190,13 +201,15 @@ const ReadyToGoProductGallery = forwardRef<any, Props>(({ initialGalleryUrls, bo
         </button>
       </div>
 
-      <MediaLibraryModal
+      <ReadyToGoMediaLibraryModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         onSelect={handleMediaSelect}
         folder="gallery"
         title="Product Gallery"
         confirmLabel="Add to gallery"
+        multiple={true}
+        externalImages={externalGalleryImages} // 👈 ADD THIS LINE
       />
     </>
   );

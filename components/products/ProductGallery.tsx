@@ -21,14 +21,13 @@ type GalleryImage = {
   preview: string;
   isExisting?: boolean;
   url?: string; 
-
 };
 
 type Props = {
   productId?: number;
   mode?: "add" | "edit";
-  error?: string;             // ← NEW
-  onValidChange?: () => void; // ← NEW: called when images are added
+  error?: string;
+  onValidChange?: () => void;
 };
 
 function SortableImage({
@@ -64,20 +63,20 @@ const ProductGallery = forwardRef<any, Props>(({ productId, mode, error, onValid
   const [deletedImages, setDeletedImages] = useState<(string | number)[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
 
-useImperativeHandle(ref, () => ({
-  getGalleryData: () => ({
-    existing: images
-      .filter((i) => i.isExisting)
-      .map((img, index) => ({ id: img.id, sort_order: index })),
-    newFiles: images
-      .filter((i) => !i.isExisting && i.file)
-      .map((i) => i.file),
-    newUrls: images                                    // ← ADD
-      .filter((i) => !i.isExisting && !i.file && (i as any).url)
-      .map((i) => (i as any).url),
-    deleted: deletedImages,
-  }),
-}));
+  useImperativeHandle(ref, () => ({
+    getGalleryData: () => ({
+      existing: images
+        .filter((i) => i.isExisting)
+        .map((img, index) => ({ id: img.id, sort_order: index })),
+      newFiles: images
+        .filter((i) => !i.isExisting && i.file)
+        .map((i) => i.file),
+      newUrls: images 
+        .filter((i) => !i.isExisting && !i.file && (i as any).url)
+        .map((i) => (i as any).url),
+      deleted: deletedImages,
+    }),
+  }));
 
   const removeImage = (id: string | number) => {
     const img = images.find((i) => i.id === id);
@@ -95,34 +94,27 @@ useImperativeHandle(ref, () => ({
     });
   };
 
-// Replace handleMediaSelect
-const handleMediaSelect = async (media: MediaImage) => {
-  if (productId) {
-    // edit mode — fetch fresh from DB
-    const res = await fetch(`${API_URL}/api/products/${productId}/gallery`);
-    const data = await res.json();
-    setImages(
-      data.map((img: any) => ({
-        id: img.id,
-        preview: `${API_URL}${img.image_path}`,
-        isExisting: true,
-      }))
-    );
-  } else {
-    // add mode — just push into local state
-    setImages((prev) => [
-      ...prev,
-      {
-        id: media.id,
-        preview: `${API_URL}${media.url}`,
-        isExisting: false,
-        // no file — we'll send the URL as a reference
-        url: media.url,
-      },
-    ]);
-  }
-  onValidChange?.();
-};
+  // 🔥 Update to handle multiple images returned securely.
+  const handleMediaSelect = (selectedData: any) => {
+    // MediaLibrary returns array because `multiple={true}`
+    const selectedMedias = Array.isArray(selectedData) ? selectedData : [selectedData];
+    
+    const newImages = selectedMedias.map((media: MediaImage) => ({
+      id: media.id,
+      preview: `${API_URL}${media.url}`,
+      isExisting: false,
+      url: media.url,
+    }));
+
+    setImages((prev) => {
+      // Prevent duplicating items already mapped in local state
+      const existingIds = new Set(prev.map(p => p.id));
+      const toAdd = newImages.filter((n: any) => !existingIds.has(n.id));
+      return [...prev, ...toAdd];
+    });
+
+    onValidChange?.();
+  };
 
   useEffect(() => {
     if (!productId) return;
@@ -146,7 +138,6 @@ const handleMediaSelect = async (media: MediaImage) => {
           Product Gallery <span className="text-red-500">*</span>
         </h3>
 
-        {/* Error message */}
         {error && (
           <p className="text-red-500 text-xs mb-3  rounded px-2 py-1.5">
             {error}
@@ -181,6 +172,7 @@ const handleMediaSelect = async (media: MediaImage) => {
         productId={productId}
         title="Product Gallery"
         confirmLabel="Add to gallery"
+        multiple={true} // 🔥 SET MULTIPLE SELECT TO TRUE
       />
     </>
   );

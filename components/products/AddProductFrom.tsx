@@ -101,8 +101,11 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
   const [preview, setPreview] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState(
-    "<p><strong>About The Publisher:</strong></p><p>AGPH Books is a Professional Self Book Publishing House based in Central India, specializing in academic, professional, fiction, and non-fiction books in both print, digital and audio formats. The publishing house produces textbooks, research and reference works, biographies, self-help titles, children’s books, literary fiction, poetry, and general interest publications. With a transparent publishing process and strong digital distribution, AGPH Books ensures global availability through Google Books, Amazon, Flipkart, and its official website store, supporting authors and institutions in reaching a wide and diverse readership.</p>"
-  );
+  `
+        <p><strong>About The Publisher:</strong></p>
+        <p>
+        AGPH Books is a professional self-book publishing house based in Central India, specializing in academic, professional, fiction, and non-fiction books in print, digital, and audio formats. The publishing house produces textbooks, research and reference works, biographies, self-help titles, children's books, literary fiction, poetry, and general interest publications. With a transparent publishing process and strong digital distribution, AGPH Books ensures global availability through Google Books,<a href="https://www.amazon.in/l/27943762031?ie=UTF8&marketplaceID=A21TJRUUN4KGV&product=9389319900&me=AMCX1E9YXP0A7" target="_blank" rel="noopener noreferrer"> Amazon</a>, Flipkart, and its <a href="https://store.agphbooks.com/" target="_blank" rel="noopener noreferrer">official website store</a>, supporting authors and institutions in reaching a wide and diverse readership.
+        </p>`  );
   const [price, setPrice] = useState("");
   const [sellPrice, setSellPrice] = useState("");
   const [stock, setStock] = useState("");
@@ -1070,9 +1073,11 @@ useEffect(() => {
       <MediaLibraryModal
         open={mediaModalOpen}
         onClose={() => setMediaModalOpen(false)}
-        onSelect={(media) => {
-          setPreview(`${process.env.NEXT_PUBLIC_API_URL}${media.url}`);
-          setMainImageUrl(media.url);
+        onSelect={(media: any) => {
+          // 🔥 Ensure we only process a single object, even if array is passed
+          const selectedMedia = Array.isArray(media) ? media[0] : media;
+          setPreview(`${process.env.NEXT_PUBLIC_API_URL}${selectedMedia.url}`);
+          setMainImageUrl(selectedMedia.url);
           setProductImage(null);
           clearError("image");
         }}
@@ -1080,6 +1085,7 @@ useEffect(() => {
         productId={productId}
         title="Product image"
         confirmLabel="Set product image"
+        // Defaults to single select (multiple={false})
       />
     </div>
   );

@@ -10,7 +10,7 @@ import AlertPopup from "@/components/Popups/AlertPopup";
 import { useRouter } from "next/navigation";
 import RichTextEditor from "../RichTextEditor";
 import SeoPanel from "../SeoPanel";
-import MediaLibraryModal from "../MediaLibraryModal";
+import ReadyToGoMediaLibraryModal from "./ReadyToGoMediaLibraryModal"; 
 import ProductSubjects from "../Productsubjects";
 
 // ── Types ────────────────────────────────────────────────────────
@@ -106,6 +106,27 @@ function parseJwt(token: string) {
   }
 }
 
+function formatProductDescription(rawDesc: string, currentTitle: string) {
+  let html = rawDesc || "";
+  
+  // 1. Auto-update or inject the Book Title H2
+  const titleHtml = `<h2>Book Title: ${currentTitle}</h2>`;
+  if (/<h2>Book Title:.*?<\/h2>/i.test(html)) {
+    // If it exists, update it with the latest title
+    html = html.replace(/<h2>Book Title:.*?<\/h2>/i, titleHtml);
+  } else {
+    // If missing, prepend it
+    html = `${titleHtml}${html}`;
+  }
+
+  // 2. Wrap in justify div if not already wrapped
+  if (!html.startsWith('<div className="text-justify">')) {
+    html = `<div className="text-justify">${html}</div>`;
+  }
+  
+  return html;
+}
+
 // ─────────────────────────────────────────────────────────────────
 const ReadyToGoProductForm = () => {
   const [productType, setProductType] = useState<"ebook" | "physical" | "both">("physical");
@@ -116,11 +137,11 @@ const ReadyToGoProductForm = () => {
   const [preview, setPreview] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState(
-    "<p><strong>About The Publisher:</strong></p><p>AGPH Books is a Professional Self Book Publishing House based in Central India, specializing in academic, professional, fiction, and non-fiction books in both print, digital and audio formats. The publishing house produces textbooks, research and reference works, biographies, self-help titles, children’s books, literary fiction, poetry, and general interest publications. With a transparent publishing process and strong digital distribution, AGPH Books ensures global availability through Google Books, Amazon, Flipkart, and its official website store, supporting authors and institutions in reaching a wide and diverse readership.</p>"
+    '<div><h2>Book Title: </h2><p><strong>About The Publisher:</strong></p><p>AGPH Books is a Professional Self Book Publishing House based in Central India, specializing in academic, professional, fiction, and non-fiction books in both print, digital and audio formats. The publishing house produces textbooks, research and reference works, biographies, self-help titles, children’s books, literary fiction, poetry, and general interest publications. With a transparent publishing process and strong digital distribution, AGPH Books ensures global availability through Google Books, Amazon, Flipkart, and its official website store, supporting authors and institutions in reaching a wide and diverse readership.</p></div>'
   );
   const [price, setPrice] = useState("");
   const [sellPrice, setSellPrice] = useState("");
-  const [stock, setStock] = useState("");
+  const [stock, setStock] = useState("1");
   const [sku, setSku] = useState("");
   const [slug, setSlug] = useState(""); 
   const [status, setStatus] = useState("published");
@@ -160,17 +181,43 @@ const ReadyToGoProductForm = () => {
 
   // 👇 ── NEW: Loader and Timer States ── 👇
   const [isFetchingData, setIsFetchingData] = useState(false);
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [timeLeft, setTimeLeft] = useState(120); // 120 seconds = 2 minutes
+  const [aiStepIndex, setAiStepIndex] = useState(0);
+
+  const aiSteps = [
+    "🚀 Loading AI data...",
+    "🧠 Analyzing book content...",
+    "💻 Generating Title...",
+    "📈 Generating Meta Description...",
+    "🚀 Generating Keywords...",
+    "Finalizing..."
+  ];
 
   useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (isFetchingData && timeLeft > 0) {
-      timer = setInterval(() => {
-        setTimeLeft((prev) => prev - 1);
+    let countdownTimer: NodeJS.Timeout;
+    let stepTimer: NodeJS.Timeout;
+
+    if (isGeneratingAI) {
+      // Countdown Timer
+      countdownTimer = setInterval(() => {
+        setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0));
       }, 1000);
+
+      // AI Step Message Timer (changes the message every 5 seconds)
+      stepTimer = setInterval(() => {
+        setAiStepIndex((prev) => (prev < aiSteps.length - 1 ? prev + 1 : prev));
+      }, 5000);
+    } else {
+      // Reset when done
+      setAiStepIndex(0);
     }
-    return () => clearInterval(timer);
-  }, [isFetchingData, timeLeft]);
+
+    return () => {
+      clearInterval(countdownTimer);
+      clearInterval(stepTimer);
+    };
+  }, [isGeneratingAI, aiSteps.length]);
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -280,7 +327,8 @@ const ReadyToGoProductForm = () => {
         if (idToFetch) {
           try {
             const token = await generateLocalToken(FRONTEND_JWT_SECRET);
-            const res = await fetch(`${CRMSERVER_API_URL}/api/products/import-ready/${idToFetch}`, {
+            // Bypass AI for the immediate load
+            const res = await fetch(`${CRMSERVER_API_URL}/api/products/import-ready/${idToFetch}?use_ai=false`, {
               headers: { "Authorization": `Bearer ${token}` }
             });
             if (res.ok) {
@@ -293,16 +341,21 @@ const ReadyToGoProductForm = () => {
 
         setTitle(data.title || "");
         const incomingDescription = data.description || data.about_book || "";
-        const defaultPublisherBlock = "<br/><p><strong>About The Publisher:</strong></p><p>AGPH Books is a Professional Self Book Publishing House based in Central India, specializing in academic, professional, fiction, and non-fiction books in both print, digital and audio formats. The publishing house produces textbooks, research and reference works, biographies, self-help titles, children’s books, literary fiction, poetry, and general interest publications. With a transparent publishing process and strong digital distribution, AGPH Books ensures global availability through Google Books, Amazon, Flipkart, and its official website store, supporting authors and institutions in reaching a wide and diverse readership.</p>";
-        
-        if (incomingDescription.includes("About The Publisher:")) {
-          setDescription(incomingDescription);
-        } else {
-          setDescription(incomingDescription + defaultPublisherBlock);
+        const defaultPublisherBlock = `
+        <p><strong>About The Publisher:</strong></p>
+        <p>
+        AGPH Books is a professional self-book publishing house based in Central India, specializing in academic, professional, fiction, and non-fiction books in print, digital, and audio formats. The publishing house produces textbooks, research and reference works, biographies, self-help titles, children's books, literary fiction, poetry, and general interest publications. With a transparent publishing process and strong digital distribution, AGPH Books ensures global availability through Google Books,<a href="https://www.amazon.in/l/27943762031?ie=UTF8&marketplaceID=A21TJRUUN4KGV&product=9389319900&me=AMCX1E9YXP0A7" target="_blank" rel="noopener noreferrer"> Amazon</a>, Flipkart, and its <a href="https://store.agphbooks.com/" target="_blank" rel="noopener noreferrer">official website store</a>, supporting authors and institutions in reaching a wide and diverse readership.
+        </p>`;        
+        let mergedDescription = incomingDescription;
+        if (!incomingDescription.includes("About The Publisher:")) {
+          mergedDescription = incomingDescription + defaultPublisherBlock;
         }
-        setPrice(data.price || data.book_mrp || "");
-        setSellPrice(data.sell_price || data.book_mrp || "");
-        setStock(String(data.stock || data.agph_stock || "0"));
+        
+        // Run the merged description through the formatter
+        setDescription(formatProductDescription(mergedDescription, data.title || ""));
+        setPrice("");
+        setSellPrice("");
+        setStock("1"); 
         setSku(data.sku || data.isbn?.replace(/-/g, "") || `AGPH-${data.book_id}`);
         setProductType(data.product_type || "physical");
         setBookId(data.book_id || "");
@@ -456,7 +509,8 @@ const ReadyToGoProductForm = () => {
     const formData = new FormData();
     formData.append("file", ebookFile);
     formData.append("title", title);
-    formData.append("description", description);
+    const finalDescription = formatProductDescription(description, title);
+    formData.append("description", finalDescription);
     formData.append("price", price);
     formData.append("sell_price", sellPrice);
     formData.append("stock", stock);
@@ -516,7 +570,8 @@ const ReadyToGoProductForm = () => {
       formData.append("image_url", mainImageUrl);
     }
     formData.append("title", title);
-    formData.append("description", description);
+    const finalDescription = formatProductDescription(description, title);
+    formData.append("description", finalDescription);
     formData.append("price", price);
     formData.append("sell_price", sellPrice);
     formData.append("stock", stock);
@@ -674,24 +729,96 @@ const ReadyToGoProductForm = () => {
     }
   }, [categories, selectedCategories, categoryTree]);
 
+  // ── AI ENHANCEMENT HANDLER ─────────────────
+  const handleGenerateAI = async () => {
+    if (!bookId) return;
+    setIsGeneratingAI(true);
+    setTimeLeft(120); 
+    try {
+      const token = await generateLocalToken(FRONTEND_JWT_SECRET);
+      const res = await fetch(`${CRMSERVER_API_URL}/api/products/import-ready/${bookId}?use_ai=true`, {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+      
+      // Parse JSON first so we can extract backend error messages if it fails
+      const data = await res.json();
+      
+      if (res.ok) {
+        const newTitle = data.title || title;
+        setTitle(newTitle);
+        setMetaTitle(data.meta_title || metaTitle);
+        setMetaDescription(data.meta_description || metaDescription);
+        setKeywords(data.keywords || keywords);
+        setDescription(prevDesc => formatProductDescription(prevDesc, newTitle));
+        
+        setToastMsg("AI content generated successfully!");
+        setToastOpen(true);
+      } else {
+        // Throw an error using the specific message returned by your Flask backend
+        throw new Error(data.message || data.error || "Failed to fetch AI data");
+      }
+    } catch (err: any) {
+      console.error("AI Generation error:", err);
+      // Trigger the explicit error modal instead of the toast
+      setPopup({
+        open: true,
+        type: "error",
+        title: "AI Generation Failed",
+        message: err.message || "Unable to fetch AI data. Please ensure the local AI service is running."
+      });
+    } finally {
+      setIsGeneratingAI(false);
+    }
+  };
+
+  const externalFormImages = driveImages.map((url, idx) => ({
+    id: `drive-cover-${idx}`,
+    url: url,
+    filename: `Imported Drive Image ${idx + 1}.jpg`,
+  }));
+
   return (
     <div className="p-6 pr-2">
-      <div className="flex flex-wrap items-center gap-4 mb-6">
+      <div className=" items-center gap-4 mb-6">
         <h1 className="text-xl font-semibold text-gray-800">
           Import & Add Product
         </h1>
+        {/* Only show "Fetching" briefly on initial load */}
         {isFetchingData && (
-          <div className="flex items-center gap-2 text-sm text-blue-700 bg-blue-50 px-4 py-1.5 rounded-full border border-blue-200 shadow-sm animate-pulse">
-            <Loader2 className="w-4 h-4 animate-spin" />
+          <div className="flex items-center gap-2 text-sm text-gray-600  px-4 py-1.5 mt-2">
+            <Loader2 className="w-4 h-4 animate-spin mr-1" />
+            <span className="font-medium">Loading details...</span>
+          </div>
+        )}
+        
+        {/* Show AI countdown timer when running */}
+        {isGeneratingAI && (
+          <div className="flex gap-3 items-center mt-3 text-sm  text-blue-600 font-medium px-4 py-1.5  hover:text-gray-600 transition-colors cursor-pointer"
+          >
+            <Loader2 className="w-4 h-4 animate-spin mr-1" />
             <span className="font-medium">
-              Fetching AI Metadata... {formatTime(timeLeft)}
+              {aiSteps[aiStepIndex]} {formatTime(timeLeft)}
             </span>
           </div>
+        )}
+
+        {/* AI Trigger Button */}
+        {!isFetchingData && !isGeneratingAI && bookId && (
+          <button
+            type="button"
+            onClick={handleGenerateAI}
+            className="flex items-center mt-3 text-sm bg-blue-50 text-blue-600 font-medium px-4 py-1.5 rounded-xl shadow-xl hover:bg-gray-50 hover:text-gray-600 transition-colors cursor-pointer"
+          >
+            🤖 Enhance Content with AI
+          </button>
         )}
       </div>
 
       {/* 👇 ALL CONTENT WRAPPED IN FIELDSET TO DISABLE WHILE FETCHING 👇 */}
-      <fieldset disabled={isFetchingData} className={`group ${isFetchingData ? "opacity-60 pointer-events-none select-none transition-opacity duration-300" : ""}`}>
+      <fieldset disabled={isGeneratingAI} className={`group ${isGeneratingAI ? "opacity-60 pointer-events-none select-none transition-opacity duration-300" : ""}`}>
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
           {/* ══════════════ LEFT FORM ══════════════ */}
           <div className="lg:col-span-3 space-y-6">
@@ -1137,11 +1264,13 @@ const ReadyToGoProductForm = () => {
         }}
       />
       <AlertPopup open={toastOpen} message={toastMsg} onClose={() => setToastOpen(false)} />
-      <MediaLibraryModal
+      <ReadyToGoMediaLibraryModal
         open={mediaModalOpen}
         onClose={() => setMediaModalOpen(false)}
         onSelect={(media) => {
-          setPreview(`${process.env.NEXT_PUBLIC_API_URL}${media.url}`);
+          // Check if it's already an absolute drive URL
+          const finalUrl = media.url.startsWith("http") ? media.url : `${process.env.NEXT_PUBLIC_API_URL}${media.url}`;
+          setPreview(finalUrl);
           setMainImageUrl(media.url);
           setProductImage(null);
           clearError("image");
@@ -1149,6 +1278,7 @@ const ReadyToGoProductForm = () => {
         folder="products"
         title="Product image"
         confirmLabel="Set product image"
+        externalImages={externalFormImages} // 👈 ADD THIS LINE
       />
     </div>
   );

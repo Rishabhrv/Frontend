@@ -12,6 +12,10 @@ import {
 import { usePermissions } from "@/hooks/usePermissions";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
+const CRMSERVER_API_URL = process.env.NEXT_PUBLIC_CRMSERVER_API_URL;
+const FRONTEND_JWT_SECRET = process.env.NEXT_PUBLIC_FRONTEND_JWT_SECRET || "default_fallback_secret";
+
+
 
 type PageKey =
   | "products" | "orders"   | "category" | "subject"
@@ -43,6 +47,22 @@ const NAV_ITEMS: NavItem[] = [
   { key: "ebook-analytics",     label: "EbookAnalytics",    icon: ChartLine,                    href: "/admin/ebook-analytics/EbookAnalyticsPage",       pathPrefix: "/admin/ebook-analytics"      },
 ];
 
+async function generateLocalToken(secret: string) {
+  const header = { alg: "HS256", typ: "JWT" };
+  const payload = {
+    user_id: 1, 
+    session_id: "auto-generated-frontend-session",
+    exp: Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60) 
+  };
+  const base64UrlEncode = (obj: any) => btoa(JSON.stringify(obj)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const data = `${base64UrlEncode(header)}.${base64UrlEncode(payload)}`;
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey('raw', encoder.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const signature = await crypto.subtle.sign('HMAC', key, encoder.encode(data));
+  const sig64 = btoa(String.fromCharCode(...new Uint8Array(signature))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  return `${data}.${sig64}`;
+}
+
 export default function Sidebar() {
   const pathname = usePathname() ?? "";
 
@@ -51,6 +71,7 @@ export default function Sidebar() {
   // Badge Counter States
   const [newOrdersCount, setNewOrdersCount] = useState<number>(0);
   const [pendingReviewsCount, setPendingReviewsCount] = useState<number>(0);
+  const [readyToGoCount, setReadyToGoCount] = useState<number>(0);
   
   const { can, loading } = usePermissions();
 
@@ -86,6 +107,31 @@ export default function Sidebar() {
         .catch(err => console.error("Error fetching reviews count:", err));
     }
   }, [can, pathname]);
+
+  useEffect(() => {
+  if (!can("products")) return;
+
+  const fetchReadyToGoCount = async () => {
+    try {
+      const token = await generateLocalToken(FRONTEND_JWT_SECRET);
+
+      const res = await fetch(`${CRMSERVER_API_URL}/api/books/unlisted/agph`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await res.json();
+      setReadyToGoCount(data.count || 0);
+    } catch (err) {
+      console.error("Error fetching ready to go count:", err);
+    }
+  };
+
+  fetchReadyToGoCount();
+}, [can, pathname]);
 
   if (loading) {
     return (
@@ -132,6 +178,7 @@ export default function Sidebar() {
               label="Ready To Go Products"
               href="/admin/product/ReadytoGoProduct"
               active={pathname === "/admin/product/ReadytoGoProduct"}
+              badge={readyToGoCount > 0 ? readyToGoCount : undefined}
             />
           </SidebarItem>
         )}
