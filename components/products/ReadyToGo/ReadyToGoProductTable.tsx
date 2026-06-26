@@ -125,15 +125,13 @@ export default function ReadyToGoProductTable() {
 
   return (
     <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-semibold text-gray-800">
-          Pending Book Listings
-        </h1>
-      </div>
 
       <div className="bg-white p-6 ">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
+            <h1 className="text-xl font-semibold text-gray-800">
+              Pending Book Listings
+            </h1>
           </div>
           
           <form onSubmit={handleSearchSubmit} className="flex items-center gap-2">

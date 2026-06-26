@@ -182,6 +182,7 @@ const ReadyToGoProductForm = () => {
   // 👇 ── NEW: Loader and Timer States ── 👇
   const [isFetchingData, setIsFetchingData] = useState(false);
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  const [isImageLoading, setIsImageLoading] = useState(false); // <--- Image Loading State
   const [timeLeft, setTimeLeft] = useState(120); // 120 seconds = 2 minutes
   const [aiStepIndex, setAiStepIndex] = useState(0);
 
@@ -207,7 +208,7 @@ const ReadyToGoProductForm = () => {
       // AI Step Message Timer (changes the message every 5 seconds)
       stepTimer = setInterval(() => {
         setAiStepIndex((prev) => (prev < aiSteps.length - 1 ? prev + 1 : prev));
-      }, 5000);
+      }, 10000);
     } else {
       // Reset when done
       setAiStepIndex(0);
@@ -344,7 +345,7 @@ const ReadyToGoProductForm = () => {
         const defaultPublisherBlock = `
         <p><strong>About The Publisher:</strong></p>
         <p>
-        AGPH Books is a professional self-book publishing house based in Central India, specializing in academic, professional, fiction, and non-fiction books in print, digital, and audio formats. The publishing house produces textbooks, research and reference works, biographies, self-help titles, children's books, literary fiction, poetry, and general interest publications. With a transparent publishing process and strong digital distribution, AGPH Books ensures global availability through Google Books,<a href="https://www.amazon.in/l/27943762031?ie=UTF8&marketplaceID=A21TJRUUN4KGV&product=9389319900&me=AMCX1E9YXP0A7" target="_blank" rel="noopener noreferrer"> Amazon</a>, Flipkart, and its <a href="https://store.agphbooks.com/" target="_blank" rel="noopener noreferrer">official website store</a>, supporting authors and institutions in reaching a wide and diverse readership.
+        AGPH Books is a professional self-book publishing house based in Central India, specializing in academic, professional, fiction, and non-fiction books in print, digital, and audio formats. The publishing house produces textbooks, research and reference works, biographies, self-help titles, children's books, literary fiction, poetry, and general interest publications. With a transparent publishing process and strong digital distribution, AGPH Books ensures global availability through Google Books,<a href="https://www.amazon.in/l/27943762031?ie=UTF8&marketplaceID=A21TJRUUN4KGV&product=9389319900&me=AMCX1E9YXP0A7" target="_blank" rel="noopener noreferrer"> Amazon</a>, <a href="https://www.flipkart.com/search?q=agph%20books&otracker=search&otracker1=search&marketplace=FLIPKART&as-show=on&as=off" target="_blank" rel="noopener noreferrer">Flipkart</a>, and its <a href="https://store.agphbooks.com/" target="_blank" rel="noopener noreferrer">official website store</a>, supporting authors and institutions in reaching a wide and diverse readership.
         </p>`;        
         let mergedDescription = incomingDescription;
         if (!incomingDescription.includes("About The Publisher:")) {
@@ -372,9 +373,11 @@ const ReadyToGoProductForm = () => {
 
         if (data.book_id) {
           const driveCoverUrl = `${CRMSERVER_API_URL}/api/books/${data.book_id}/cover`;
+          setIsImageLoading(true);
           setPreview(driveCoverUrl);
           setMainImageUrl(driveCoverUrl);
         } else if (data.image) {
+          setIsImageLoading(true);
           setPreview(data.image);
           setMainImageUrl(data.image);
         } else {
@@ -432,6 +435,7 @@ const ReadyToGoProductForm = () => {
             
             setPreview((currentPreview) => {
               if (!currentPreview || currentPreview.endsWith("/cover")) {
+                setIsImageLoading(true);
                 fetch(data.urls[0])
                   .then(r => r.blob())
                   .then(blob => {
@@ -439,7 +443,8 @@ const ReadyToGoProductForm = () => {
                     const file = new File([blob], `drive-cover.${ext}`, { type: blob.type });
                     setProductImage(file);
                     setMainImageUrl(null); 
-                  });
+                  })
+                  .catch(() => setIsImageLoading(false));
                 return data.urls[0];
               }
               return currentPreview;
@@ -656,7 +661,7 @@ const ReadyToGoProductForm = () => {
         user: userName,
         sell_price: finalSellPrice || 0,
         stock: stock || 0,
-        product_url: `${SITE_URL}/product/${slug}`,
+        product_url: `${SITE_URL}/product/${data.slug || slug}`,
         image_url: finalImageUrl // Added the image URL to the payload
       };
 
@@ -787,34 +792,50 @@ const ReadyToGoProductForm = () => {
           Import & Add Product
         </h1>
         {/* Only show "Fetching" briefly on initial load */}
-        {isFetchingData && (
-          <div className="flex items-center gap-2 text-sm text-gray-600  px-4 py-1.5 mt-2">
-            <Loader2 className="w-4 h-4 animate-spin mr-1" />
-            <span className="font-medium">Loading details...</span>
-          </div>
-        )}
-        
-        {/* Show AI countdown timer when running */}
-        {isGeneratingAI && (
-          <div className="flex gap-3 items-center mt-3 text-sm  text-blue-600 font-medium px-4 py-1.5  hover:text-gray-600 transition-colors cursor-pointer"
-          >
-            <Loader2 className="w-4 h-4 animate-spin mr-1" />
-            <span className="font-medium">
-              {aiSteps[aiStepIndex]} {formatTime(timeLeft)}
-            </span>
-          </div>
-        )}
+       {isFetchingData && (
+  <div className="flex items-center gap-2 text-sm text-gray-600 px-4 py-1.5 mt-2">
+    <Loader2 className="w-4 h-4 animate-spin mr-1" />
+    <span className="font-medium">Loading details...</span>
+  </div>
+)}
 
-        {/* AI Trigger Button */}
-        {!isFetchingData && !isGeneratingAI && bookId && (
-          <button
-            type="button"
-            onClick={handleGenerateAI}
-            className="flex items-center mt-3 text-sm bg-blue-50 text-blue-600 font-medium px-4 py-1.5 rounded-xl shadow-xl hover:bg-gray-50 hover:text-gray-600 transition-colors cursor-pointer"
-          >
-            🤖 Enhance Content with AI
-          </button>
-        )}
+{/* Show AI countdown timer when running */}
+{isGeneratingAI && (
+  <div className="flex gap-3 items-center mt-3 text-sm text-blue-600 font-medium px-4 py-1.5 hover:text-gray-600 transition-colors cursor-pointer">
+    <Loader2 className="w-4 h-4 animate-spin mr-1" />
+    <span className="font-medium">
+      {aiSteps[aiStepIndex]} {formatTime(timeLeft)}
+    </span>
+  </div>
+)}
+
+{/* AI Trigger Button */}
+{!isFetchingData && !isGeneratingAI && bookId && (
+  <button
+    type="button"
+    onClick={handleGenerateAI}
+    className="group relative flex items-center justify-center p-[2px] rounded-full shadow-[0_4px_14px_0_rgba(0,0,0,0.1)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.15)] hover:-translate-y-0.5 transition-all duration-200 cursor-pointer mt-3"
+  >
+    {/* Gradient Border Wrapper */}
+    <span className="absolute inset-0 rounded-full bg-gradient-to-r from-[#00E5FF] via-[#4D7CFF] to-[#C100FF] z-0"></span>
+    
+    {/* Inner White Button Container */}
+    <span className="relative flex items-center gap-2 px-2 py-1 bg-white rounded-full w-full h-full z-10">
+      
+      {/* Custom Sparkles SVG matching the image */}
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M10 2.5C10 6.642 13.358 10 17.5 10C13.358 10 10 13.358 10 17.5C10 13.358 6.642 10 2.5 10C6.642 10 10 6.642 10 2.5Z" fill="#00E5FF"/>
+        <path d="M19 14C19 15.657 20.343 17 22 17C20.343 17 19 18.343 19 20C19 18.343 17.657 17 16 17C17.657 17 19 15.657 19 14Z" fill="#00E5FF"/>
+        <path d="M5 16C5 17.104 5.895 18 7 18C5.895 18 5 18.895 5 20C5 18.895 4.104 18 3 18C4.104 18 5 17.104 5 16Z" fill="#00E5FF"/>
+      </svg>
+
+      {/* Gradient Text (kept your original text, easily swappable to "Generate") */}
+      <span className="font-medium text-[14px] bg-gradient-to-r from-[#00E5FF] via-[#4D7CFF] to-[#C100FF] bg-clip-text text-transparent">
+        Enhance Content with AI
+      </span>
+    </span>
+  </button>
+)}
       </div>
 
       {/* 👇 ALL CONTENT WRAPPED IN FIELDSET TO DISABLE WHILE FETCHING 👇 */}
@@ -1093,20 +1114,30 @@ const ReadyToGoProductForm = () => {
               </div>
               <div className="w-full">
                 <button type="button" disabled={isFetchingData} onClick={() => setMediaModalOpen(true)} className="w-full">
-                  <div className={`flex h-60 w-full flex-col items-center justify-center rounded-lg border-2 border-dashed bg-gray-50 text-center overflow-hidden transition-colors ${errors.image ? "border-red-400" : "border-gray-300"} ${!isFetchingData ? "hover:border-blue-500 cursor-pointer" : "cursor-not-allowed"}`}>
+                  <div className={`relative flex h-60 w-full flex-col items-center justify-center rounded-lg border-2 border-dashed bg-gray-50 text-center overflow-hidden transition-colors ${errors.image ? "border-red-400" : "border-gray-300"} ${!isFetchingData ? "hover:border-blue-500 cursor-pointer" : "cursor-not-allowed"}`}>
                     {preview ? (
-                      <img 
-                        src={preview} 
-                        alt={mainImageAlt || "Product image"} 
-                        className="h-full w-full object-contain" 
-                        onError={() => {
-                          setPreview(null);
-                          setMainImageUrl(null);
-                          setToastMsg("The imported cover image failed to load. Please select or upload a new image.");
-                          setToastOpen(true);
-                          setErrors((prev) => ({ ...prev, image: "Imported image failed to load" }));
-                        }}
-                      />
+                      <>
+                        {/* 👇 Image Loading Overlay 👇 */}
+                        {isImageLoading && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-gray-50/90 z-10">
+                            <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+                          </div>
+                        )}
+                        <img 
+                          src={preview} 
+                          alt={mainImageAlt || "Product image"} 
+                          className={`h-full w-full object-contain transition-opacity duration-300 ${isImageLoading ? "opacity-0" : "opacity-100"}`} 
+                          onLoad={() => setIsImageLoading(false)}
+                          onError={() => {
+                            setIsImageLoading(false);
+                            setPreview(null);
+                            setMainImageUrl(null);
+                            setToastMsg("The imported cover image failed to load. Please select or upload a new image.");
+                            setToastOpen(true);
+                            setErrors((prev) => ({ ...prev, image: "Imported image failed to load" }));
+                          }}
+                        />
+                      </>
                     ) : (
                       <>
                         <span className="text-sm text-gray-500">Upload Product Image</span>
@@ -1119,13 +1150,13 @@ const ReadyToGoProductForm = () => {
                 {preview && (
                   <button type="button"
                     disabled={isFetchingData}
-                    onClick={() => { setPreview(null); setProductImage(null); setMainImageAlt(""); setMainImageUrl(null); }}
+                    onClick={() => { setPreview(null); setProductImage(null); setMainImageAlt(""); setMainImageUrl(null); setIsImageLoading(false); }}
                     className="mt-2 text-xs text-red-500 hover:underline w-full text-center cursor-pointer disabled:opacity-50">
                     Remove image
                   </button>
                 )}
 
-                {/* 👇 ── NEW: DRIVE IMAGE SELECTOR ROW ── 👇 */}
+                {/* 👇 ── DRIVE IMAGE SELECTOR ROW ── 👇 */}
                 {driveImages.length > 0 && (
                   <div className="mt-5 border-t pt-4">
                     <p className="text-xs font-medium text-gray-600 mb-3">Or select main cover from Drive:</p>
@@ -1137,6 +1168,9 @@ const ReadyToGoProductForm = () => {
                             key={idx}
                             onClick={() => {
                               if (isFetchingData) return;
+                              if (preview === url) return; // Prevent unnecessary reload if already selected
+                              
+                              setIsImageLoading(true); // Trigger loading overlay
                               setPreview(url);
                               clearError("image");
                               
@@ -1147,7 +1181,8 @@ const ReadyToGoProductForm = () => {
                                   const file = new File([blob], `drive-cover.${ext}`, { type: blob.type });
                                   setProductImage(file);
                                   setMainImageUrl(null); 
-                                });
+                                })
+                                .catch(() => setIsImageLoading(false)); // Cleanup if fetch strictly fails
                             }}
                             className={`flex-shrink-0 rounded-md overflow-hidden border-2 transition-all duration-200 ${
                               isSelected 
@@ -1268,8 +1303,10 @@ const ReadyToGoProductForm = () => {
         open={mediaModalOpen}
         onClose={() => setMediaModalOpen(false)}
         onSelect={(media) => {
-          // Check if it's already an absolute drive URL
           const finalUrl = media.url.startsWith("http") ? media.url : `${process.env.NEXT_PUBLIC_API_URL}${media.url}`;
+          if (preview !== finalUrl) {
+            setIsImageLoading(true); // Trigger loading overlay
+          }
           setPreview(finalUrl);
           setMainImageUrl(media.url);
           setProductImage(null);
@@ -1278,7 +1315,7 @@ const ReadyToGoProductForm = () => {
         folder="products"
         title="Product image"
         confirmLabel="Set product image"
-        externalImages={externalFormImages} // 👈 ADD THIS LINE
+        externalImages={externalFormImages}
       />
     </div>
   );
