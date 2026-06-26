@@ -163,6 +163,7 @@ const ReadyToGoProductForm = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [toastOpen, setToastOpen] = useState(false);
   const [toastMsg, setToastMsg] = useState("");
+  const [toastType, setToastType] = useState<"success" | "error">("error");
   const router = useRouter();
   const [needsConversion, setNeedsConversion] = useState(false);
   const [isConverting, setIsConverting] = useState(false);
@@ -382,6 +383,7 @@ const ReadyToGoProductForm = () => {
           setMainImageUrl(data.image);
         } else {
           setToastMsg("Warning: No product image was found in the imported data. Please upload one.");
+          setToastType("error");
           setToastOpen(true);
           setErrors((prev) => ({ ...prev, image: "Product image is missing from import" }));
         }
@@ -531,7 +533,7 @@ const ReadyToGoProductForm = () => {
     formData.append("categories", JSON.stringify(selectedCategories));
     formData.append("authors", JSON.stringify(authors));
     formData.append("attributes", JSON.stringify(attributes));
-    formData.append("meta_title", metaTitle);
+    formData.append("meta_title", metaTitle ? metaTitle.split('|')[0].trim() : "");
     formData.append("meta_description", metaDescription);
     formData.append("keywords", keywords);
     formData.append("subjects", JSON.stringify(selectedSubjects));
@@ -555,6 +557,7 @@ const ReadyToGoProductForm = () => {
       setNeedsConversion(false);
     } catch (error: any) {
       setToastMsg(error.message);
+      setToastType("error");
       setToastOpen(true);
     }
     setIsConverting(false);
@@ -581,6 +584,7 @@ const ReadyToGoProductForm = () => {
     formData.append("sell_price", sellPrice);
     formData.append("stock", stock);
     formData.append("sku", sku);
+    if (slug.trim()) formData.append("slug", slug);
     formData.append("product_type", productType);
     formData.append("status", status);
     formData.append("weight", weight);
@@ -599,7 +603,7 @@ const ReadyToGoProductForm = () => {
     formData.append("attributes", JSON.stringify(attributes));
     formData.append("authors", JSON.stringify(authors));
     formData.append("categories", JSON.stringify(selectedCategories));
-    formData.append("meta_title", metaTitle);
+    formData.append("meta_title", metaTitle ? metaTitle.split('|')[0].trim() : "");
     formData.append("meta_description", metaDescription);
     formData.append("keywords", keywords);
     formData.append("book_id", bookId);
@@ -760,6 +764,7 @@ const ReadyToGoProductForm = () => {
         setDescription(prevDesc => formatProductDescription(prevDesc, newTitle));
         
         setToastMsg("AI content generated successfully!");
+        setToastType("success");
         setToastOpen(true);
       } else {
         // Throw an error using the specific message returned by your Flask backend
@@ -1133,6 +1138,7 @@ const ReadyToGoProductForm = () => {
                             setPreview(null);
                             setMainImageUrl(null);
                             setToastMsg("The imported cover image failed to load. Please select or upload a new image.");
+                            setToastType("error");
                             setToastOpen(true);
                             setErrors((prev) => ({ ...prev, image: "Imported image failed to load" }));
                           }}
@@ -1298,7 +1304,7 @@ const ReadyToGoProductForm = () => {
           }
         }}
       />
-      <AlertPopup open={toastOpen} message={toastMsg} onClose={() => setToastOpen(false)} />
+      <AlertPopup open={toastOpen} message={toastMsg} type={toastType} onClose={() => setToastOpen(false)} />
       <ReadyToGoMediaLibraryModal
         open={mediaModalOpen}
         onClose={() => setMediaModalOpen(false)}

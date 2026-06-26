@@ -5,13 +5,15 @@ import { useEffect } from "react";
 type ToastProps = {
   open: boolean;
   message: string;
+  type?: "success" | "error"; // <-- Add the type prop
   onClose: () => void;
-  duration?: number; // auto close (ms)
+  duration?: number;
 };
 
 export default function AlertPopup({
   open,
   message,
+  type = "error", // <-- Default to error
   onClose,
   duration = 3000,
 }: ToastProps) {
@@ -24,9 +26,12 @@ export default function AlertPopup({
 
   if (!open) return null;
 
+  // 👇 Dynamically set background color based on the type
+  const bgColor = type === "success" ? "bg-green-600" : "bg-red-600";
+
   return (
     <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999]">
-      <div className="bg-red-600 text-white px-6 py-3 rounded-md shadow-lg text-sm font-medium">
+      <div className={`${bgColor} text-white px-6 py-3 rounded-md shadow-lg text-sm font-medium transition-colors duration-300`}>
         {message}
       </div>
     </div>
