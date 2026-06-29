@@ -180,6 +180,11 @@ export default function Sidebar() {
               active={pathname === "/admin/product/ReadytoGoProduct"}
               badge={readyToGoCount > 0 ? readyToGoCount : undefined}
             />
+            <SubItem
+              label="Amazon Product"
+              href="/admin/product/AmazonProduct"
+              active={pathname === "/admin/product/AmazonProduct"}
+            />
           </SidebarItem>
         )}
 
