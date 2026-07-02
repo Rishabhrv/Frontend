@@ -158,6 +158,9 @@ const BookRow = ({ book, onSyncComplete }: { book: any, onSyncComplete: () => vo
     }
   }, [isOpen, hasFetchedAssets, fetchAmazonAssets]);
 
+
+  const draftKey = `amazon_listing_draft_${book.book_id}`;
+
   const [formData, setFormData] = useState({
     title: book.amazon_defaults?.title || book.title || "",
     isbn: book.isbn || "",
@@ -191,6 +194,26 @@ const BookRow = ({ book, onSyncComplete }: { book: any, onSyncComplete: () => vo
     keywords: book.amazon_defaults?.keywords || book.tags || "",
     description: book.amazon_defaults?.description || book.about_book || "",
   });
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedDraft = localStorage.getItem(draftKey);
+      if (savedDraft) {
+        try {
+          const parsed = JSON.parse(savedDraft);
+          setFormData((prev) => ({ ...prev, ...parsed }));
+        } catch (err) {
+          console.error("Failed to parse local draft", err);
+        }
+      }
+    }
+  }, [draftKey]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(draftKey, JSON.stringify(formData));
+    }
+  }, [formData, draftKey]);
 
   useEffect(() => {
     let countdownTimer: NodeJS.Timeout;
@@ -294,7 +317,7 @@ const BookRow = ({ book, onSyncComplete }: { book: any, onSyncComplete: () => vo
     }
   };
 
-  const handleAmazonPush = async (e: React.MouseEvent) => {
+ const handleAmazonPush = async (e: React.MouseEvent) => {
     e.stopPropagation();
     
     if (formData.sell_price <= 0) {
@@ -304,7 +327,6 @@ const BookRow = ({ book, onSyncComplete }: { book: any, onSyncComplete: () => vo
       return;
     }
 
-    // 👇 ── NEW: Validation for User ── 👇
     if (!selectedUserId) {
       setStatus('error');
       setMessage('Please assign a user.');
@@ -331,7 +353,6 @@ const BookRow = ({ book, onSyncComplete }: { book: any, onSyncComplete: () => vo
       const result = await response.json();
 
       if (response.ok && result.success) {
-        // 👇 ── NEW: Trigger Webhook ── 👇
         try {
           await fetch(`${CRMSERVER_API_URL}/api/amazon-store-webhook`, {
             method: 'POST',
@@ -345,6 +366,10 @@ const BookRow = ({ book, onSyncComplete }: { book: any, onSyncComplete: () => vo
           });
         } catch (webhookErr) {
           console.error("Amazon Webhook failed to trigger", webhookErr);
+        }
+
+        if (typeof window !== "undefined") {
+          localStorage.removeItem(draftKey);
         }
 
         setStatus('success');
@@ -452,10 +477,23 @@ const BookRow = ({ book, onSyncComplete }: { book: any, onSyncComplete: () => vo
               <button
                 type="button"
                 onClick={handleGenerateAI}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-blue-700 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 hover:border-blue-300 transition-colors pointer-events-auto uppercase tracking-wide"
+                className="group relative flex items-center justify-center p-[2px] rounded-full shadow-[0_4px_14px_0_rgba(0,0,0,0.1)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.15)] hover:-translate-y-0.5 transition-all duration-200 cursor-pointer mt-3"
               >
-                <Sparkles className="w-3.5 h-3.5 text-blue-500" />
-                Enhance Listing
+                 <span className="absolute inset-0 rounded-full bg-gradient-to-r from-[#00E5FF] via-[#4D7CFF] to-[#C100FF] z-0"></span>
+                 
+                 <span className="relative flex items-center gap-2 px-2 py-1 bg-white rounded-full w-full h-full z-10">
+                   
+                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                     <path d="M10 2.5C10 6.642 13.358 10 17.5 10C13.358 10 10 13.358 10 17.5C10 13.358 6.642 10 2.5 10C6.642 10 10 6.642 10 2.5Z" fill="#00E5FF"/>
+                     <path d="M19 14C19 15.657 20.343 17 22 17C20.343 17 19 18.343 19 20C19 18.343 17.657 17 16 17C17.657 17 19 15.657 19 14Z" fill="#00E5FF"/>
+                     <path d="M5 16C5 17.104 5.895 18 7 18C5.895 18 5 18.895 5 20C5 18.895 4.104 18 3 18C4.104 18 5 17.104 5 16Z" fill="#00E5FF"/>
+                   </svg>
+              
+                   {/* Gradient Text (kept your original text, easily swappable to "Generate") */}
+                   <span className="font-medium text-[14px] bg-gradient-to-r from-[#00E5FF] via-[#4D7CFF] to-[#C100FF] bg-clip-text text-transparent">
+                     Enhance Content with AI
+                   </span>
+                   </span>
               </button>
             )}
           </div>
@@ -555,7 +593,7 @@ const BookRow = ({ book, onSyncComplete }: { book: any, onSyncComplete: () => vo
 </div>
         
 
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4">
           
 
             {/* Section 3: Publication Details */}
@@ -584,7 +622,7 @@ const BookRow = ({ book, onSyncComplete }: { book: any, onSyncComplete: () => vo
             </SectionCard>
           </div>
 
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4">
             
 
             {/* Section 5: Category & Classification */}
@@ -597,24 +635,16 @@ const BookRow = ({ book, onSyncComplete }: { book: any, onSyncComplete: () => vo
               </div>
               <div className="flex flex-col gap-1 mt-3">
                 <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Browse Node ID</label>
-                <select
-                  name="recommended_browse_nodes"
+                <CascadingBrowseNodeSelect
+                  nodes={BROWSE_NODES}
                   value={formData.recommended_browse_nodes}
                   onChange={handleChange}
-                  className="border border-slate-200 rounded-md px-2.5 py-1.5 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none w-full bg-white text-slate-700"
-                >
-                  <option value="" disabled>Select a category...</option>
-                  {BROWSE_NODES.map((node) => (
-                    <option key={node.id} value={node.id}>
-                      {node.name}
-                    </option>
-                  ))}
-                </select>
+                />
               </div>
             </SectionCard>
           </div>
 
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4">
             {/* Section 6: Audience & Targeting */}
             <SectionCard title="Audience & Targeting">
               <FieldInput 
@@ -642,7 +672,7 @@ const BookRow = ({ book, onSyncComplete }: { book: any, onSyncComplete: () => vo
                 name="description"
                 value={formData.description}
                 onChange={handleChange}
-                rows={4}
+                rows={10}
                 className="border border-slate-200 rounded-md px-2.5 py-1.5 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none w-full resize-y font-mono text-[13px] bg-white text-slate-800"
               />
             </div>
@@ -900,6 +930,112 @@ const ImagePreviewInput = ({
             Done
           </button>
         </div>
+      )}
+    </div>
+  );
+};
+
+// ─── CASCADING BROWSE NODE COMPONENT ─────────────────────────────────────────
+const CascadingBrowseNodeSelect = ({ 
+  nodes, 
+  value, 
+  onChange 
+}: { 
+  nodes: any[]; 
+  value: string; 
+  onChange: (e: any) => void; 
+}) => {
+  // Parse the flat strings into arrays (e.g. ["Books", "Teen & Young Adult", ...])
+  const parsedNodes = React.useMemo(() => {
+    return nodes.map(n => ({
+      id: n.id,
+      name: n.name,
+      parts: n.name.split('>').map((p: string) => p.trim())
+    }));
+  }, [nodes]);
+
+  const [selections, setSelections] = useState<string[]>([]);
+
+  // Initialize selections if the book already has a recommended_browse_node from the DB or AI
+  useEffect(() => {
+    const selectedNode = parsedNodes.find(n => n.id === String(value));
+    if (selectedNode) {
+      const isMatch = selections.length === selectedNode.parts.length && 
+                      selections.every((val, index) => val === selectedNode.parts[index]);
+      if (!isMatch) {
+        setSelections(selectedNode.parts);
+      }
+    }
+  }, [value, parsedNodes, selections]);
+
+  // Calculate which options should be available at each level
+  const levels = [];
+  let currentPrefix: string[] = [];
+
+  for (let i = 0; i <= selections.length; i++) {
+    // Find all nodes that match the prefix of what the user has selected so far
+    const matchingNodes = parsedNodes.filter(n =>
+      currentPrefix.every((part, idx) => n.parts[idx] === part)
+    );
+
+    // Get the unique categories for the current depth level
+    const nextOptions = Array.from(new Set(matchingNodes.map(n => n.parts[i]).filter(Boolean)));
+    
+    if (nextOptions.length === 0) break; // Reached the leaf node
+
+    levels.push({
+      levelIndex: i,
+      options: nextOptions.sort()
+    });
+
+    if (i < selections.length) {
+      currentPrefix.push(selections[i]);
+    }
+  }
+
+  const handleSelectChange = (levelIndex: number, selectedValue: string) => {
+    // Keep selections up to the level that was just changed, and append the new value
+    const newSelections = selections.slice(0, levelIndex);
+    if (selectedValue) {
+      newSelections.push(selectedValue);
+    }
+    setSelections(newSelections);
+
+    // Check if the current combination exactly matches a known Node ID
+    const matchingNode = parsedNodes.find(n =>
+      n.parts.length === newSelections.length &&
+      n.parts.every((p: string, idx: number) => p === newSelections[idx])
+    );
+
+    // Mimic standard event payload so your existing handleChange function works flawlessly
+    if (matchingNode) {
+      onChange({ target: { name: 'recommended_browse_nodes', value: matchingNode.id } });
+    } else {
+      onChange({ target: { name: 'recommended_browse_nodes', value: '' } });
+    }
+  };
+
+  return (
+    <div className="flex gap-2">
+      {levels.map((level, i) => (
+        <select
+          key={i}
+          value={selections[i] || ""}
+          onChange={(e) => handleSelectChange(i, e.target.value)}
+          className="border border-slate-200 rounded-md px-2.5 py-1.5 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none w-full bg-slate-50 text-slate-700"
+        >
+          <option value="" disabled>Select {i === 0 ? 'category' : 'subcategory'}...</option>
+          {level.options.map((opt: string) => (
+            <option key={opt} value={opt}>{opt}</option>
+          ))}
+        </select>
+      ))}
+      
+      {/* Warning when a user is halfway through a tree but hasn't reached an assignable node ID */}
+      {!value && selections.length > 0 && (
+        <span className="text-[10.px] text-amber-600 flex items-center gap-1 font-medium mt-0.5">
+          <AlertCircle className="w-3.5 h-3.5" /> Please select a final subcategory to assign an ID.
+        </span>
       )}
     </div>
   );
