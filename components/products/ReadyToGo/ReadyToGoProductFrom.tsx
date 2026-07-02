@@ -174,6 +174,8 @@ const ReadyToGoProductForm = () => {
   const [mainImageUrl, setMainImageUrl] = useState<string | null>(null);
   const [imprintFilter, setImprintFilter] = useState<"agph" | "agclassics">("agph");
   const [bookId, setBookId] = useState("");
+  const [activeUsers, setActiveUsers] = useState<{id: number, username: string}[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState("");
   const [ebookCoverFile, setEbookCoverFile] = useState<File | null>(null);
   const [importedAttributes, setImportedAttributes] = useState<{name: string, value: string}[]>([]);
   const [importedAuthors, setImportedAuthors] = useState<{id: number, name: string}[]>([]);
@@ -253,6 +255,24 @@ const ReadyToGoProductForm = () => {
     };
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, []);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const token = await generateLocalToken(FRONTEND_JWT_SECRET);
+        const res = await fetch(`${CRMSERVER_API_URL}/api/active_users`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        const json = await res.json();
+        if (json.success) {
+          setActiveUsers(json.data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch active users", err);
+      }
+    };
+    fetchUsers();
   }, []);
 
   useEffect(() => {
@@ -472,6 +492,7 @@ const ReadyToGoProductForm = () => {
       if (!sku.trim()) newErrors.sku = "SKU is required";
       if (selectedCategories.length === 0) newErrors.categories = "At least one category is required";
       if (!String(bookId).trim()) newErrors.bookId = "MIS Book ID is required";
+      if (!selectedUserId) newErrors.assignedUser = "Please assign a user to this listing";
 
       if (productType === "physical" || productType === "both") {
         if (!price) newErrors.price = "Cost price is required";
@@ -662,7 +683,7 @@ const ReadyToGoProductForm = () => {
 
       const webhookPayload = {
         book_id: bookId,
-        user: userName,
+        user_id: selectedUserId,
         sell_price: finalSellPrice || 0,
         stock: stock || 0,
         product_url: `${SITE_URL}/product/${data.slug || slug}`,
@@ -865,7 +886,24 @@ const ReadyToGoProductForm = () => {
                         />
                         {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title}</p>}
                       </div>
-                      <div className="w-[20%]">
+                      
+                      <div className="w-[10%]">
+                        <label className="block text-sm mb-1">Assign User {isPublishing && <Req />}</label>
+                        <select
+                          disabled={isFetchingData}
+                          className={`w-full rounded border px-3 py-2 text-sm disabled:bg-gray-50 ${errors.assignedUser ? "border-red-400" : ""}`}
+                          value={selectedUserId}
+                          onChange={(e) => { setSelectedUserId(e.target.value); clearError("assignedUser"); }}
+                        >
+                          <option value="">Select User...</option>
+                          {activeUsers.map(u => (
+                            <option key={u.id} value={u.id}>{u.username}</option>
+                          ))}
+                        </select>
+                        {errors.assignedUser && <p className="text-red-500 text-xs mt-1">{errors.assignedUser}</p>}
+                      </div>
+
+                      <div className="w-[10%]">
                         <label className="block text-sm mb-1">MIS Book ID {isPublishing && <Req />}</label>
                         <input
                           type="text"
