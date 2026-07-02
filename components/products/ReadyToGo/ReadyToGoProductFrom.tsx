@@ -710,6 +710,10 @@ const ReadyToGoProductForm = () => {
     setIsDirty(false);
     isDirtyRef.current = false;
 
+    if (typeof window !== "undefined") {
+      sessionStorage.removeItem(`ai_draft_${bookId}`);
+    }
+
     setPopup({
       open: true,
       type: "success",
@@ -760,6 +764,7 @@ const ReadyToGoProductForm = () => {
   }, [categories, selectedCategories, categoryTree]);
 
   // ── AI ENHANCEMENT HANDLER ─────────────────
+  // ── AI ENHANCEMENT HANDLER ─────────────────
   const handleGenerateAI = async () => {
     if (!bookId) return;
     setIsGeneratingAI(true);
@@ -773,27 +778,45 @@ const ReadyToGoProductForm = () => {
         }
       });
       
-      // Parse JSON first so we can extract backend error messages if it fails
       const data = await res.json();
       
       if (res.ok) {
         const newTitle = data.title || title;
+        const newMetaTitle = data.meta_title || metaTitle;
+        const newMetaDesc = data.meta_description || metaDescription;
+        const newKeywords = data.keywords || keywords;
+        
+        // We need to calculate the new description format so we can save it exactly as it renders
+        let newDesc = description;
+        setDescription(prevDesc => {
+          newDesc = formatProductDescription(prevDesc, newTitle);
+          return newDesc;
+        });
+
+        if (typeof window !== "undefined") {
+          const aiContent = {
+            title: newTitle,
+            metaTitle: newMetaTitle,
+            metaDescription: newMetaDesc,
+            keywords: newKeywords,
+            description: newDesc
+          };
+          sessionStorage.setItem(`ai_draft_${bookId}`, JSON.stringify(aiContent));
+        }
+
         setTitle(newTitle);
-        setMetaTitle(data.meta_title || metaTitle);
-        setMetaDescription(data.meta_description || metaDescription);
-        setKeywords(data.keywords || keywords);
-        setDescription(prevDesc => formatProductDescription(prevDesc, newTitle));
+        setMetaTitle(newMetaTitle);
+        setMetaDescription(newMetaDesc);
+        setKeywords(newKeywords);
         
         setToastMsg("AI content generated successfully!");
         setToastType("success");
         setToastOpen(true);
       } else {
-        // Throw an error using the specific message returned by your Flask backend
         throw new Error(data.message || data.error || "Failed to fetch AI data");
       }
     } catch (err: any) {
       console.error("AI Generation error:", err);
-      // Trigger the explicit error modal instead of the toast
       setPopup({
         open: true,
         type: "error",
@@ -810,6 +833,24 @@ const ReadyToGoProductForm = () => {
     url: url,
     filename: `Imported Drive Image ${idx + 1}.jpg`,
   }));
+
+  useEffect(() => {
+    if (!bookId || typeof window === "undefined") return;
+    
+    const savedAiContent = sessionStorage.getItem(`ai_draft_${bookId}`);
+    if (savedAiContent) {
+      try {
+        const parsed = JSON.parse(savedAiContent);
+        if (parsed.title) setTitle(parsed.title);
+        if (parsed.metaTitle) setMetaTitle(parsed.metaTitle);
+        if (parsed.metaDescription) setMetaDescription(parsed.metaDescription);
+        if (parsed.keywords) setKeywords(parsed.keywords);
+        if (parsed.description) setDescription(parsed.description);
+      } catch (e) {
+        console.error("Failed to parse saved AI content", e);
+      }
+    }
+  }, [bookId]);
 
   return (
     <div className="p-6 pr-2">
@@ -874,7 +915,7 @@ const ReadyToGoProductForm = () => {
               <div className="flex gap-6">
                 <div className="flex-1 space-y-4">
                     <div className="flex gap-4">
-                      <div className="w-[80%]">
+                      <div className="w-[70%]">
                         <label className="block text-sm mb-1">Product Title <Req /></label>
                         <input
                           type="text"
@@ -887,7 +928,7 @@ const ReadyToGoProductForm = () => {
                         {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title}</p>}
                       </div>
                       
-                      <div className="w-[10%]">
+                      <div className="w-[15%]">
                         <label className="block text-sm mb-1">Assign User {isPublishing && <Req />}</label>
                         <select
                           disabled={isFetchingData}
@@ -903,7 +944,7 @@ const ReadyToGoProductForm = () => {
                         {errors.assignedUser && <p className="text-red-500 text-xs mt-1">{errors.assignedUser}</p>}
                       </div>
 
-                      <div className="w-[10%]">
+                      <div className="w-[15%]">
                         <label className="block text-sm mb-1">MIS Book ID {isPublishing && <Req />}</label>
                         <input
                           type="text"
