@@ -30,7 +30,8 @@ type Product = {
 };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL!; // Added SITE_URL
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL!;
+const AGCLASSIC_URL = process.env.NEXT_PUBLIC_AGCLASSIC_URL!; // Added AGCLASSIC_URL
 
 /* ═══════════════════════════════════════════════════════════════
    HELPERS & SHARED LOGIC
@@ -555,6 +556,8 @@ export default function ProductsTable() {
           >
             <option value="">All categories</option>
             <option value="__none__">No category</option>
+            <option value="agph">AGPH</option>
+            <option value="agclassics">AG Classics</option>
             {allCategories.map(cat => <option key={cat.id} value={cat.name}>{cat.name}</option>)}
           </select>
 
@@ -631,56 +634,69 @@ export default function ProductsTable() {
           </thead>
 
           <tbody className="divide-y divide-gray-200 text-xs">
-            {paginatedProducts.map(product => (
-              <tr key={product.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4">
-                  <input type="checkbox" checked={selectedIds.includes(product.id)}
-                    onChange={() => setSelectedIds(prev =>
-                      prev.includes(product.id) ? prev.filter(id => id !== product.id) : [...prev, product.id]
-                    )} />
-                </td>
-                <td className="px-3 py-4">
-                  <div className="flex items-center gap-3">
-                    <img src={`${API_URL}${product.image}`} alt={product.name}
-                      className="h-12 w-12 rounded object-cover" />
-                    <div>
-                      <p className="font-medium text-xs">{product.name}</p>
-                      <p className="text-xs text-gray-500 space-x-2">
-                        <Link href={`/admin/product/EditProduct?id=${product.id}`}
-                          className="text-blue-600 hover:underline cursor-pointer">Edit</Link>
-                        <span>|</span>
-                        <button onClick={() => handleDelete(product.id, product.status)}
-                          className="text-red-600 hover:underline cursor-pointer">Delete</button>
-                      </p>
+            {paginatedProducts.map(product => {
+              
+              // Determine if the product belongs to AG Classics
+              const isAgClassic = product.imprints.includes("agclassics");
+              // Render appropriate URL based on the imprint
+              const viewUrl = isAgClassic ? `${AGCLASSIC_URL}/product/${product.slug}` : `/product/${product.slug}`;
+
+              return (
+                <tr key={product.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4">
+                    <input type="checkbox" checked={selectedIds.includes(product.id)}
+                      onChange={() => setSelectedIds(prev =>
+                        prev.includes(product.id) ? prev.filter(id => id !== product.id) : [...prev, product.id]
+                      )} />
+                  </td>
+                  <td className="px-3 py-4">
+                    <div className="flex items-center gap-3">
+                      <img src={`${API_URL}${product.image}`} alt={product.name}
+                        className="h-12 w-12 rounded object-cover" />
+                      <div>
+                        <p className="font-medium text-xs">{product.name}</p>
+                        <p className="text-xs text-gray-500 space-x-2 mt-1">
+                          
+                          <Link href={viewUrl} target="_blank"
+                            className="text-green-600 hover:underline cursor-pointer">View</Link>
+                          
+                          <span>|</span>
+                          <Link href={`/admin/product/EditProduct?id=${product.id}`}
+                            className="text-blue-600 hover:underline cursor-pointer">Edit</Link>
+                          <span>|</span>
+                          <button onClick={() => handleDelete(product.id, product.status)}
+                            className="text-red-600 hover:underline cursor-pointer">Delete</button>
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </td>
-                <td className="px-3 py-4 text-gray-500">
-                  <span className="block">{product.sku}</span>
-                  {product.book_id && (
-                    <span className="block text-xs text-gray-400 mt-0.5">
-                      ID: {product.book_id}
-                    </span>
-                  )}
-                </td>
-                <td className="px-3 py-4 whitespace-nowrap"><StockBadge stock={product.stock} /></td>
-                <td className="px-3 py-4 font-medium">{product.price}</td>
-                <td className="px-3 py-4 text-gray-500">{product.categories.join(", ")}</td>
-                <td className="px-3 py-4"><SeoCell product={product} /></td>
-                <td className="px-5 py-4 text-[11px] text-gray-500 whitespace-nowrap">
-                  <div className="mb-1">
-                    <span className="font-medium text-gray-700">Created:</span><br/>
-                    {formatDateTimeIST(product.date)}
-                  </div>
-                  {product.updated_at && (
-                    <div>
-                      <span className="font-medium text-gray-700">Updated:</span><br/>
-                      {formatDateTimeIST(product.updated_at)}
+                  </td>
+                  <td className="px-3 py-4 text-gray-500">
+                    <span className="block">{product.sku}</span>
+                    {product.book_id && (
+                      <span className="block text-xs text-gray-400 mt-0.5">
+                        ID: {product.book_id}
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-3 py-4 whitespace-nowrap"><StockBadge stock={product.stock} /></td>
+                  <td className="px-3 py-4 font-medium">{product.price}</td>
+                  <td className="px-3 py-4 text-gray-500">{product.categories.join(", ")}</td>
+                  <td className="px-3 py-4"><SeoCell product={product} /></td>
+                  <td className="px-5 py-4 text-[11px] text-gray-500 whitespace-nowrap">
+                    <div className="mb-1">
+                      <span className="font-medium text-gray-700">Created:</span><br/>
+                      {formatDateTimeIST(product.date)}
                     </div>
-                  )}
-                </td>
-              </tr>
-            ))}
+                    {product.updated_at && (
+                      <div>
+                        <span className="font-medium text-gray-700">Updated:</span><br/>
+                        {formatDateTimeIST(product.updated_at)}
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -711,10 +727,13 @@ export default function ProductsTable() {
 
 function StockBadge({ stock }: { stock: number }) {
   return (
-    <span className={`inline-flex whitespace-nowrap rounded-full px-3 py-1 text-xs font-medium
-      ${stock > 0 ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
-      {stock > 0 ? "In stock" : "Out of stock"}
-    </span>
+    <div className="flex flex-col gap-1 items-start">
+      <span className={`inline-flex whitespace-nowrap rounded-full px-3 py-1 text-xs font-medium
+        ${stock > 0 ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+        {stock > 0 ? "In stock" : "Out of stock"} {stock > 0 ? stock : ""} 
+      </span>
+
+    </div>
   );
 }
 
@@ -768,7 +787,7 @@ function Pagination({ currentPage, totalPages, onPageChange }: {
       <button
         disabled={currentPage === totalPages}
         onClick={() => onPageChange(currentPage + 1)}
-        className="rounded border cursor-pointer px-3 py-1 disabled:opacity-50 cursor-pointer"
+        className="rounded border px-3 py-1 disabled:opacity-50 cursor-pointer"
       >
         Next
       </button>

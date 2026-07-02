@@ -163,6 +163,7 @@ const ReadyToGoProductForm = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [toastOpen, setToastOpen] = useState(false);
   const [toastMsg, setToastMsg] = useState("");
+  const [toastType, setToastType] = useState<"success" | "error">("error");
   const router = useRouter();
   const [needsConversion, setNeedsConversion] = useState(false);
   const [isConverting, setIsConverting] = useState(false);
@@ -173,6 +174,8 @@ const ReadyToGoProductForm = () => {
   const [mainImageUrl, setMainImageUrl] = useState<string | null>(null);
   const [imprintFilter, setImprintFilter] = useState<"agph" | "agclassics">("agph");
   const [bookId, setBookId] = useState("");
+  const [activeUsers, setActiveUsers] = useState<{id: number, username: string}[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState("");
   const [ebookCoverFile, setEbookCoverFile] = useState<File | null>(null);
   const [importedAttributes, setImportedAttributes] = useState<{name: string, value: string}[]>([]);
   const [importedAuthors, setImportedAuthors] = useState<{id: number, name: string}[]>([]);
@@ -252,6 +255,24 @@ const ReadyToGoProductForm = () => {
     };
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, []);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const token = await generateLocalToken(FRONTEND_JWT_SECRET);
+        const res = await fetch(`${CRMSERVER_API_URL}/api/active_users`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        const json = await res.json();
+        if (json.success) {
+          setActiveUsers(json.data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch active users", err);
+      }
+    };
+    fetchUsers();
   }, []);
 
   useEffect(() => {
@@ -382,6 +403,7 @@ const ReadyToGoProductForm = () => {
           setMainImageUrl(data.image);
         } else {
           setToastMsg("Warning: No product image was found in the imported data. Please upload one.");
+          setToastType("error");
           setToastOpen(true);
           setErrors((prev) => ({ ...prev, image: "Product image is missing from import" }));
         }
@@ -470,6 +492,7 @@ const ReadyToGoProductForm = () => {
       if (!sku.trim()) newErrors.sku = "SKU is required";
       if (selectedCategories.length === 0) newErrors.categories = "At least one category is required";
       if (!String(bookId).trim()) newErrors.bookId = "MIS Book ID is required";
+      if (!selectedUserId) newErrors.assignedUser = "Please assign a user to this listing";
 
       if (productType === "physical" || productType === "both") {
         if (!price) newErrors.price = "Cost price is required";
@@ -531,7 +554,7 @@ const ReadyToGoProductForm = () => {
     formData.append("categories", JSON.stringify(selectedCategories));
     formData.append("authors", JSON.stringify(authors));
     formData.append("attributes", JSON.stringify(attributes));
-    formData.append("meta_title", metaTitle);
+    formData.append("meta_title", metaTitle ? metaTitle.split('|')[0].trim() : "");
     formData.append("meta_description", metaDescription);
     formData.append("keywords", keywords);
     formData.append("subjects", JSON.stringify(selectedSubjects));
@@ -555,6 +578,7 @@ const ReadyToGoProductForm = () => {
       setNeedsConversion(false);
     } catch (error: any) {
       setToastMsg(error.message);
+      setToastType("error");
       setToastOpen(true);
     }
     setIsConverting(false);
@@ -581,6 +605,7 @@ const ReadyToGoProductForm = () => {
     formData.append("sell_price", sellPrice);
     formData.append("stock", stock);
     formData.append("sku", sku);
+    if (slug.trim()) formData.append("slug", slug);
     formData.append("product_type", productType);
     formData.append("status", status);
     formData.append("weight", weight);
@@ -599,7 +624,7 @@ const ReadyToGoProductForm = () => {
     formData.append("attributes", JSON.stringify(attributes));
     formData.append("authors", JSON.stringify(authors));
     formData.append("categories", JSON.stringify(selectedCategories));
-    formData.append("meta_title", metaTitle);
+    formData.append("meta_title", metaTitle ? metaTitle.split('|')[0].trim() : "");
     formData.append("meta_description", metaDescription);
     formData.append("keywords", keywords);
     formData.append("book_id", bookId);
@@ -658,7 +683,7 @@ const ReadyToGoProductForm = () => {
 
       const webhookPayload = {
         book_id: bookId,
-        user: userName,
+        user_id: selectedUserId,
         sell_price: finalSellPrice || 0,
         stock: stock || 0,
         product_url: `${SITE_URL}/product/${data.slug || slug}`,
@@ -760,6 +785,7 @@ const ReadyToGoProductForm = () => {
         setDescription(prevDesc => formatProductDescription(prevDesc, newTitle));
         
         setToastMsg("AI content generated successfully!");
+        setToastType("success");
         setToastOpen(true);
       } else {
         // Throw an error using the specific message returned by your Flask backend
@@ -860,7 +886,24 @@ const ReadyToGoProductForm = () => {
                         />
                         {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title}</p>}
                       </div>
-                      <div className="w-[20%]">
+                      
+                      <div className="w-[10%]">
+                        <label className="block text-sm mb-1">Assign User {isPublishing && <Req />}</label>
+                        <select
+                          disabled={isFetchingData}
+                          className={`w-full rounded border px-3 py-2 text-sm disabled:bg-gray-50 ${errors.assignedUser ? "border-red-400" : ""}`}
+                          value={selectedUserId}
+                          onChange={(e) => { setSelectedUserId(e.target.value); clearError("assignedUser"); }}
+                        >
+                          <option value="">Select User...</option>
+                          {activeUsers.map(u => (
+                            <option key={u.id} value={u.id}>{u.username}</option>
+                          ))}
+                        </select>
+                        {errors.assignedUser && <p className="text-red-500 text-xs mt-1">{errors.assignedUser}</p>}
+                      </div>
+
+                      <div className="w-[10%]">
                         <label className="block text-sm mb-1">MIS Book ID {isPublishing && <Req />}</label>
                         <input
                           type="text"
@@ -1133,6 +1176,7 @@ const ReadyToGoProductForm = () => {
                             setPreview(null);
                             setMainImageUrl(null);
                             setToastMsg("The imported cover image failed to load. Please select or upload a new image.");
+                            setToastType("error");
                             setToastOpen(true);
                             setErrors((prev) => ({ ...prev, image: "Imported image failed to load" }));
                           }}
@@ -1298,7 +1342,7 @@ const ReadyToGoProductForm = () => {
           }
         }}
       />
-      <AlertPopup open={toastOpen} message={toastMsg} onClose={() => setToastOpen(false)} />
+      <AlertPopup open={toastOpen} message={toastMsg} type={toastType} onClose={() => setToastOpen(false)} />
       <ReadyToGoMediaLibraryModal
         open={mediaModalOpen}
         onClose={() => setMediaModalOpen(false)}

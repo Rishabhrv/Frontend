@@ -7,15 +7,13 @@ import {
   Box, Layers, ChevronDown, LibraryBig, Users, ShoppingCart,
   Truck, BadgeCheck, BadgeIndianRupee, BadgePercent,
   Megaphone, UserStar, AlignVerticalDistributeStart, ShieldOff,
-  LucideIcon, ChartArea, ChartLine,
+  LucideIcon, ChartArea, ChartLine, ClipboardList
 } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 const CRMSERVER_API_URL = process.env.NEXT_PUBLIC_CRMSERVER_API_URL;
 const FRONTEND_JWT_SECRET = process.env.NEXT_PUBLIC_FRONTEND_JWT_SECRET || "default_fallback_secret";
-
-
 
 type PageKey =
   | "products" | "orders"   | "category" | "subject"
@@ -66,18 +64,24 @@ async function generateLocalToken(secret: string) {
 export default function Sidebar() {
   const pathname = usePathname() ?? "";
 
-  const [openMenu, setOpenMenu] = useState<"products" | "orders" | null>(null);
+  const [openMenu, setOpenMenu] = useState<"products" | "orders" | "listing" | null>(null);
   
   // Badge Counter States
   const [newOrdersCount, setNewOrdersCount] = useState<number>(0);
   const [pendingReviewsCount, setPendingReviewsCount] = useState<number>(0);
   const [readyToGoCount, setReadyToGoCount] = useState<number>(0);
+  const [amazonPendingCount, setAmazonPendingCount] = useState<number>(0);
   
   const { can, loading } = usePermissions();
 
-  // Highlight current category active tabs
+  // Highlight current active tabs based on explicit paths
   useEffect(() => {
-    if (pathname.startsWith("/admin/product")) {
+    // Specifically target listing routes so the correct parent menu stays open
+    if (pathname === "/admin/product/ReadytoGoProduct" || pathname === "/admin/product/AmazonProduct") {
+      setOpenMenu("listing");
+    } 
+    // Handle the remaining product routes
+    else if (pathname.startsWith("/admin/product")) {
       setOpenMenu("products");
     } 
     else if (pathname.startsWith("/admin/order")) {
@@ -108,30 +112,58 @@ export default function Sidebar() {
     }
   }, [can, pathname]);
 
+  // Fetch Ready To Go Products
   useEffect(() => {
-  if (!can("products")) return;
+    if (!can("products")) return;
 
-  const fetchReadyToGoCount = async () => {
-    try {
-      const token = await generateLocalToken(FRONTEND_JWT_SECRET);
+    const fetchReadyToGoCount = async () => {
+      try {
+        const token = await generateLocalToken(FRONTEND_JWT_SECRET);
+        const res = await fetch(`${CRMSERVER_API_URL}/api/books/unlisted/agph`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const data = await res.json();
+        setReadyToGoCount(data.count || 0);
+      } catch (err) {
+        console.error("Error fetching ready to go count:", err);
+      }
+    };
 
-      const res = await fetch(`${CRMSERVER_API_URL}/api/books/unlisted/agph`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
+    fetchReadyToGoCount();
+  }, [can, pathname]);
 
-      const data = await res.json();
-      setReadyToGoCount(data.count || 0);
-    } catch (err) {
-      console.error("Error fetching ready to go count:", err);
-    }
-  };
+  // Fetch Amazon Pending Books Count
+  useEffect(() => {
+    if (!can("products")) return;
 
-  fetchReadyToGoCount();
-}, [can, pathname]);
+    const fetchAmazonPendingCount = async () => {
+      try {
+        const token = await generateLocalToken(FRONTEND_JWT_SECRET);
+        const res = await fetch(`${CRMSERVER_API_URL}/api/amazon/pending_books`, {
+          method: "GET",
+          headers: { 
+            "Content-Type": "application/json", 
+            "Authorization": `Bearer ${token}` 
+          }
+        });
+        
+        if (!res.ok) throw new Error("Failed to fetch pending amazon books");
+        const json = await res.json();
+        
+        if (json.status === "success" && json.data) {
+          setAmazonPendingCount(json.data.length);
+        }
+      } catch (err) {
+        console.error("Error fetching Amazon pending count:", err);
+      }
+    };
+
+    fetchAmazonPendingCount();
+  }, [can, pathname]);
 
   if (loading) {
     return (
@@ -148,6 +180,9 @@ export default function Sidebar() {
 
   const noAccess = !can("products") && NAV_ITEMS.every(({ key }) => !can(key));
 
+  // Calculate total combined listing count
+  const totalListingCount = readyToGoCount + amazonPendingCount;
+
   return (
     <aside className="hidden w-55 bg-white border-r border-gray-200 lg:block min-h-screen">
       {/* LOGO */}
@@ -156,7 +191,7 @@ export default function Sidebar() {
       <nav className="px-3 text-sm">
         <p className="px-3 py-2 text-xs text-gray-400 uppercase">Menu</p>
 
-        {/* PRODUCTS */}
+        {/* PRODUCTS (Main Menu) */}
         {can("products") && (
           <SidebarItem
             icon={<Box size={18} />}
@@ -174,16 +209,34 @@ export default function Sidebar() {
               href="/admin/product/AddProduct"
               active={pathname === "/admin/product/AddProduct"}
             />
+          </SidebarItem>
+        )}
+
+        {/* LISTING (Main Menu, tied to product permissions) */}
+        {can("products") && (
+          <SidebarItem
+            icon={<ClipboardList size={18} />}
+            label="Listing"
+            isOpen={openMenu === "listing"}
+            badge={totalListingCount > 0 ? totalListingCount : undefined} // <-- Combined badge added here
+            onClick={() => setOpenMenu(openMenu === "listing" ? null : "listing")}
+          >
             <SubItem
-              label="Ready To Go Products"
+              label="Ready To List"
               href="/admin/product/ReadytoGoProduct"
               active={pathname === "/admin/product/ReadytoGoProduct"}
               badge={readyToGoCount > 0 ? readyToGoCount : undefined}
             />
+            <SubItem
+              label="List On Amazon"
+              href="/admin/product/AmazonProduct"
+              active={pathname === "/admin/product/AmazonProduct"}
+              badge={amazonPendingCount > 0 ? amazonPendingCount : undefined}
+            />
           </SidebarItem>
         )}
 
-        {/* ORDERS */}
+        {/* ORDERS (Main Menu) */}
         {can("orders") && (
           <SidebarItem
             icon={<ShoppingCart size={18} />}

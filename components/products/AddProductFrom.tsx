@@ -462,7 +462,7 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
     formData.append("sell_price", sellPrice);
     formData.append("stock", stock);
     formData.append("sku", sku);
-    if (mode === "edit") formData.append("slug", slug);
+    if (slug.trim()) formData.append("slug", slug);
     formData.append("product_type", productType);
     formData.append("status", status);
     formData.append("weight", weight);
