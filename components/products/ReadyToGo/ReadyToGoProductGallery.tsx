@@ -24,16 +24,19 @@ type GalleryImage = {
 
 type Props = {
   initialGalleryUrls?: string[]; 
-  bookId?: string | number; // 👈 NEW: Accepts bookId to fetch from Drive
+  bookId?: string | number; // Accepts bookId to fetch from Drive
+  title?: string; // 👇 NEW: Accepts title string to display dynamically in alt tags
   error?: string;
   onValidChange?: () => void;
 };
 
 function SortableImage({
   img,
+  title, // Pass title to specific sortable card
   onRemove,
 }: {
   img: GalleryImage;
+  title?: string;
   onRemove: (id: string | number) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: img.id });
@@ -44,7 +47,12 @@ function SortableImage({
       className="relative group aspect-square rounded border border-gray-300 overflow-hidden"
     >
       <div {...attributes} {...listeners} className="h-full w-full cursor-grab">
-        <img src={img.preview} className="h-full w-full object-cover pointer-events-none" />
+        {/* Dynamically bind the product title to the gallery alt text */}
+        <img 
+          src={img.preview} 
+          alt={title ? `${title} - Gallery Image` : "Gallery Image"} 
+          className="h-full w-full object-cover pointer-events-none" 
+        />
       </div>
       <button
         type="button"
@@ -57,9 +65,7 @@ function SortableImage({
   );
 }
 
-
-
-const ReadyToGoProductGallery = forwardRef<any, Props>(({ initialGalleryUrls, bookId, error, onValidChange }, ref) => {
+const ReadyToGoProductGallery = forwardRef<any, Props>(({ initialGalleryUrls, bookId, title, error, onValidChange }, ref) => {
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -185,7 +191,7 @@ const ReadyToGoProductGallery = forwardRef<any, Props>(({ initialGalleryUrls, bo
           <SortableContext items={images.map((i) => i.id)} strategy={rectSortingStrategy}>
             <div className="grid grid-cols-3 gap-2 mb-3">
               {images.map((img) => (
-                <SortableImage key={img.id} img={img} onRemove={removeImage} />
+                <SortableImage key={img.id} img={img} title={title} onRemove={removeImage} />
               ))}
             </div>
           </SortableContext>
@@ -207,9 +213,10 @@ const ReadyToGoProductGallery = forwardRef<any, Props>(({ initialGalleryUrls, bo
         onSelect={handleMediaSelect}
         folder="gallery"
         title="Product Gallery"
+        productTitle={title}
         confirmLabel="Add to gallery"
         multiple={true}
-        externalImages={externalGalleryImages} // 👈 ADD THIS LINE
+        externalImages={externalGalleryImages}
       />
     </>
   );
