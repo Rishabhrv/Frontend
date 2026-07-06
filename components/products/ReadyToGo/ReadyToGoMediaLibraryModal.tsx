@@ -25,9 +25,10 @@ type Props = {
   folder: "products" | "gallery";
   productId?: number;
   title?: string;
+  productTitle?: string;
   confirmLabel?: string;
   multiple?: boolean;
-  externalImages?: MediaImage[]; // 👈 NEW: Allow parent to inject fetched images
+  externalImages?: MediaImage[];
 };
 
 const globalSessionTempImages: Record<string, MediaImage[]> = {
@@ -42,9 +43,10 @@ export default function ReadyToGoMediaLibraryModal({
   folder,
   productId,
   title = "Product image",
+  productTitle,
   confirmLabel = "Set product image",
   multiple = false,
-  externalImages = [], // 👈 NEW: Default to empty array
+  externalImages = [],
 }: Props) {
   const [tab, setTab] = useState<"library" | "upload">("library");
   const [images, setImages] = useState<MediaImage[]>([]);
@@ -111,15 +113,22 @@ export default function ReadyToGoMediaLibraryModal({
     return () => clearTimeout(t);
   }, [search, open, fetchImages]);
 
+  // 👇 FIXED: This is where we auto-fill the input field with the productTitle!
   useEffect(() => {
     if (activeImage) {
       setFileName(activeImage.filename.replace(/\.[^/.]+$/, ""));
       fetch(`${API_URL}/api/media/alt?file_path=${encodeURIComponent(activeImage.url)}`)
         .then((res) => res.json())
-        .then((data) => setAltText(data.alt_text || ""))
-        .catch(() => setAltText(""));
+        .then((data) => {
+          // If the DB has saved alt text, use it. Otherwise, default to productTitle!
+          setAltText(data.alt_text || productTitle || "");
+        })
+        .catch(() => {
+          // If the fetch fails, default to productTitle
+          setAltText(productTitle || "");
+        });
     }
-  }, [activeImage]);
+  }, [activeImage, productTitle]); // Added productTitle to dependency array
 
   /* ── Upload ───────────────────────────────────────────────────────────── */
   const handleUpload = async (files: FileList | null) => {
@@ -192,7 +201,6 @@ export default function ReadyToGoMediaLibraryModal({
     return range;
   };
 
-  /* 👇 NEW: Merge externalImages into the displayed list */
   const combinedImages = [...externalImages, ...tempImages, ...images].filter(
     (img, index, self) => index === self.findIndex((t) => t.url === img.url || t.id === img.id)
   );
@@ -276,7 +284,6 @@ export default function ReadyToGoMediaLibraryModal({
                       {displayImages.map((img) => {
                         const isSel = selected.some((s) => s.id === img.id);
                         
-                        // 👇 NEW: Check if URL is absolute (Drive/HTTP) or relative.
                         const imgSrc = img.url.startsWith("http") || img.url.startsWith("blob:") 
                           ? img.url 
                           : `${API_URL}${img.url}`;
@@ -296,7 +303,12 @@ export default function ReadyToGoMediaLibraryModal({
                             }}
                             className={`relative aspect-square rounded overflow-hidden border-2 transition-all ${isSel ? "border-blue-600 shadow-md" : "border-transparent hover:border-gray-300"}`}
                           >
-                            <img src={imgSrc} alt={img.alt_text || img.filename} className="w-full h-full object-cover" loading="lazy" />
+                            <img 
+                              src={imgSrc} 
+                              alt={productTitle ? `${productTitle} - ${img.alt_text || img.filename}` : (img.alt_text || img.filename)} 
+                              className="w-full h-full object-cover" 
+                              loading="lazy" 
+                            />
                             {isSel && (
                               <div className="absolute top-1 right-1 w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center shadow">
                                 <Check className="w-3 h-3 text-white" />
@@ -314,10 +326,9 @@ export default function ReadyToGoMediaLibraryModal({
                 <div className="w-60 border-l border-gray-200 overflow-y-auto shrink-0 flex flex-col">
                   <div className="p-4 border-b border-gray-100 bg-gray-50">
                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Attachment Details</p>
-                    {/* 👇 Ensure absolute URLs render in sidebar properly too */}
                     <img 
                       src={activeImage.url.startsWith("http") || activeImage.url.startsWith("blob:") ? activeImage.url : `${API_URL}${activeImage.url}`} 
-                      alt={activeImage.filename} 
+                      alt={productTitle ? `${productTitle} - ${activeImage.filename}` : activeImage.filename} 
                       className="w-full rounded border border-gray-200 object-cover max-h-36" 
                     />
                   </div>
@@ -331,6 +342,7 @@ export default function ReadyToGoMediaLibraryModal({
                       </div>
                       <div>
                         <label className="block text-xs font-semibold text-gray-600 mb-1">Alt Text</label>
+                        {/* 👇 Input field binds perfectly to altText state */}
                         <input type="text" value={altText} onChange={(e) => setAltText(e.target.value)} placeholder="Describe the image…" className="w-full border border-gray-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500" />
                       </div>
                     </div>
@@ -345,7 +357,6 @@ export default function ReadyToGoMediaLibraryModal({
                         });
                         const originalName = activeImage.filename.replace(/\.[^/.]+$/, "");
                         if (fileName !== originalName && !activeImage.url.startsWith("http")) {
-                          // Rename local files (Skip rename for external Google Drive links)
                           const res = await fetch(`${API_URL}/api/media/rename`, {
                             method: "PUT",
                             headers: { "Content-Type": "application/json" },

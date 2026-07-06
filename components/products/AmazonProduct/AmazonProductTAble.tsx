@@ -387,6 +387,63 @@ const BookRow = ({ book, onSyncComplete }: { book: any, onSyncComplete: () => vo
     }
   };
 
+  // ── DETERMINE MISSING FIELDS ─────────────────
+  const getMissingFields = () => {
+    const missing = [];
+    
+    // 1. Core Information
+    if (!formData.title?.trim()) missing.push("Full Title");
+    if (!formData.isbn?.trim()) missing.push("ISBN");
+    if (!formData.authors?.trim()) missing.push("Authors");
+    if (!formData.binding?.trim()) missing.push("Binding");
+    
+    // 2. Pricing & Inventory
+    if (!formData.sell_price || formData.sell_price <= 0) missing.push("Sell Price");
+    if (!formData.stock || formData.stock <= 0) missing.push("Stock");
+    if (!formData.number_of_items || formData.number_of_items <= 0) missing.push("No. of Items");
+    
+    // 3. Publication Details
+    if (!formData.pub_date?.trim()) missing.push("Pub Date");
+    if (!formData.edition?.trim()) missing.push("Edition");
+    if (!formData.language?.trim()) missing.push("Language");
+    if (!formData.language_type?.trim()) missing.push("Language Type");
+    if (!formData.pages || formData.pages <= 0) missing.push("Pages");
+    
+    // 4. Physical Dimensions (L/W/H/Weight)
+    if (!formData.weight || formData.weight <= 0) missing.push("Weight");
+    if (!formData.package_weight || formData.package_weight <= 0) missing.push("Package Weight");
+    if (!formData.length || formData.length <= 0) missing.push("Length");
+    if (!formData.width || formData.width <= 0) missing.push("Width");
+    if (!formData.height || formData.height <= 0) missing.push("Height");
+    
+    // 5. Category & Classification
+    if (!formData.subject?.trim()) missing.push("Primary Subject");
+    if (!formData.subject_code?.trim()) missing.push("BISAC Code");
+    if (!formData.genre?.trim()) missing.push("Genre");
+    if (!formData.subject_keyword?.trim()) missing.push("Subject Keywords");
+    if (!formData.recommended_browse_nodes?.trim()) missing.push("Browse Node ID");
+    
+    // 6. Audience & Targeting
+    if (!formData.target_audience?.trim()) missing.push("Target Audience");
+    if (!formData.min_age || formData.min_age <= 0) missing.push("Min Reading Age");
+    if (!formData.max_age || formData.max_age <= 0) missing.push("Max Reading Age");
+    
+    // 7. Content & Description
+    if (!formData.keywords?.trim()) missing.push("Search Keywords");
+    const cleanDesc = formData.description?.replace(/(<([^>]+)>)/gi, "").trim();
+    if (!formData.description || !cleanDesc) missing.push("Description");
+    
+    // 8. Images
+    if (!formData.image_url?.trim()) missing.push("Main Image URL");
+    
+    // 9. System Requirements
+    if (!selectedUserId) missing.push("Assign User");
+    
+    return missing;
+  };
+
+  const missingFields = getMissingFields();
+
   // Push button visual state is derived explicitly so the disabled/pending
   // look never relies on opacity fades (which made it unreadable before).
   const pushButtonClasses = isPending && status !== 'success'
@@ -497,6 +554,25 @@ const BookRow = ({ book, onSyncComplete }: { book: any, onSyncComplete: () => vo
               </button>
             )}
           </div>
+
+          {!isGeneratingAI && missingFields.length > 0 && (
+            <div className="mt-5 p-4 bg-red-50/80 border border-red-200 rounded-lg w-full">
+              <div className="flex items-center gap-2 mb-3 text-red-700">
+                <AlertCircle className="w-5 h-5" />
+                <span className="font-semibold text-sm">Missing Required Fields</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {missingFields.map((field, idx) => (
+                  <span 
+                    key={idx} 
+                    className="text-xs font-medium bg-white text-red-600 px-2.5 py-1 rounded border border-red-100 shadow-sm"
+                  >
+                    {field}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
 
           {message && (
             <div className={`p-3 rounded-md text-xs font-semibold border ${status === 'error' ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>

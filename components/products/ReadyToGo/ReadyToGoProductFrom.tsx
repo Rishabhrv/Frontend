@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Upload, Loader2 } from "lucide-react"; 
+import { Upload, Loader2, AlertCircle } from "lucide-react"; 
 import ReadyToGoProductAttributes from "./ReadyToGoProductAttributes";
 import ReadyToGoProductGallery from "./ReadyToGoProductGallery";
 import ReadyToGoProductAuthor from "./ReadyToGoProductAuthor";
@@ -764,7 +764,6 @@ const ReadyToGoProductForm = () => {
   }, [categories, selectedCategories, categoryTree]);
 
   // ── AI ENHANCEMENT HANDLER ─────────────────
-  // ── AI ENHANCEMENT HANDLER ─────────────────
   const handleGenerateAI = async () => {
     if (!bookId) return;
     setIsGeneratingAI(true);
@@ -852,6 +851,73 @@ const ReadyToGoProductForm = () => {
     }
   }, [bookId]);
 
+// ── DETERMINE MISSING FIELDS ─────────────────
+  const getMissingFields = () => {
+    const missing = [];
+    
+    // Always required
+    if (!title.trim()) missing.push("Product Title");
+    
+    // Required for publishing
+    if (status === "published") {
+      // 1. Basic Content
+      const cleanDesc = description.replace(/(<([^>]+)>)/gi, "").trim();
+      if (!description || !cleanDesc) missing.push("Description");
+      
+      if (!sku.trim()) missing.push("SKU");
+      if (selectedCategories.length === 0) missing.push("Category");
+      if (!String(bookId).trim()) missing.push("MIS Book ID");
+      if (!selectedUserId) missing.push("Assign User");
+      if (!productImage && !mainImageUrl && !preview) missing.push("Product Image");
+
+      // 2. Physical / Both Requirements
+      if (productType === "physical" || productType === "both") {
+        if (!price) missing.push("Cost Price");
+        if (!sellPrice) missing.push("Selling Price");
+        if (!stock) missing.push("Stock");
+        if (!weight) missing.push("Weight");
+        if (!length || !width || !height) missing.push("Dimensions (L/W/H)");
+      }
+
+      // 3. E-book / Both Requirements
+      if (productType === "ebook" || productType === "both") {
+        if (!ebookPrice) missing.push("E-book Price");
+        if (!ebookSellPrice) missing.push("E-book Selling Price");
+        if (!ebookFile && !convertedFilePath) missing.push("E-book Document");
+      }
+
+      // 4. SEO Fields
+      if (!metaTitle.trim()) missing.push("SEO Title");
+      if (!metaDescription.trim()) missing.push("Meta Description");
+      if (!keywords.trim()) missing.push("Focus Keyphrase");
+
+      // 5. Child Components (Refs)
+      // Authors
+      const authors = authorRef.current?.getAuthors?.() || [];
+      if (authors.length === 0) missing.push("Author");
+
+      // Gallery Images
+      const galleryData = galleryRef.current?.getGalleryData?.();
+      const totalGalleryImages = 
+        (galleryData?.newFiles?.length || 0) + 
+        (galleryData?.newUrls?.length || 0) + 
+        (galleryData?.existing?.length || 0);
+        
+      if (totalGalleryImages === 0) {
+        missing.push("Product Gallery Images");
+      }
+
+      // Attributes
+      if (errors.attributes) {
+        missing.push("Attributes (ISBN, Date, Pages)");
+      }
+    }
+    
+    return missing;
+  };
+
+  const missingFields = getMissingFields();
+
   return (
     <div className="p-6 pr-2">
       <div className=" items-center gap-4 mb-6">
@@ -896,13 +962,32 @@ const ReadyToGoProductForm = () => {
         <path d="M5 16C5 17.104 5.895 18 7 18C5.895 18 5 18.895 5 20C5 18.895 4.104 18 3 18C4.104 18 5 17.104 5 16Z" fill="#00E5FF"/>
       </svg>
 
-      {/* Gradient Text (kept your original text, easily swappable to "Generate") */}
+      {/* Gradient Text */}
       <span className="font-medium text-[14px] bg-gradient-to-r from-[#00E5FF] via-[#4D7CFF] to-[#C100FF] bg-clip-text text-transparent">
         Enhance Content with AI
       </span>
     </span>
   </button>
 )}
+
+{!isFetchingData && missingFields.length > 0 && status === "published" && (
+          <div className="mt-5 p-4 bg-red-50/80 border border-red-200 rounded-lg w-full max-w-4xl">
+            <div className="flex items-center gap-2 mb-3 text-red-700">
+              <AlertCircle className="w-5 h-5" />
+              <span className="font-semibold text-sm">Missing Required Fields</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {missingFields.map((field, idx) => (
+                <span 
+                  key={idx} 
+                  className="text-xs font-medium bg-white text-red-600 px-2.5 py-1 rounded border border-red-100 shadow-sm"
+                >
+                  {field}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 👇 ALL CONTENT WRAPPED IN FIELDSET TO DISABLE WHILE FETCHING 👇 */}
@@ -1087,16 +1172,25 @@ const ReadyToGoProductForm = () => {
                     </div>
                     <div className="w-full">
                       <label className="cursor-pointer block">
-                        <div className={`flex h-40 w-full flex-col items-center justify-center rounded-lg border-2 border-dashed bg-gray-50 text-center overflow-hidden transition-colors border-gray-300 ${!isFetchingData ? "hover:border-blue-500 cursor-pointer" : "cursor-not-allowed"}`}>
-                          {ebookCoverFile ? (
-                            <img src={URL.createObjectURL(ebookCoverFile)} alt="Ebook cover" className="h-full w-full object-cover" />
-                          ) : (
-                            <>
-                              <span className="text-sm text-gray-500">Upload E-book Cover</span>
-                              <span className="mt-1 text-xs text-gray-400">JPG, PNG</span>
-                            </>
-                          )}
-                        </div>
+                        {ebookCoverFile ? (
+  <>
+    {/* Dynamically bind the title to the e-book cover alt text */}
+    <img
+      src={URL.createObjectURL(ebookCoverFile)}
+      alt={title ? `${title} - Ebook Cover` : "Ebook cover"}
+      className="h-full w-full object-cover"
+    />
+  </>
+) : (
+  <>
+    <span className="text-sm text-gray-500">
+      Upload E-book Cover
+    </span>
+    <span className="mt-1 text-xs text-gray-400">
+      JPG, PNG
+    </span>
+  </>
+)}
                         <input type="file" accept="image/*" hidden disabled={isFetchingData}
                           onChange={(e) => {
                             const file = e.target.files?.[0];
@@ -1207,9 +1301,10 @@ const ReadyToGoProductForm = () => {
                             <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
                           </div>
                         )}
+                        {/* Dynamically bind the title to the primary image alt text */}
                         <img 
                           src={preview} 
-                          alt={mainImageAlt || "Product image"} 
+                          alt={title || mainImageAlt || "Product image"} 
                           className={`h-full w-full object-contain transition-opacity duration-300 ${isImageLoading ? "opacity-0" : "opacity-100"}`} 
                           onLoad={() => setIsImageLoading(false)}
                           onError={() => {
@@ -1276,9 +1371,10 @@ const ReadyToGoProductForm = () => {
                             } ${!isFetchingData ? "cursor-pointer hover:border-blue-300 hover:opacity-100" : "cursor-not-allowed"}`}
                             style={{ width: "60px", height: "80px" }}
                           >
+                            {/* Dynamically bind the title to drive image thumbnails */}
                             <img
                               src={url}
-                              alt={`Drive cover option ${idx + 1}`}
+                              alt={title ? `${title} - Drive Cover Option ${idx + 1}` : `Drive cover option ${idx + 1}`}
                               className="h-full w-full object-cover"
                             />
                           </div>
@@ -1354,10 +1450,12 @@ const ReadyToGoProductForm = () => {
               {errors.categories && <p className="text-red-500 text-xs mt-2">{errors.categories}</p>}
             </div>
 
+            {/* Pass the title down to the gallery component */}
             <ReadyToGoProductGallery
               ref={galleryRef}
               initialGalleryUrls={importedGallery}
               bookId={bookId} 
+              title={title}
               error={errors.gallery}
               onValidChange={() => clearError("gallery")}
             />
@@ -1398,6 +1496,7 @@ const ReadyToGoProductForm = () => {
           clearError("image");
         }}
         folder="products"
+        productTitle={title}
         title="Product image"
         confirmLabel="Set product image"
         externalImages={externalFormImages}
