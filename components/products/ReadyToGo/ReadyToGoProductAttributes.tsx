@@ -151,6 +151,14 @@ const ReadyToGoProductAttributes = forwardRef<any, ReadyToGoProductAttributesPro
           (a) => a.name.trim() !== "" && a.values.trim() !== ""
         );
       },
+      
+      // 👇 NEW METHOD: Expose exactly which fixed attributes are missing for the UI list
+      getMissingFixedAttributes: () => {
+        return FIXED_ATTRIBUTES.filter((name) => {
+          const attr = attributes.find((a) => a.name === name);
+          return !attr || attr.values.trim() === "";
+        });
+      }
     }));
 
     const dynamicAttributes = attributes.filter((a) => !FIXED_ATTRIBUTES.includes(a.name));

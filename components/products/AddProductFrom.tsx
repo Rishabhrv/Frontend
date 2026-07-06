@@ -85,11 +85,43 @@ const Req = () => <span className="text-red-500 ml-0.5">*</span>;
 // ── API URL ───────────────────────────────────────────────────────
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 const AGCLASSIC_URL = process.env.NEXT_PUBLIC_AGCLASSIC_URL!;
-const CRMSERVER_API_URL = process.env.NEXT_PUBLIC_CRMSERVER_API_URL!; // Add this line
+const CRMSERVER_API_URL = process.env.NEXT_PUBLIC_CRMSERVER_API_URL!; 
+const FRONTEND_JWT_SECRET = process.env.NEXT_PUBLIC_FRONTEND_JWT_SECRET || "default_fallback_secret";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL!;
 
 const CONFIRM_MSG =
   "You have unsaved changes. Are you sure you want to leave?\nYour changes will be lost.";
 
+async function generateLocalToken(secret: string) {
+  const header = { alg: "HS256", typ: "JWT" };
+  const payload = {
+    user_id: 1, 
+    session_id: "auto-generated-frontend-session",
+    exp: Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60) 
+  };
+  const base64UrlEncode = (obj: any) => btoa(JSON.stringify(obj)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const data = `${base64UrlEncode(header)}.${base64UrlEncode(payload)}`;
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey('raw', encoder.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const signature = await crypto.subtle.sign('HMAC', key, encoder.encode(data));
+  const sig64 = btoa(String.fromCharCode(...new Uint8Array(signature))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  return `${data}.${sig64}`;
+}
+
+function parseJwt(token: string) {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      window.atob(base64).split('').map(function (c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join('')
+    );
+    return JSON.parse(jsonPayload);
+  } catch (e) {
+    return null;
+  }
+}
 
 // ─────────────────────────────────────────────────────────────────
 const AddProductFrom = ({ mode = "add", productId }: Props) => {
@@ -149,6 +181,10 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
   const [ebookCoverFile, setEbookCoverFile] = useState<File | null>(null);
   const [existingEbookCover, setExistingEbookCover] = useState<string | null>(null);
   const [unlistedBookIds, setUnlistedBookIds] = useState<string[]>([]);
+  
+  // 👇 NEW: User States
+  const [activeUsers, setActiveUsers] = useState<{id: number, username: string}[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState("");
 
   // ── Unsaved-changes guard ────────────────────────────────────────
   const [isDirty, setIsDirty] = useState(false);
@@ -165,9 +201,10 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
     productType, weight, length, width, height, ebookPrice, ebookSellPrice,
     selectedCategories, metaTitle, metaDescription, keywords,
     productImage, ebookFile, mainImageUrl, selectedSubjects, bookId,
+    selectedUserId // Added user to dirty check
   ]);
 
-  // 1️⃣  Tab close / browser refresh
+  // Routing Guards...
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (!isDirtyRef.current) return;
@@ -178,17 +215,13 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, []);
 
-  // 2️⃣  <Link> clicks 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       if (!isDirtyRef.current) return;
-
       const anchor = (e.target as HTMLElement).closest("a");
       if (!anchor) return;
-
       const href = anchor.getAttribute("href");
       if (!href || href.startsWith("#") || href === window.location.pathname) return;
-
       const confirmed = window.confirm(CONFIRM_MSG);
       if (!confirmed) {
         e.preventDefault();
@@ -196,20 +229,16 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
         e.stopImmediatePropagation();
         return;
       }
-
       isDirtyRef.current = false;
       setIsDirty(false);
     };
-
     document.addEventListener("click", handleClick, true);
     return () => document.removeEventListener("click", handleClick, true);
   }, []);
 
-  // 3️⃣  Programmatic navigation: router.push() / router.replace()
   useEffect(() => {
     const originalPushState = window.history.pushState.bind(window.history);
     const originalReplaceState = window.history.replaceState.bind(window.history);
-
     const guard = (original: typeof originalPushState) =>
       (...args: Parameters<typeof originalPushState>) => {
         if (isDirtyRef.current) {
@@ -220,17 +249,14 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
         }
         original(...args);
       };
-
     window.history.pushState = guard(originalPushState);
     window.history.replaceState = guard(originalReplaceState);
-
     return () => {
       window.history.pushState = originalPushState;
       window.history.replaceState = originalReplaceState;
     };
   }, []);
 
-  // 4️⃣  Browser Back / Forward buttons
   useEffect(() => {
     const handlePopState = () => {
       if (!isDirtyRef.current) return;
@@ -245,7 +271,6 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
-  // ────────────────────────────────────────────────────────────────
 
   const fetchProductImages = async (id: number) => {
     try {
@@ -256,6 +281,25 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
       setProductImages([]);
     }
   };
+
+  // 👇 NEW: Fetch active users for the dropdown
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const token = await generateLocalToken(FRONTEND_JWT_SECRET);
+        const res = await fetch(`${CRMSERVER_API_URL}/api/active_users`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        const json = await res.json();
+        if (json.success) {
+          setActiveUsers(json.data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch active users", err);
+      }
+    };
+    fetchUsers();
+  }, []);
 
  useEffect(() => {
     if (mode !== "edit" || !productId) {
@@ -296,6 +340,7 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
         setEbookPrice(data.ebook_price ?? "");
         setEbookSellPrice(data.ebook_sell_price ?? "");
         setBookId(data.book_id ? String(data.book_id) : "");
+        setSelectedUserId(data.user_id ? String(data.user_id) : ""); // Populates existing user if editing
         
         setTimeout(() => {
           isInitialLoad.current = false;
@@ -315,7 +360,6 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
         const data = await res.json();
         
         if (res.ok && data.status === "success" && data.data) {
-          // Extract only the IDs and store them as strings for easy comparison
           const ids = data.data.map((book: any) => String(book.book_id));
           setUnlistedBookIds(ids);
         }
@@ -339,6 +383,9 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
       if (!sku.trim()) newErrors.sku = "SKU is required";
       if (selectedCategories.length === 0)
         newErrors.categories = "At least one category is required";
+
+      // 👇 NEW: User validation
+      if (!selectedUserId) newErrors.assignedUser = "Please assign a user to this listing";
 
       if (imprintFilter === "agph" && !String(bookId).trim()) {
         newErrors.bookId = "MIS Book ID is required";
@@ -419,6 +466,7 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
     formData.append("keywords", keywords);
     formData.append("subjects", JSON.stringify(selectedSubjects));
     formData.append("book_id", bookId);
+    formData.append("user_id", selectedUserId); // Pass user to normal API
     if (ebookCoverFile) {
       formData.append("ebook_cover", ebookCoverFile);
     }
@@ -483,6 +531,8 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
     formData.append("meta_description", metaDescription);
     formData.append("keywords", keywords);
     formData.append("book_id", bookId);
+    formData.append("user_id", selectedUserId); // Pass user to normal API
+    
     if (galleryData) {
       formData.append("existingGallery", JSON.stringify(galleryData.existing));
       formData.append("deletedGallery", JSON.stringify(galleryData.deleted));
@@ -506,6 +556,58 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
       return;
     }
 
+    // 👇 NEW: Trigger Store Webhook Logic
+    try {
+      let userName = "Admin";
+      const token = localStorage.getItem("admin_token");
+      
+      if (token) {
+        const decoded = parseJwt(token);
+        if (decoded && decoded.name) {
+          userName = decoded.name;
+        }
+      }
+
+      let finalSellPrice = sellPrice;
+      if (productType === "ebook" && !sellPrice) {
+        finalSellPrice = ebookSellPrice;
+      }
+
+      let finalImageUrl = mainImageUrl || (preview && !preview.startsWith("blob:") ? preview : "");
+      if (data && data.image) {
+        if (data.image.startsWith("/")) {
+          finalImageUrl = `${API_URL}${data.image}`;
+        } else {
+          finalImageUrl = data.image; 
+        }
+      }
+
+      const finalSlug = data.slug || slug;
+
+      const webhookPayload = {
+        book_id: bookId,
+        user_id: selectedUserId,
+        sell_price: finalSellPrice || 0,
+        stock: stock || 0,
+        product_url: `${SITE_URL}/product/${finalSlug}`,
+        image_url: finalImageUrl 
+      };
+
+      const WEBHOOK_API_URL = `${CRMSERVER_API_URL}/api/store-webhook`; 
+      
+      fetch(WEBHOOK_API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(webhookPayload)
+      })
+      .then(res => console.log("Webhook triggered successfully"))
+      .catch(err => console.error("Webhook failed to trigger", err));
+
+    } catch (err) {
+      console.error("Error setting up webhook", err);
+    }
 
     // Clear dirty so no guard fires after a successful save
     setIsDirty(false);
@@ -582,8 +684,8 @@ useEffect(() => {
             <div className="flex gap-6">
               <div className="flex-1 space-y-4">
                   <div className="flex gap-4">
-                    {/* Make Title width dynamic based on imprint */}
-                    <div className={imprintFilter === "agph" ? "w-[80%]" : "w-full"}>
+                    {/* 👇 Make Title width dynamic based on imprint */}
+                    <div className={imprintFilter === "agph" ? "w-[70%]" : "w-[80%]"}>
                       <label className="block text-sm mb-1">Product Title <Req /></label>
                       <input
                         type="text"
@@ -600,9 +702,25 @@ useEffect(() => {
                       )}
                     </div>
                     
+                    {/* 👇 NEW: ASSIGN USER FIELD */}
+                    <div className={imprintFilter === "agph" ? "w-[15%]" : "w-[20%]"}>
+                      <label className="block text-sm mb-1">Assign User {isPublishing && <Req />}</label>
+                      <select
+                        className={`w-full rounded border px-3 py-2 text-sm ${errors.assignedUser ? "border-red-400" : ""}`}
+                        value={selectedUserId}
+                        onChange={(e) => { setSelectedUserId(e.target.value); clearError("assignedUser"); }}
+                      >
+                        <option value="">Select User...</option>
+                        {activeUsers.map(u => (
+                          <option key={u.id} value={u.id}>{u.username}</option>
+                        ))}
+                      </select>
+                      {errors.assignedUser && <p className="text-red-500 text-xs mt-1">{errors.assignedUser}</p>}
+                    </div>
+
                    {/* Only show MIS Book ID if imprint is AGPH */}
                     {imprintFilter === "agph" && (
-                      <div className="w-[20%]">
+                      <div className="w-[15%]">
                         <label className="block text-sm mb-1">
                           MIS Book ID {isPublishing && <Req />}
                         </label>
@@ -618,13 +736,11 @@ useEffect(() => {
 
                             // Instant Validation: Check against the loaded list
                             if (typedValue.trim() && unlistedBookIds.includes(typedValue.trim())) {
-                              // Set the inline red error text
                               setErrors((prev) => ({
                                 ...prev,
                                 bookId: 'Use the "Ready to Go" form for this book ID.',
                               }));
                               
-                              // Pop the toast notification
                               setToastMsg(`Book ID ${typedValue} is prepared! Please go to the "Ready to Go" form to list it.`);
                               setToastOpen(true);
                             }

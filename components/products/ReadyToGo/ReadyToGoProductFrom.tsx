@@ -858,11 +858,20 @@ const ReadyToGoProductForm = () => {
     // Always required
     if (!title.trim()) missing.push("Product Title");
     
-    // Required for publishing
     if (status === "published") {
-      // 1. Basic Content
-      const cleanDesc = description.replace(/(<([^>]+)>)/gi, "").trim();
-      if (!description || !cleanDesc) missing.push("Description");
+      let textOnlyDesc = description.replace(/<[^>]+>/gi, " ");
+      
+      const escapedTitle = title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const titleRegex = new RegExp(`Book Title:\\s*${escapedTitle}`, "i");
+      textOnlyDesc = textOnlyDesc.replace(titleRegex, "");
+      
+      const publisherIndex = textOnlyDesc.indexOf("About The Publisher:");
+      if (publisherIndex !== -1) {
+        textOnlyDesc = textOnlyDesc.substring(0, publisherIndex);
+      }
+      
+      // If nothing is left after stripping the title and publisher block, the description is missing
+      if (!description || !textOnlyDesc.trim()) missing.push("Description");
       
       if (!sku.trim()) missing.push("SKU");
       if (selectedCategories.length === 0) missing.push("Category");
@@ -892,9 +901,24 @@ const ReadyToGoProductForm = () => {
       if (!keywords.trim()) missing.push("Focus Keyphrase");
 
       // 5. Child Components (Refs)
-      // Authors
+      
+      // 👇 UPDATED: Authors (Checking for specific missing data)
       const authors = authorRef.current?.getAuthors?.() || [];
-      if (authors.length === 0) missing.push("Author");
+      if (authors.length === 0) {
+        missing.push("Author");
+      } else {
+        authors.forEach((author: any, idx: number) => {
+          const authorName = author.name || `Author ${idx + 1}`;
+          
+          // Note: Adjust 'photo' and 'about_author' keys if your ReadyToGoProductAuthor component uses different keys (like 'image' or 'description')
+          if (!author.photo && !author.author_photo && !author.image) {
+            missing.push(`${authorName} Image`);
+          }
+          if (!author.about_author && !author.description && !author.bio) {
+            missing.push(`${authorName} Description`);
+          }
+        });
+      }
 
       // Gallery Images
       const galleryData = galleryRef.current?.getGalleryData?.();
@@ -907,9 +931,13 @@ const ReadyToGoProductForm = () => {
         missing.push("Product Gallery Images");
       }
 
-      // Attributes
-      if (errors.attributes) {
-        missing.push("Attributes (ISBN, Date, Pages)");
+      // 👇 UPDATED: Attributes (Checking exactly which ones are missing)
+      const missingAttrs = attributesRef.current?.getMissingFixedAttributes?.() || [];
+      if (missingAttrs.length > 0) {
+        missingAttrs.forEach((attrName: string) => missing.push(`Attribute: ${attrName}`));
+      } else if (errors.attributes) {
+        // Fallback for general attribute errors
+        missing.push("Attributes Configuration");
       }
     }
     
@@ -971,7 +999,7 @@ const ReadyToGoProductForm = () => {
 )}
 
 {!isFetchingData && missingFields.length > 0 && status === "published" && (
-          <div className="mt-5 p-4 bg-red-50/80 border border-red-200 rounded-lg w-full max-w-4xl">
+          <div className="mt-5 p-4 bg-red-50/80 border border-red-200 rounded-lg w-full ">
             <div className="flex items-center gap-2 mb-3 text-red-700">
               <AlertCircle className="w-5 h-5" />
               <span className="font-semibold text-sm">Missing Required Fields</span>
