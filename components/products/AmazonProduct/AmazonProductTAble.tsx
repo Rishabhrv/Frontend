@@ -91,7 +91,7 @@ const BookRow = ({ book, onSyncComplete }: { book: any, onSyncComplete: () => vo
   const [message, setMessage] = useState('');
 
   // 👇 ── NEW: User Assignment States ── 👇
-  const [activeUsers, setActiveUsers] = useState<{id: number, username: string}[]>([]);
+  const [activeUsers, setActiveUsers] = useState<{ id: number, username: string }[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string>("");
 
   // ── AI States ──
@@ -132,7 +132,7 @@ const BookRow = ({ book, onSyncComplete }: { book: any, onSyncComplete: () => vo
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/products/${book.book_id}/amazon-assets`);
       const json = await res.json();
-      
+
       if (json.success) {
         const API_URL = process.env.NEXT_PUBLIC_API_URL;
         setFormData(prev => ({
@@ -154,7 +154,7 @@ const BookRow = ({ book, onSyncComplete }: { book: any, onSyncComplete: () => vo
   useEffect(() => {
     if (isOpen && !hasFetchedAssets) {
       fetchAmazonAssets();
-      setHasFetchedAssets(true); 
+      setHasFetchedAssets(true);
     }
   }, [isOpen, hasFetchedAssets, fetchAmazonAssets]);
 
@@ -253,19 +253,19 @@ const BookRow = ({ book, onSyncComplete }: { book: any, onSyncComplete: () => vo
   };
 
   const formatAmazonTime = (dateString: string) => {
-  if (!dateString) return "";
-  const d = new Date(dateString);
-  if (isNaN(d.getTime())) return dateString; // Fallback if invalid
-  return d.toLocaleString("en-IN", {
-    timeZone: "Asia/Kolkata",
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  });
-};
+    if (!dateString) return "";
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return dateString; // Fallback if invalid
+    return d.toLocaleString("en-IN", {
+      timeZone: "Asia/Kolkata",
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
 
   const handleGenerateAI = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -276,21 +276,21 @@ const BookRow = ({ book, onSyncComplete }: { book: any, onSyncComplete: () => vo
 
     try {
       const token = await generateLocalToken(FRONTEND_JWT_SECRET);
-      
+
       const res = await fetch(`${CRMSERVER_API_URL}/api/amazon/enhance_metadata`, {
         method: "POST",
-        headers: { 
-          "Content-Type": "application/json", 
-          "Authorization": `Bearer ${token}` 
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify({
           title: formData.title,
           description: formData.description
         })
       });
-      
+
       const data = await res.json();
-      
+
       if (res.ok && data.success) {
         setFormData(prev => ({
           ...prev,
@@ -303,7 +303,7 @@ const BookRow = ({ book, onSyncComplete }: { book: any, onSyncComplete: () => vo
           subject_keyword: data.enhanced.subject_keywords || prev.subject_keyword,
           keywords: data.enhanced.keywords || prev.keywords
         }));
-        
+
         setStatus('idle');
         setMessage('AI has successfully enhanced your listing metadata!');
       } else {
@@ -317,9 +317,9 @@ const BookRow = ({ book, onSyncComplete }: { book: any, onSyncComplete: () => vo
     }
   };
 
- const handleAmazonPush = async (e: React.MouseEvent) => {
+  const handleAmazonPush = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    
+
     if (formData.sell_price <= 0) {
       setStatus('error');
       setMessage('Valid price required.');
@@ -361,7 +361,7 @@ const BookRow = ({ book, onSyncComplete }: { book: any, onSyncComplete: () => vo
               book_id: book.book_id,
               amazon_user_id: Number(selectedUserId),
               amazon_stock: Number(formData.stock),
-              amazon_pending: 1 
+              amazon_pending: 1
             })
           });
         } catch (webhookErr) {
@@ -378,7 +378,7 @@ const BookRow = ({ book, onSyncComplete }: { book: any, onSyncComplete: () => vo
       } else {
         setStatus('error');
         setMessage(result.details || result.error || 'Failed to list.');
-        setIsOpen(true); 
+        setIsOpen(true);
       }
     } catch (err: any) {
       setStatus('error');
@@ -390,55 +390,55 @@ const BookRow = ({ book, onSyncComplete }: { book: any, onSyncComplete: () => vo
   // ── DETERMINE MISSING FIELDS ─────────────────
   const getMissingFields = () => {
     const missing = [];
-    
+
     // 1. Core Information
     if (!formData.title?.trim()) missing.push("Full Title");
     if (!formData.isbn?.trim()) missing.push("ISBN");
     if (!formData.authors?.trim()) missing.push("Authors");
     if (!formData.binding?.trim()) missing.push("Binding");
-    
+
     // 2. Pricing & Inventory
     if (!formData.sell_price || formData.sell_price <= 0) missing.push("Sell Price");
     if (!formData.stock || formData.stock <= 0) missing.push("Stock");
     if (!formData.number_of_items || formData.number_of_items <= 0) missing.push("No. of Items");
-    
+
     // 3. Publication Details
     if (!formData.pub_date?.trim()) missing.push("Pub Date");
     if (!formData.edition?.trim()) missing.push("Edition");
     if (!formData.language?.trim()) missing.push("Language");
     if (!formData.language_type?.trim()) missing.push("Language Type");
     if (!formData.pages || formData.pages <= 0) missing.push("Pages");
-    
+
     // 4. Physical Dimensions (L/W/H/Weight)
     if (!formData.weight || formData.weight <= 0) missing.push("Weight");
     if (!formData.package_weight || formData.package_weight <= 0) missing.push("Package Weight");
     if (!formData.length || formData.length <= 0) missing.push("Length");
     if (!formData.width || formData.width <= 0) missing.push("Width");
     if (!formData.height || formData.height <= 0) missing.push("Height");
-    
+
     // 5. Category & Classification
     if (!formData.subject?.trim()) missing.push("Primary Subject");
     if (!formData.subject_code?.trim()) missing.push("BISAC Code");
     if (!formData.genre?.trim()) missing.push("Genre");
     if (!formData.subject_keyword?.trim()) missing.push("Subject Keywords");
     if (!formData.recommended_browse_nodes?.trim()) missing.push("Browse Node ID");
-    
+
     // 6. Audience & Targeting
     if (!formData.target_audience?.trim()) missing.push("Target Audience");
     if (!formData.min_age || formData.min_age <= 0) missing.push("Min Reading Age");
     if (!formData.max_age || formData.max_age <= 0) missing.push("Max Reading Age");
-    
+
     // 7. Content & Description
     if (!formData.keywords?.trim()) missing.push("Search Keywords");
     const cleanDesc = formData.description?.replace(/(<([^>]+)>)/gi, "").trim();
     if (!formData.description || !cleanDesc) missing.push("Description");
-    
+
     // 8. Images
     if (!formData.image_url?.trim()) missing.push("Main Image URL");
-    
+
     // 9. System Requirements
     if (!selectedUserId) missing.push("Assign User");
-    
+
     return missing;
   };
 
@@ -450,7 +450,7 @@ const BookRow = ({ book, onSyncComplete }: { book: any, onSyncComplete: () => vo
     ? 'bg-slate-100 text-slate-500 border border-slate-200 cursor-not-allowed'
     : status === 'success'
       ? 'bg-emerald-600 text-white cursor-not-allowed'
-      : 'bg-blue-600 text-white hover:bg-blue-700';
+      : 'bg-blue-600 text-white hover:bg-blue-700 cursor-pointer';
 
   return (
     <div className={`bg-white border border-slate-200 border-l-4 ${isPending ? 'border-l-amber-400' : 'border-l-blue-500'} rounded-lg overflow-hidden mb-4 transition-colors ${isOpen ? 'ring-1 ring-blue-200' : ''}`}>
@@ -475,16 +475,16 @@ const BookRow = ({ book, onSyncComplete }: { book: any, onSyncComplete: () => vo
                 </span>
               )}
             </p>
-            
+
           </div>
         </div>
 
         <div className="flex items-center gap-3 shrink-0">
-          {status === 'error' && <span className="text-[11px] text-rose-700 font-bold bg-rose-50 px-2 py-1 rounded flex items-center gap-1 border border-rose-200"><AlertCircle className="w-3.5 h-3.5"/> Error</span>}
-          {status === 'success' && <span className="text-[11px] text-emerald-700 font-bold bg-emerald-50 px-2 py-1 rounded flex items-center gap-1 border border-emerald-200"><CheckCircle2 className="w-3.5 h-3.5"/> Success</span>}
+          {status === 'error' && <span className="text-[11px] text-rose-700 font-bold bg-rose-50 px-2 py-1 rounded flex items-center gap-1 border border-rose-200"><AlertCircle className="w-3.5 h-3.5" /> Error</span>}
+          {status === 'success' && <span className="text-[11px] text-emerald-700 font-bold bg-emerald-50 px-2 py-1 rounded flex items-center gap-1 border border-emerald-200"><CheckCircle2 className="w-3.5 h-3.5" /> Success</span>}
 
           <div onClick={(e) => e.stopPropagation()}>
-            <select 
+            <select
               value={selectedUserId}
               onChange={(e) => setSelectedUserId(e.target.value)}
               disabled={status === 'loading' || status === 'success' || isPending}
@@ -515,14 +515,14 @@ const BookRow = ({ book, onSyncComplete }: { book: any, onSyncComplete: () => vo
       {/* ─── EXPANDABLE ACCORDION BODY ─── */}
       {isOpen && (
         <fieldset disabled={isGeneratingAI} className={`border-t border-slate-200 bg-slate-50 p-4 space-y-4 ${isGeneratingAI ? "opacity-60 pointer-events-none transition-opacity duration-300" : ""}`}>
-          
+
           {/* ─── AI ENHANCEMENT BUTTON BAR ─── */}
           <div className="flex items-center justify-between bg-white p-3 rounded-lg border border-slate-200">
             <div>
               <h4 className="text-sm font-bold text-slate-800">AI Metadata Optimization</h4>
               <p className="text-xs text-slate-500">Auto-fill Title, SEO, Audience, and BISAC categories based on the description.</p>
             </div>
-            
+
             {isGeneratingAI ? (
               <div className="flex gap-2 items-center text-xs text-blue-700 font-medium px-3 py-1.5 pointer-events-auto">
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -536,21 +536,21 @@ const BookRow = ({ book, onSyncComplete }: { book: any, onSyncComplete: () => vo
                 onClick={handleGenerateAI}
                 className="group relative flex items-center justify-center p-[2px] rounded-full shadow-[0_4px_14px_0_rgba(0,0,0,0.1)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.15)] hover:-translate-y-0.5 transition-all duration-200 cursor-pointer mt-3"
               >
-                 <span className="absolute inset-0 rounded-full bg-gradient-to-r from-[#00E5FF] via-[#4D7CFF] to-[#C100FF] z-0"></span>
-                 
-                 <span className="relative flex items-center gap-2 px-2 py-1 bg-white rounded-full w-full h-full z-10">
-                   
-                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                     <path d="M10 2.5C10 6.642 13.358 10 17.5 10C13.358 10 10 13.358 10 17.5C10 13.358 6.642 10 2.5 10C6.642 10 10 6.642 10 2.5Z" fill="#00E5FF"/>
-                     <path d="M19 14C19 15.657 20.343 17 22 17C20.343 17 19 18.343 19 20C19 18.343 17.657 17 16 17C17.657 17 19 15.657 19 14Z" fill="#00E5FF"/>
-                     <path d="M5 16C5 17.104 5.895 18 7 18C5.895 18 5 18.895 5 20C5 18.895 4.104 18 3 18C4.104 18 5 17.104 5 16Z" fill="#00E5FF"/>
-                   </svg>
-              
-                   {/* Gradient Text (kept your original text, easily swappable to "Generate") */}
-                   <span className="font-medium text-[14px] bg-gradient-to-r from-[#00E5FF] via-[#4D7CFF] to-[#C100FF] bg-clip-text text-transparent">
-                     Enhance Content with AI
-                   </span>
-                   </span>
+                <span className="absolute inset-0 rounded-full bg-gradient-to-r from-[#00E5FF] via-[#4D7CFF] to-[#C100FF] z-0"></span>
+
+                <span className="relative flex items-center gap-2 px-2 py-1 bg-white rounded-full w-full h-full z-10">
+
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M10 2.5C10 6.642 13.358 10 17.5 10C13.358 10 10 13.358 10 17.5C10 13.358 6.642 10 2.5 10C6.642 10 10 6.642 10 2.5Z" fill="#00E5FF" />
+                    <path d="M19 14C19 15.657 20.343 17 22 17C20.343 17 19 18.343 19 20C19 18.343 17.657 17 16 17C17.657 17 19 15.657 19 14Z" fill="#00E5FF" />
+                    <path d="M5 16C5 17.104 5.895 18 7 18C5.895 18 5 18.895 5 20C5 18.895 4.104 18 3 18C4.104 18 5 17.104 5 16Z" fill="#00E5FF" />
+                  </svg>
+
+                  {/* Gradient Text (kept your original text, easily swappable to "Generate") */}
+                  <span className="font-medium text-[14px] bg-gradient-to-r from-[#00E5FF] via-[#4D7CFF] to-[#C100FF] bg-clip-text text-transparent">
+                    Enhance Content with AI
+                  </span>
+                </span>
               </button>
             )}
           </div>
@@ -563,8 +563,8 @@ const BookRow = ({ book, onSyncComplete }: { book: any, onSyncComplete: () => vo
               </div>
               <div className="flex flex-wrap gap-2">
                 {missingFields.map((field, idx) => (
-                  <span 
-                    key={idx} 
+                  <span
+                    key={idx}
                     className="text-xs font-medium bg-white text-red-600 px-2.5 py-1 rounded border border-red-100 shadow-sm"
                   >
                     {field}
@@ -580,58 +580,58 @@ const BookRow = ({ book, onSyncComplete }: { book: any, onSyncComplete: () => vo
             </div>
           )}
 
-          
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
-  
-  {/* Section 7: Images (Left Side - Takes 1/3) */}
-  <div className="lg:col-span-1">
-    <SectionCard title="Images">
-      <div className="flex flex-col gap-5 items-center">
-        {/* Main Image */}
-        <div className=" mt-3 w-full sm:w-2/3 md:w-1/2">
-          <ImagePreviewInput 
-            label="Main Image URL" 
-            name="image_url" 
-            value={formData.image_url} 
-            onChange={handleChange} 
-            isMain={true}
-          />
-        </div>
 
-        {/* Thumbnail Row */}
-        <div className=" mt-3 mb-3 grid grid-cols-1 sm:grid-cols-3 gap-3 w-full">
-          <ImagePreviewInput 
-            label="Other Image 1" 
-            name="other_image_1" 
-            value={formData.other_image_1} 
-            onChange={handleChange} 
-          />
-          <ImagePreviewInput 
-            label="Other Image 2" 
-            name="other_image_2" 
-            value={formData.other_image_2} 
-            onChange={handleChange} 
-          />
-          <ImagePreviewInput 
-            label="Other Image 3" 
-            name="other_image_3" 
-            value={formData.other_image_3} 
-            onChange={handleChange} 
-          />
-        </div>
-      </div>
-    </SectionCard>
-  </div>
+            {/* Section 7: Images (Left Side - Takes 1/3) */}
+            <div className="lg:col-span-1">
+              <SectionCard title="Images">
+                <div className="flex flex-col gap-5 items-center">
+                  {/* Main Image */}
+                  <div className=" mt-3 w-full sm:w-2/3 md:w-1/2">
+                    <ImagePreviewInput
+                      label="Main Image URL"
+                      name="image_url"
+                      value={formData.image_url}
+                      onChange={handleChange}
+                      isMain={true}
+                    />
+                  </div>
 
-  {/* Section 1: Core Information (Right Side - Takes 2/3) */}
-  <div className="lg:col-span-2 space-y-4">
-    <SectionCard title="Core Information">
-      <FieldInput label="Full Title" name="title" value={formData.title} onChange={handleChange} />
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <FieldInput label="ISBN" name="isbn" value={formData.isbn} onChange={handleChange} mono />
-        <FieldInput label="Authors" hint="(comma separated)" name="authors" value={formData.authors} onChange={handleChange} />
-      </div>
-      <div className="flex flex-col gap-1">
+                  {/* Thumbnail Row */}
+                  <div className=" mt-3 mb-3 grid grid-cols-1 sm:grid-cols-3 gap-3 w-full">
+                    <ImagePreviewInput
+                      label="Other Image 1"
+                      name="other_image_1"
+                      value={formData.other_image_1}
+                      onChange={handleChange}
+                    />
+                    <ImagePreviewInput
+                      label="Other Image 2"
+                      name="other_image_2"
+                      value={formData.other_image_2}
+                      onChange={handleChange}
+                    />
+                    <ImagePreviewInput
+                      label="Other Image 3"
+                      name="other_image_3"
+                      value={formData.other_image_3}
+                      onChange={handleChange}
+                    />
+                  </div>
+                </div>
+              </SectionCard>
+            </div>
+
+            {/* Section 1: Core Information (Right Side - Takes 2/3) */}
+            <div className="lg:col-span-2 space-y-4">
+              <SectionCard title="Core Information">
+                <FieldInput label="Full Title" name="title" value={formData.title} onChange={handleChange} />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <FieldInput label="ISBN" name="isbn" value={formData.isbn} onChange={handleChange} mono />
+                  <FieldInput label="Authors" hint="(comma separated)" name="authors" value={formData.authors} onChange={handleChange} />
+                </div>
+                <div className="flex flex-col gap-1">
                   <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Binding</label>
                   <select
                     name="binding"
@@ -643,34 +643,34 @@ const BookRow = ({ book, onSyncComplete }: { book: any, onSyncComplete: () => vo
                     <option value="hardcover">Hardcover</option>
                   </select>
                 </div>
-    </SectionCard>
+              </SectionCard>
 
-      {/* Section 2: Pricing & Inventory */}
-            <SectionCard title="Pricing & Inventory">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <FieldInput label="Sell Price" type="number" name="sell_price" value={formData.sell_price} onChange={handleChange} />
-                <FieldInput label="Stock" type="number" name="stock" value={formData.stock} onChange={handleChange} />
-                <FieldInput label="No. of Items" type="number" name="number_of_items" value={formData.number_of_items} onChange={handleChange} />
-              </div>
-            </SectionCard>
+              {/* Section 2: Pricing & Inventory */}
+              <SectionCard title="Pricing & Inventory">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <FieldInput label="Sell Price" type="number" name="sell_price" value={formData.sell_price} onChange={handleChange} />
+                  <FieldInput label="Stock" type="number" name="stock" value={formData.stock} onChange={handleChange} />
+                  <FieldInput label="No. of Items" type="number" name="number_of_items" value={formData.number_of_items} onChange={handleChange} />
+                </div>
+              </SectionCard>
 
-             {/* Section 4: Physical Dimensions */}
-            <SectionCard title="Physical Dimensions">
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                <FieldInput label="Weight (kg)" type="number" step="0.01" name="weight" value={formData.weight} onChange={handleChange} />
-                <FieldInput label="Package Weight (kg)" type="number" step="0.01" name="package_weight" value={formData.package_weight} onChange={handleChange} />
-                <FieldInput label="Length (cm)" type="number" step="0.01" name="length" value={formData.length} onChange={handleChange} />
-                <FieldInput label="Width (cm)" type="number" step="0.01" name="width" value={formData.width} onChange={handleChange} />
-                <FieldInput label="Height (cm)" type="number" step="0.01" name="height" value={formData.height} onChange={handleChange} />
-              </div>
-            </SectionCard>
-  </div>
-  
-</div>
-        
+              {/* Section 4: Physical Dimensions */}
+              <SectionCard title="Physical Dimensions">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  <FieldInput label="Weight (kg)" type="number" step="0.01" name="weight" value={formData.weight} onChange={handleChange} />
+                  <FieldInput label="Package Weight (kg)" type="number" step="0.01" name="package_weight" value={formData.package_weight} onChange={handleChange} />
+                  <FieldInput label="Length (cm)" type="number" step="0.01" name="length" value={formData.length} onChange={handleChange} />
+                  <FieldInput label="Width (cm)" type="number" step="0.01" name="width" value={formData.width} onChange={handleChange} />
+                  <FieldInput label="Height (cm)" type="number" step="0.01" name="height" value={formData.height} onChange={handleChange} />
+                </div>
+              </SectionCard>
+            </div>
+
+          </div>
+
 
           <div className="grid grid-cols-1 gap-4">
-          
+
 
             {/* Section 3: Publication Details */}
             <SectionCard title="Publication Details">
@@ -699,7 +699,7 @@ const BookRow = ({ book, onSyncComplete }: { book: any, onSyncComplete: () => vo
           </div>
 
           <div className="grid grid-cols-1 gap-4">
-            
+
 
             {/* Section 5: Category & Classification */}
             <SectionCard title="Category & Classification">
@@ -723,13 +723,13 @@ const BookRow = ({ book, onSyncComplete }: { book: any, onSyncComplete: () => vo
           <div className="grid grid-cols-1 gap-4">
             {/* Section 6: Audience & Targeting */}
             <SectionCard title="Audience & Targeting">
-              <FieldInput 
-                label="Target Audience" 
-                hint="(comma separated, max 5. e.g., Tweens, Academics, Professionals)" 
-                name="target_audience" 
-                value={formData.target_audience} 
-                onChange={handleChange} 
-                placeholder="e.g., Tweens, Students, Academics" 
+              <FieldInput
+                label="Target Audience"
+                hint="(comma separated, max 5. e.g., Tweens, Academics, Professionals)"
+                name="target_audience"
+                value={formData.target_audience}
+                onChange={handleChange}
+                placeholder="e.g., Tweens, Students, Academics"
               />
               <div className="grid grid-cols-2 gap-3 mt-3">
                 <FieldInput label="Min Reading Age" type="number" name="min_age" value={formData.min_age} onChange={handleChange} />
@@ -756,7 +756,7 @@ const BookRow = ({ book, onSyncComplete }: { book: any, onSyncComplete: () => vo
 
           {/* Fixed Amazon Settings */}
           <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-600">
-            <h4 className="font-bold text-slate-700 mb-2 flex items-center gap-2 uppercase tracking-wide text-[11px]"><Info className="w-3.5 h-3.5 text-slate-400"/> Fixed Amazon Settings</h4>
+            <h4 className="font-bold text-slate-700 mb-2 flex items-center gap-2 uppercase tracking-wide text-[11px]"><Info className="w-3.5 h-3.5 text-slate-400" /> Fixed Amazon Settings</h4>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
               <div><strong className="text-slate-700 block">Tax Code:</strong> A_GEN_PEAK680</div>
               <div><strong className="text-slate-700 block">HSN Code:</strong> 4901</div>
@@ -845,55 +845,55 @@ export default function AmazonProductTable() {
       </div>
 
       <div className="flex flex-col">
-  {loading ? (
-    <div className="py-20 flex flex-col items-center justify-center text-slate-400 bg-white border border-slate-200 rounded-lg">
-      <Loader2 className="w-8 h-8 animate-spin mb-3 text-blue-500" />
-      <p className="font-medium text-sm text-slate-500">Fetching eligible books from database...</p>
-    </div>
-  ) : visibleBooks.length === 0 ? (
-    <div className="py-20 text-center text-slate-500 bg-white border border-slate-200 rounded-lg">
-      <div className="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3">
-        <CheckCircle2 className="w-7 h-7 text-slate-400" />
+        {loading ? (
+          <div className="py-20 flex flex-col items-center justify-center text-slate-400 bg-white border border-slate-200 rounded-lg">
+            <Loader2 className="w-8 h-8 animate-spin mb-3 text-blue-500" />
+            <p className="font-medium text-sm text-slate-500">Fetching eligible books from database...</p>
+          </div>
+        ) : visibleBooks.length === 0 ? (
+          <div className="py-20 text-center text-slate-500 bg-white border border-slate-200 rounded-lg">
+            <div className="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3">
+              <CheckCircle2 className="w-7 h-7 text-slate-400" />
+            </div>
+            <p className="font-semibold text-base text-slate-900">All caught up!</p>
+            <p className="text-sm mt-1">No pending books found matching your criteria.</p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+
+            {/* ── 👇 SECTION 1: NORMAL / AVAILABLE BOOKS ── */}
+            {visibleBooks.filter(b => b.amazon_pending != 1).length > 0 && (
+              <div>
+                <h2 className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                  Ready to Push ({visibleBooks.filter(b => b.amazon_pending != 1).length})
+                </h2>
+                {visibleBooks
+                  .filter(b => b.amazon_pending != 1)
+                  .map((book) => (
+                    <BookRow key={book.book_id} book={book} onSyncComplete={fetchPendingBooks} />
+                  ))}
+              </div>
+            )}
+            {/* ── 👇 SECTION 2: PENDING BOOKS ── */}
+            {visibleBooks.filter(b => b.amazon_pending == 1).length > 0 && (
+              <div>
+                <h2 className="text-[11px] font-bold text-amber-600 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                  Awaiting Amazon Link ({visibleBooks.filter(b => b.amazon_pending == 1).length})
+                </h2>
+                {visibleBooks
+                  .filter(b => b.amazon_pending == 1)
+                  .map((book) => (
+                    <BookRow key={book.book_id} book={book} onSyncComplete={fetchPendingBooks} />
+                  ))}
+              </div>
+            )}
+
+
+          </div>
+        )}
       </div>
-      <p className="font-semibold text-base text-slate-900">All caught up!</p>
-      <p className="text-sm mt-1">No pending books found matching your criteria.</p>
-    </div>
-  ) : (
-    <div className="space-y-6">
-
-         {/* ── 👇 SECTION 1: NORMAL / AVAILABLE BOOKS ── */}
-      {visibleBooks.filter(b => b.amazon_pending != 1).length > 0 && (
-        <div>
-          <h2 className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-            Ready to Push ({visibleBooks.filter(b => b.amazon_pending != 1).length})
-          </h2>
-          {visibleBooks
-            .filter(b => b.amazon_pending != 1)
-            .map((book) => (
-              <BookRow key={book.book_id} book={book} onSyncComplete={fetchPendingBooks} />
-            ))}
-        </div>
-      )}
-      {/* ── 👇 SECTION 2: PENDING BOOKS ── */}
-      {visibleBooks.filter(b => b.amazon_pending == 1).length > 0 && (
-        <div>
-          <h2 className="text-[11px] font-bold text-amber-600 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
-            Pending Amazon ({visibleBooks.filter(b => b.amazon_pending == 1).length})
-          </h2>
-          {visibleBooks
-            .filter(b => b.amazon_pending == 1)
-            .map((book) => (
-              <BookRow key={book.book_id} book={book} onSyncComplete={fetchPendingBooks} />
-            ))}
-        </div>
-      )}
-
-   
-    </div>
-  )}
-</div>
 
       {!loading && totalPages > 1 && (
         <div className="mt-6 flex flex-col sm:flex-row items-center justify-between text-sm text-slate-600 bg-white p-4 rounded-lg border border-slate-200 gap-4">
@@ -934,21 +934,19 @@ const ImagePreviewInput = ({
       <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wide">
         {label}
       </label>
-      
+
       {!isEditing ? (
         <div
-          className={`relative cursor-pointer border-2 ${
-            hasError ? 'border-rose-300 bg-rose-50' : 'border-dashed border-slate-300 bg-slate-50'
-          } hover:border-blue-400 rounded-md overflow-hidden transition-colors flex items-center justify-center group ${
-            isMain ? 'aspect-[3/4] w-full max-w-sm mx-auto' : 'aspect-[3/4] w-full'
-          }`}
+          className={`relative cursor-pointer border-2 ${hasError ? 'border-rose-300 bg-rose-50' : 'border-dashed border-slate-300 bg-slate-50'
+            } hover:border-blue-400 rounded-md overflow-hidden transition-colors flex items-center justify-center group ${isMain ? 'aspect-[3/4] w-full max-w-sm mx-auto' : 'aspect-[3/4] w-full'
+            }`}
           onClick={() => setIsEditing(true)}
         >
           {value && !hasError ? (
             /* eslint-disable-next-line @next/next/no-img-element */
-            <img 
-              src={value} 
-              alt={label} 
+            <img
+              src={value}
+              alt={label}
               className="object-contain w-full h-full"
               onError={() => {
                 // Instead of flipping to edit mode, we just mark this URL as failed
@@ -957,9 +955,8 @@ const ImagePreviewInput = ({
             />
           ) : (
             // Placeholder when no URL is provided OR when URL failed to load
-            <div className={`flex flex-col items-center justify-center transition-colors px-2 text-center ${
-              hasError ? 'text-rose-400 group-hover:text-rose-500' : 'text-slate-300 group-hover:text-blue-400'
-            }`}>
+            <div className={`flex flex-col items-center justify-center transition-colors px-2 text-center ${hasError ? 'text-rose-400 group-hover:text-rose-500' : 'text-slate-300 group-hover:text-blue-400'
+              }`}>
               {hasError ? (
                 <>
                   <AlertCircle className="w-7 h-7 mb-1.5 opacity-60" />
@@ -973,7 +970,7 @@ const ImagePreviewInput = ({
               )}
             </div>
           )}
-          
+
           {/* Hover Overlay */}
           <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
             <span className="text-white text-[11px] font-semibold bg-slate-900/60 px-2.5 py-1 rounded-full backdrop-blur-sm text-center">
@@ -994,9 +991,8 @@ const ImagePreviewInput = ({
             onKeyDown={(e) => {
               if (e.key === 'Enter') setIsEditing(false);
             }}
-            className={`border ${
-              hasError ? 'border-rose-300 focus:ring-rose-500' : 'border-slate-200 focus:ring-blue-500 focus:border-blue-500'
-            } rounded-md px-2.5 py-1.5 text-sm focus:ring-1 outline-none w-full bg-white transition-colors text-slate-800`}
+            className={`border ${hasError ? 'border-rose-300 focus:ring-rose-500' : 'border-slate-200 focus:ring-blue-500 focus:border-blue-500'
+              } rounded-md px-2.5 py-1.5 text-sm focus:ring-1 outline-none w-full bg-white transition-colors text-slate-800`}
           />
           <button
             type="button"
@@ -1012,14 +1008,14 @@ const ImagePreviewInput = ({
 };
 
 // ─── CASCADING BROWSE NODE COMPONENT ─────────────────────────────────────────
-const CascadingBrowseNodeSelect = ({ 
-  nodes, 
-  value, 
-  onChange 
-}: { 
-  nodes: any[]; 
-  value: string; 
-  onChange: (e: any) => void; 
+const CascadingBrowseNodeSelect = ({
+  nodes,
+  value,
+  onChange
+}: {
+  nodes: any[];
+  value: string;
+  onChange: (e: any) => void;
 }) => {
   // Parse the flat strings into arrays (e.g. ["Books", "Teen & Young Adult", ...])
   const parsedNodes = React.useMemo(() => {
@@ -1036,8 +1032,8 @@ const CascadingBrowseNodeSelect = ({
   useEffect(() => {
     const selectedNode = parsedNodes.find(n => n.id === String(value));
     if (selectedNode) {
-      const isMatch = selections.length === selectedNode.parts.length && 
-                      selections.every((val, index) => val === selectedNode.parts[index]);
+      const isMatch = selections.length === selectedNode.parts.length &&
+        selections.every((val, index) => val === selectedNode.parts[index]);
       if (!isMatch) {
         setSelections(selectedNode.parts);
       }
@@ -1056,7 +1052,7 @@ const CascadingBrowseNodeSelect = ({
 
     // Get the unique categories for the current depth level
     const nextOptions = Array.from(new Set(matchingNodes.map(n => n.parts[i]).filter(Boolean)));
-    
+
     if (nextOptions.length === 0) break; // Reached the leaf node
 
     levels.push({
@@ -1106,7 +1102,7 @@ const CascadingBrowseNodeSelect = ({
           ))}
         </select>
       ))}
-      
+
       {/* Warning when a user is halfway through a tree but hasn't reached an assignable node ID */}
       {!value && selections.length > 0 && (
         <span className="text-[10.px] text-amber-600 flex items-center gap-1 font-medium mt-0.5">

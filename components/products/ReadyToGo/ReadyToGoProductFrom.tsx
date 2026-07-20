@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Upload, Loader2, AlertCircle } from "lucide-react"; 
+import { Upload, Loader2, AlertCircle } from "lucide-react";
 import ReadyToGoProductAttributes from "./ReadyToGoProductAttributes";
 import ReadyToGoProductGallery from "./ReadyToGoProductGallery";
 import ReadyToGoProductAuthor from "./ReadyToGoProductAuthor";
@@ -10,8 +10,9 @@ import AlertPopup from "@/components/Popups/AlertPopup";
 import { useRouter } from "next/navigation";
 import RichTextEditor from "../RichTextEditor";
 import SeoPanel from "../SeoPanel";
-import ReadyToGoMediaLibraryModal from "./ReadyToGoMediaLibraryModal"; 
+import ReadyToGoMediaLibraryModal from "./ReadyToGoMediaLibraryModal";
 import ProductSubjects from "../Productsubjects";
+import ProductSections from "../ProductSections";
 
 // ── Types ────────────────────────────────────────────────────────
 type Category = {
@@ -77,9 +78,9 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL;
 async function generateLocalToken(secret: string) {
   const header = { alg: "HS256", typ: "JWT" };
   const payload = {
-    user_id: 1, 
+    user_id: 1,
     session_id: "auto-generated-frontend-session",
-    exp: Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60) 
+    exp: Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60)
   };
   const base64UrlEncode = (obj: any) => btoa(JSON.stringify(obj)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   const data = `${base64UrlEncode(header)}.${base64UrlEncode(payload)}`;
@@ -108,7 +109,7 @@ function parseJwt(token: string) {
 
 function formatProductDescription(rawDesc: string, currentTitle: string) {
   let html = rawDesc || "";
-  
+
   // 1. Auto-update or inject the Book Title H2
   const titleHtml = `<h2>Book Title: ${currentTitle}</h2>`;
   if (/<h2>Book Title:.*?<\/h2>/i.test(html)) {
@@ -123,7 +124,7 @@ function formatProductDescription(rawDesc: string, currentTitle: string) {
   if (!html.startsWith('<div className="text-justify">')) {
     html = `<div className="text-justify">${html}</div>`;
   }
-  
+
   return html;
 }
 
@@ -143,14 +144,14 @@ const ReadyToGoProductForm = () => {
   const [sellPrice, setSellPrice] = useState("");
   const [stock, setStock] = useState("1");
   const [sku, setSku] = useState("");
-  const [slug, setSlug] = useState(""); 
+  const [slug, setSlug] = useState("");
   const [status, setStatus] = useState("published");
-  
+
   const [weight, setWeight] = useState("0.40");
   const [length, setLength] = useState("22.86");
   const [width, setWidth] = useState("15.24");
   const [height, setHeight] = useState("1.60");
-  
+
   const attributesRef = useRef<any>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
@@ -159,6 +160,7 @@ const ReadyToGoProductForm = () => {
   const [metaDescription, setMetaDescription] = useState("");
   const [keywords, setKeywords] = useState("");
   const authorRef = useRef<any>(null);
+  const sectionsRef = useRef<any>(null);
   const [popup, setPopup] = useState<{ open: boolean; type: "success" | "error"; title: string; message: string; }>({ open: false, type: "success", title: "", message: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [toastOpen, setToastOpen] = useState(false);
@@ -174,11 +176,11 @@ const ReadyToGoProductForm = () => {
   const [mainImageUrl, setMainImageUrl] = useState<string | null>(null);
   const [imprintFilter, setImprintFilter] = useState<"agph" | "agclassics">("agph");
   const [bookId, setBookId] = useState("");
-  const [activeUsers, setActiveUsers] = useState<{id: number, username: string}[]>([]);
+  const [activeUsers, setActiveUsers] = useState<{ id: number, username: string }[]>([]);
   const [selectedUserId, setSelectedUserId] = useState("");
   const [ebookCoverFile, setEbookCoverFile] = useState<File | null>(null);
-  const [importedAttributes, setImportedAttributes] = useState<{name: string, value: string}[]>([]);
-  const [importedAuthors, setImportedAuthors] = useState<{id: number, name: string}[]>([]);
+  const [importedAttributes, setImportedAttributes] = useState<{ name: string, value: string }[]>([]);
+  const [importedAuthors, setImportedAuthors] = useState<{ id: number, name: string }[]>([]);
   const [importedGallery, setImportedGallery] = useState<string[]>([]);
   const [driveImages, setDriveImages] = useState<string[]>([]);
 
@@ -300,14 +302,14 @@ const ReadyToGoProductForm = () => {
     const originalPushState = window.history.pushState.bind(window.history);
     const originalReplaceState = window.history.replaceState.bind(window.history);
     const guard = (original: typeof originalPushState) => (...args: Parameters<typeof originalPushState>) => {
-        if (isDirtyRef.current) {
-          const confirmed = window.confirm(CONFIRM_MSG);
-          if (!confirmed) return;
-          isDirtyRef.current = false;
-          setIsDirty(false);
-        }
-        original(...args);
-      };
+      if (isDirtyRef.current) {
+        const confirmed = window.confirm(CONFIRM_MSG);
+        if (!confirmed) return;
+        isDirtyRef.current = false;
+        setIsDirty(false);
+      }
+      original(...args);
+    };
     window.history.pushState = guard(originalPushState);
     window.history.replaceState = guard(originalReplaceState);
     return () => {
@@ -331,7 +333,7 @@ const ReadyToGoProductForm = () => {
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
 
- // ── INIT DATA FETCH ─────────────────
+  // ── INIT DATA FETCH ─────────────────
   useEffect(() => {
     const loadImportData = async () => {
       const importDataStr = sessionStorage.getItem("pendingProductImport");
@@ -343,7 +345,7 @@ const ReadyToGoProductForm = () => {
 
       try {
         const rawData = JSON.parse(importDataStr);
-        let data = rawData; 
+        let data = rawData;
         const idToFetch = rawData.book_id;
 
         if (idToFetch) {
@@ -367,17 +369,17 @@ const ReadyToGoProductForm = () => {
         <p><strong>About The Publisher:</strong></p>
         <p>
         AGPH Books is a professional self-book publishing house based in Central India, specializing in academic, professional, fiction, and non-fiction books in print, digital, and audio formats. The publishing house produces textbooks, research and reference works, biographies, self-help titles, children's books, literary fiction, poetry, and general interest publications. With a transparent publishing process and strong digital distribution, AGPH Books ensures global availability through Google Books,<a href="https://www.amazon.in/l/27943762031?ie=UTF8&marketplaceID=A21TJRUUN4KGV&product=9389319900&me=AMCX1E9YXP0A7" target="_blank" rel="noopener noreferrer"> Amazon</a>, <a href="https://www.flipkart.com/search?q=agph%20books&otracker=search&otracker1=search&marketplace=FLIPKART&as-show=on&as=off" target="_blank" rel="noopener noreferrer">Flipkart</a>, and its <a href="https://store.agphbooks.com/" target="_blank" rel="noopener noreferrer">official website store</a>, supporting authors and institutions in reaching a wide and diverse readership.
-        </p>`;        
+        </p>`;
         let mergedDescription = incomingDescription;
         if (!incomingDescription.includes("About The Publisher:")) {
           mergedDescription = incomingDescription + defaultPublisherBlock;
         }
-        
+
         // Run the merged description through the formatter
         setDescription(formatProductDescription(mergedDescription, data.title || ""));
         setPrice("");
         setSellPrice("");
-        setStock("1"); 
+        setStock("1");
         setSku(data.sku || data.isbn?.replace(/-/g, "") || `AGPH-${data.book_id}`);
         setProductType(data.product_type || "physical");
         setBookId(data.book_id || "");
@@ -386,7 +388,7 @@ const ReadyToGoProductForm = () => {
         setKeywords(data.keywords || "");
         setEbookPrice(data.ebook_price || "");
         setEbookSellPrice(data.ebook_sell_price || "");
-        
+
         setWeight(data.weight || "0.40");
         setLength(data.length || "22.86");
         setWidth(data.width || "15.24");
@@ -446,7 +448,7 @@ const ReadyToGoProductForm = () => {
       setDriveImages([]);
       return;
     }
-    
+
     const fetchDriveImages = async () => {
       try {
         const res = await fetch(`${CRMSERVER_API_URL}/api/books/${bookId}/gallery-images`);
@@ -454,7 +456,7 @@ const ReadyToGoProductForm = () => {
           const data = await res.json();
           if (data.urls && data.urls.length > 0) {
             setDriveImages(data.urls);
-            
+
             setPreview((currentPreview) => {
               if (!currentPreview || currentPreview.endsWith("/cover")) {
                 setIsImageLoading(true);
@@ -464,7 +466,7 @@ const ReadyToGoProductForm = () => {
                     const ext = blob.type.split('/')[1] || 'jpg';
                     const file = new File([blob], `drive-cover.${ext}`, { type: blob.type });
                     setProductImage(file);
-                    setMainImageUrl(null); 
+                    setMainImageUrl(null);
                   })
                   .catch(() => setIsImageLoading(false));
                 return data.urls[0];
@@ -571,7 +573,7 @@ const ReadyToGoProductForm = () => {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
       setConvertedFilePath(data.epubPath);
-      
+
       if (data.productId) {
         router.replace(`/admin/product/EditProduct?id=${data.productId}`);
       }
@@ -591,6 +593,8 @@ const ReadyToGoProductForm = () => {
     const attributes = attributesRef.current?.getAttributes() || [];
     const galleryData = galleryRef.current?.getGalleryData();
     const authors = authorRef.current?.getAuthors() || [];
+    const sectionsData = sectionsRef.current?.getSectionsData() || [];
+    const sectionsFiles = sectionsRef.current?.getSectionImageFiles() || {};
     const formData = new FormData();
 
     if (productImage) {
@@ -612,13 +616,13 @@ const ReadyToGoProductForm = () => {
     formData.append("length", length);
     formData.append("width", width);
     formData.append("height", height);
-    
+
     if (convertedFilePath) {
       formData.append("converted_epub", convertedFilePath);
     } else if (ebookFile) {
       formData.append("ebook", ebookFile);
     }
-    
+
     formData.append("ebook_price", ebookPrice);
     formData.append("ebook_sell_price", ebookSellPrice);
     formData.append("attributes", JSON.stringify(attributes));
@@ -628,7 +632,7 @@ const ReadyToGoProductForm = () => {
     formData.append("meta_description", metaDescription);
     formData.append("keywords", keywords);
     formData.append("book_id", bookId);
-    
+
     if (galleryData) {
       galleryData.newFiles.forEach((file: File) => formData.append("gallery", file));
       if (galleryData.newUrls?.length) {
@@ -639,6 +643,11 @@ const ReadyToGoProductForm = () => {
       formData.append("ebook_cover", ebookCoverFile);
     }
     formData.append("subjects", JSON.stringify(selectedSubjects));
+
+    formData.append("sections", JSON.stringify(sectionsData));
+    Object.keys(sectionsFiles).forEach((key) => {
+      formData.append(key, sectionsFiles[key]);
+    });
 
     const res = await fetch(`${API_URL}/api/products`, { method: "POST", body: formData });
     const data = await res.json();
@@ -652,7 +661,7 @@ const ReadyToGoProductForm = () => {
       // 1. Extract the active user from the JWT stored in localStorage
       let userName = "Admin";
       const token = localStorage.getItem("admin_token");
-      
+
       if (token) {
         const decoded = parseJwt(token);
         if (decoded && decoded.name) {
@@ -670,7 +679,7 @@ const ReadyToGoProductForm = () => {
       // Avoid sending local 'blob:' URLs to the server. 
       // Fallback to the saved image path returned by your API (e.g., data.image) if available.
       let finalImageUrl = mainImageUrl || (preview && !preview.startsWith("blob:") ? preview : "");
-      
+
       // NEW: Catch the image path returned from Express and attach the full domain
       if (data && data.image) {
         // If Express returned a relative path like "/uploads/products/...", prepend the API_URL
@@ -691,8 +700,8 @@ const ReadyToGoProductForm = () => {
       };
 
       // IMPORTANT: REPLACE THE URL BELOW WITH YOUR ACTUAL TARGET API URL
-      const WEBHOOK_API_URL = `${CRMSERVER_API_URL}/api/store-webhook`; 
-      
+      const WEBHOOK_API_URL = `${CRMSERVER_API_URL}/api/store-webhook`;
+
       fetch(WEBHOOK_API_URL, {
         method: "POST",
         headers: {
@@ -700,8 +709,8 @@ const ReadyToGoProductForm = () => {
         },
         body: JSON.stringify(webhookPayload)
       })
-      .then(res => console.log("Webhook triggered successfully"))
-      .catch(err => console.error("Webhook failed to trigger", err));
+        .then(res => console.log("Webhook triggered successfully"))
+        .catch(err => console.error("Webhook failed to trigger", err));
 
     } catch (err) {
       console.error("Error setting up webhook", err);
@@ -730,7 +739,7 @@ const ReadyToGoProductForm = () => {
         const agphOnly = data.filter((cat) => cat.imprint === "agph");
         setCategories(agphOnly);
       });
-}, []);
+  }, []);
 
   const toggleCategory = (id: number) => {
     setSelectedCategories((prev) =>
@@ -767,7 +776,7 @@ const ReadyToGoProductForm = () => {
   const handleGenerateAI = async () => {
     if (!bookId) return;
     setIsGeneratingAI(true);
-    setTimeLeft(120); 
+    setTimeLeft(120);
     try {
       const token = await generateLocalToken(FRONTEND_JWT_SECRET);
       const res = await fetch(`${CRMSERVER_API_URL}/api/products/import-ready/${bookId}?use_ai=true`, {
@@ -776,15 +785,15 @@ const ReadyToGoProductForm = () => {
           "Authorization": `Bearer ${token}`
         }
       });
-      
+
       const data = await res.json();
-      
+
       if (res.ok) {
         const newTitle = data.title || title;
         const newMetaTitle = data.meta_title || metaTitle;
         const newMetaDesc = data.meta_description || metaDescription;
         const newKeywords = data.keywords || keywords;
-        
+
         // We need to calculate the new description format so we can save it exactly as it renders
         let newDesc = description;
         setDescription(prevDesc => {
@@ -807,7 +816,7 @@ const ReadyToGoProductForm = () => {
         setMetaTitle(newMetaTitle);
         setMetaDescription(newMetaDesc);
         setKeywords(newKeywords);
-        
+
         setToastMsg("AI content generated successfully!");
         setToastType("success");
         setToastOpen(true);
@@ -835,7 +844,7 @@ const ReadyToGoProductForm = () => {
 
   useEffect(() => {
     if (!bookId || typeof window === "undefined") return;
-    
+
     const savedAiContent = sessionStorage.getItem(`ai_draft_${bookId}`);
     if (savedAiContent) {
       try {
@@ -851,28 +860,28 @@ const ReadyToGoProductForm = () => {
     }
   }, [bookId]);
 
-// ── DETERMINE MISSING FIELDS ─────────────────
+  // ── DETERMINE MISSING FIELDS ─────────────────
   const getMissingFields = () => {
     const missing = [];
-    
+
     // Always required
     if (!title.trim()) missing.push("Product Title");
-    
+
     if (status === "published") {
       let textOnlyDesc = description.replace(/<[^>]+>/gi, " ");
-      
+
       const escapedTitle = title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const titleRegex = new RegExp(`Book Title:\\s*${escapedTitle}`, "i");
       textOnlyDesc = textOnlyDesc.replace(titleRegex, "");
-      
+
       const publisherIndex = textOnlyDesc.indexOf("About The Publisher:");
       if (publisherIndex !== -1) {
         textOnlyDesc = textOnlyDesc.substring(0, publisherIndex);
       }
-      
+
       // If nothing is left after stripping the title and publisher block, the description is missing
       if (!description || !textOnlyDesc.trim()) missing.push("Description");
-      
+
       if (!sku.trim()) missing.push("SKU");
       if (selectedCategories.length === 0) missing.push("Category");
       if (!String(bookId).trim()) missing.push("MIS Book ID");
@@ -901,20 +910,20 @@ const ReadyToGoProductForm = () => {
       if (!keywords.trim()) missing.push("Focus Keyphrase");
 
       // 5. Child Components (Refs)
-      
+
       // 👇 UPDATED: Authors (Checking for specific missing data)
-      const authors = authorRef.current?.getAuthors?.() || [];
-      if (authors.length === 0) {
+      const fullAuthors = authorRef.current?.getFullAuthors?.() || [];
+      if (fullAuthors.length === 0) {
         missing.push("Author");
       } else {
-        authors.forEach((author: any, idx: number) => {
+        fullAuthors.forEach((author: any, idx: number) => {
           const authorName = author.name || `Author ${idx + 1}`;
-          
-          // Note: Adjust 'photo' and 'about_author' keys if your ReadyToGoProductAuthor component uses different keys (like 'image' or 'description')
-          if (!author.photo && !author.author_photo && !author.image) {
+
+          // Using profile_image and bio to match Author object
+          if (!author.profile_image && !author.photo && !author.author_photo && !author.image) {
             missing.push(`${authorName} Image`);
           }
-          if (!author.about_author && !author.description && !author.bio) {
+          if (!author.bio && !author.about_author && !author.description) {
             missing.push(`${authorName} Description`);
           }
         });
@@ -922,11 +931,11 @@ const ReadyToGoProductForm = () => {
 
       // Gallery Images
       const galleryData = galleryRef.current?.getGalleryData?.();
-      const totalGalleryImages = 
-        (galleryData?.newFiles?.length || 0) + 
-        (galleryData?.newUrls?.length || 0) + 
+      const totalGalleryImages =
+        (galleryData?.newFiles?.length || 0) +
+        (galleryData?.newUrls?.length || 0) +
         (galleryData?.existing?.length || 0);
-        
+
       if (totalGalleryImages === 0) {
         missing.push("Product Gallery Images");
       }
@@ -940,7 +949,7 @@ const ReadyToGoProductForm = () => {
         missing.push("Attributes Configuration");
       }
     }
-    
+
     return missing;
   };
 
@@ -953,52 +962,52 @@ const ReadyToGoProductForm = () => {
           Import & Add Product
         </h1>
         {/* Only show "Fetching" briefly on initial load */}
-       {isFetchingData && (
-  <div className="flex items-center gap-2 text-sm text-gray-600 px-4 py-1.5 mt-2">
-    <Loader2 className="w-4 h-4 animate-spin mr-1" />
-    <span className="font-medium">Loading details...</span>
-  </div>
-)}
+        {isFetchingData && (
+          <div className="flex items-center gap-2 text-sm text-gray-600 px-4 py-1.5 mt-2">
+            <Loader2 className="w-4 h-4 animate-spin mr-1" />
+            <span className="font-medium">Loading details...</span>
+          </div>
+        )}
 
-{/* Show AI countdown timer when running */}
-{isGeneratingAI && (
-  <div className="flex gap-3 items-center mt-3 text-sm text-blue-600 font-medium px-4 py-1.5 hover:text-gray-600 transition-colors cursor-pointer">
-    <Loader2 className="w-4 h-4 animate-spin mr-1" />
-    <span className="font-medium">
-      {aiSteps[aiStepIndex]} {formatTime(timeLeft)}
-    </span>
-  </div>
-)}
+        {/* Show AI countdown timer when running */}
+        {isGeneratingAI && (
+          <div className="flex gap-3 items-center mt-3 text-sm text-blue-600 font-medium px-4 py-1.5 hover:text-gray-600 transition-colors cursor-pointer">
+            <Loader2 className="w-4 h-4 animate-spin mr-1" />
+            <span className="font-medium">
+              {aiSteps[aiStepIndex]} {formatTime(timeLeft)}
+            </span>
+          </div>
+        )}
 
-{/* AI Trigger Button */}
-{!isFetchingData && !isGeneratingAI && bookId && (
-  <button
-    type="button"
-    onClick={handleGenerateAI}
-    className="group relative flex items-center justify-center p-[2px] rounded-full shadow-[0_4px_14px_0_rgba(0,0,0,0.1)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.15)] hover:-translate-y-0.5 transition-all duration-200 cursor-pointer mt-3"
-  >
-    {/* Gradient Border Wrapper */}
-    <span className="absolute inset-0 rounded-full bg-gradient-to-r from-[#00E5FF] via-[#4D7CFF] to-[#C100FF] z-0"></span>
-    
-    {/* Inner White Button Container */}
-    <span className="relative flex items-center gap-2 px-2 py-1 bg-white rounded-full w-full h-full z-10">
-      
-      {/* Custom Sparkles SVG matching the image */}
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M10 2.5C10 6.642 13.358 10 17.5 10C13.358 10 10 13.358 10 17.5C10 13.358 6.642 10 2.5 10C6.642 10 10 6.642 10 2.5Z" fill="#00E5FF"/>
-        <path d="M19 14C19 15.657 20.343 17 22 17C20.343 17 19 18.343 19 20C19 18.343 17.657 17 16 17C17.657 17 19 15.657 19 14Z" fill="#00E5FF"/>
-        <path d="M5 16C5 17.104 5.895 18 7 18C5.895 18 5 18.895 5 20C5 18.895 4.104 18 3 18C4.104 18 5 17.104 5 16Z" fill="#00E5FF"/>
-      </svg>
+        {/* AI Trigger Button */}
+        {!isFetchingData && !isGeneratingAI && bookId && (
+          <button
+            type="button"
+            onClick={handleGenerateAI}
+            className="group relative flex items-center justify-center p-[2px] rounded-full shadow-[0_4px_14px_0_rgba(0,0,0,0.1)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.15)] hover:-translate-y-0.5 transition-all duration-200 cursor-pointer mt-3"
+          >
+            {/* Gradient Border Wrapper */}
+            <span className="absolute inset-0 rounded-full bg-gradient-to-r from-[#00E5FF] via-[#4D7CFF] to-[#C100FF] z-0"></span>
 
-      {/* Gradient Text */}
-      <span className="font-medium text-[14px] bg-gradient-to-r from-[#00E5FF] via-[#4D7CFF] to-[#C100FF] bg-clip-text text-transparent">
-        Enhance Content with AI
-      </span>
-    </span>
-  </button>
-)}
+            {/* Inner White Button Container */}
+            <span className="relative flex items-center gap-2 px-2 py-1 bg-white rounded-full w-full h-full z-10">
 
-{!isFetchingData && missingFields.length > 0 && status === "published" && (
+              {/* Custom Sparkles SVG matching the image */}
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M10 2.5C10 6.642 13.358 10 17.5 10C13.358 10 10 13.358 10 17.5C10 13.358 6.642 10 2.5 10C6.642 10 10 6.642 10 2.5Z" fill="#00E5FF" />
+                <path d="M19 14C19 15.657 20.343 17 22 17C20.343 17 19 18.343 19 20C19 18.343 17.657 17 16 17C17.657 17 19 15.657 19 14Z" fill="#00E5FF" />
+                <path d="M5 16C5 17.104 5.895 18 7 18C5.895 18 5 18.895 5 20C5 18.895 4.104 18 3 18C4.104 18 5 17.104 5 16Z" fill="#00E5FF" />
+              </svg>
+
+              {/* Gradient Text */}
+              <span className="font-medium text-[14px] bg-gradient-to-r from-[#00E5FF] via-[#4D7CFF] to-[#C100FF] bg-clip-text text-transparent">
+                Enhance Content with AI
+              </span>
+            </span>
+          </button>
+        )}
+
+        {!isFetchingData && missingFields.length > 0 && status === "published" && (
           <div className="mt-5 p-4 bg-red-50/80 border border-red-200 rounded-lg w-full ">
             <div className="flex items-center gap-2 mb-3 text-red-700">
               <AlertCircle className="w-5 h-5" />
@@ -1006,8 +1015,8 @@ const ReadyToGoProductForm = () => {
             </div>
             <div className="flex flex-wrap gap-2">
               {missingFields.map((field, idx) => (
-                <span 
-                  key={idx} 
+                <span
+                  key={idx}
                   className="text-xs font-medium bg-white text-red-600 px-2.5 py-1 rounded border border-red-100 shadow-sm"
                 >
                   {field}
@@ -1027,49 +1036,49 @@ const ReadyToGoProductForm = () => {
               <h2 className="mb-4 font-medium text-gray-700">Basic Information</h2>
               <div className="flex gap-6">
                 <div className="flex-1 space-y-4">
-                    <div className="flex gap-4">
-                      <div className="w-[70%]">
-                        <label className="block text-sm mb-1">Product Title <Req /></label>
-                        <input
-                          type="text"
-                          disabled={isFetchingData}
-                          placeholder="Enter Product Title"
-                          className={`w-full rounded border px-3 py-2 text-sm disabled:bg-gray-50 ${errors.title ? "border-red-400" : ""}`}
-                          value={title}
-                          onChange={(e) => { setTitle(e.target.value); clearError("title"); }}
-                        />
-                        {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title}</p>}
-                      </div>
-                      
-                      <div className="w-[15%]">
-                        <label className="block text-sm mb-1">Assign User {isPublishing && <Req />}</label>
-                        <select
-                          disabled={isFetchingData}
-                          className={`w-full rounded border px-3 py-2 text-sm disabled:bg-gray-50 ${errors.assignedUser ? "border-red-400" : ""}`}
-                          value={selectedUserId}
-                          onChange={(e) => { setSelectedUserId(e.target.value); clearError("assignedUser"); }}
-                        >
-                          <option value="">Select User...</option>
-                          {activeUsers.map(u => (
-                            <option key={u.id} value={u.id}>{u.username}</option>
-                          ))}
-                        </select>
-                        {errors.assignedUser && <p className="text-red-500 text-xs mt-1">{errors.assignedUser}</p>}
-                      </div>
-
-                      <div className="w-[15%]">
-                        <label className="block text-sm mb-1">MIS Book ID {isPublishing && <Req />}</label>
-                        <input
-                          type="text"
-                          disabled={isFetchingData}
-                          placeholder="e.g. 1583"
-                          className={`w-full rounded border px-3 py-2 text-sm disabled:bg-gray-50 ${errors.bookId ? "border-red-400" : ""}`}
-                          value={bookId}
-                          onChange={(e) => { setBookId(e.target.value); clearError("bookId"); }}
-                        />
-                        {errors.bookId && <p className="text-red-500 text-xs mt-1">{errors.bookId}</p>}
-                      </div>
+                  <div className="flex gap-4">
+                    <div className="w-[70%]">
+                      <label className="block text-sm mb-1">Product Title <Req /></label>
+                      <input
+                        type="text"
+                        disabled={isFetchingData}
+                        placeholder="Enter Product Title"
+                        className={`w-full rounded border px-3 py-2 text-sm disabled:bg-gray-50 ${errors.title ? "border-red-400" : ""}`}
+                        value={title}
+                        onChange={(e) => { setTitle(e.target.value); clearError("title"); }}
+                      />
+                      {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title}</p>}
                     </div>
+
+                    <div className="w-[15%]">
+                      <label className="block text-sm mb-1">Assign User {isPublishing && <Req />}</label>
+                      <select
+                        disabled={isFetchingData}
+                        className={`w-full rounded border px-3 py-2 text-sm disabled:bg-gray-50 ${errors.assignedUser ? "border-red-400" : ""}`}
+                        value={selectedUserId}
+                        onChange={(e) => { setSelectedUserId(e.target.value); clearError("assignedUser"); }}
+                      >
+                        <option value="">Select User...</option>
+                        {activeUsers.map(u => (
+                          <option key={u.id} value={u.id}>{u.username}</option>
+                        ))}
+                      </select>
+                      {errors.assignedUser && <p className="text-red-500 text-xs mt-1">{errors.assignedUser}</p>}
+                    </div>
+
+                    <div className="w-[15%]">
+                      <label className="block text-sm mb-1">MIS Book ID {isPublishing && <Req />}</label>
+                      <input
+                        type="text"
+                        disabled={isFetchingData}
+                        placeholder="e.g. 1583"
+                        className={`w-full rounded border px-3 py-2 text-sm disabled:bg-gray-50 ${errors.bookId ? "border-red-400" : ""}`}
+                        value={bookId}
+                        onChange={(e) => { setBookId(e.target.value); clearError("bookId"); }}
+                      />
+                      {errors.bookId && <p className="text-red-500 text-xs mt-1">{errors.bookId}</p>}
+                    </div>
+                  </div>
                   <div>
                     <label className="block text-sm mb-1">Full Description {isPublishing && <Req />}</label>
                     <RichTextEditor
@@ -1201,24 +1210,24 @@ const ReadyToGoProductForm = () => {
                     <div className="w-full">
                       <label className="cursor-pointer block">
                         {ebookCoverFile ? (
-  <>
-    {/* Dynamically bind the title to the e-book cover alt text */}
-    <img
-      src={URL.createObjectURL(ebookCoverFile)}
-      alt={title ? `${title} - Ebook Cover` : "Ebook cover"}
-      className="h-full w-full object-cover"
-    />
-  </>
-) : (
-  <>
-    <span className="text-sm text-gray-500">
-      Upload E-book Cover
-    </span>
-    <span className="mt-1 text-xs text-gray-400">
-      JPG, PNG
-    </span>
-  </>
-)}
+                          <>
+                            {/* Dynamically bind the title to the e-book cover alt text */}
+                            <img
+                              src={URL.createObjectURL(ebookCoverFile)}
+                              alt={title ? `${title} - Ebook Cover` : "Ebook cover"}
+                              className="h-full w-full object-cover"
+                            />
+                          </>
+                        ) : (
+                          <>
+                            <span className="text-sm text-gray-500">
+                              Upload E-book Cover
+                            </span>
+                            <span className="mt-1 text-xs text-gray-400">
+                              JPG, PNG
+                            </span>
+                          </>
+                        )}
                         <input type="file" accept="image/*" hidden disabled={isFetchingData}
                           onChange={(e) => {
                             const file = e.target.files?.[0];
@@ -1277,7 +1286,7 @@ const ReadyToGoProductForm = () => {
 
             <ReadyToGoProductAttributes
               ref={attributesRef}
-              initialAttributes={importedAttributes} 
+              initialAttributes={importedAttributes}
               error={errors.attributes}
               onValidChange={() => clearError("attributes")}
             />
@@ -1287,6 +1296,10 @@ const ReadyToGoProductForm = () => {
               initialAuthors={importedAuthors}
               error={errors.authors}
               onValidChange={() => clearError("authors")}
+            />
+
+            <ProductSections
+              ref={sectionsRef}
             />
 
             <SeoPanel
@@ -1330,10 +1343,10 @@ const ReadyToGoProductForm = () => {
                           </div>
                         )}
                         {/* Dynamically bind the title to the primary image alt text */}
-                        <img 
-                          src={preview} 
-                          alt={title || mainImageAlt || "Product image"} 
-                          className={`h-full w-full object-contain transition-opacity duration-300 ${isImageLoading ? "opacity-0" : "opacity-100"}`} 
+                        <img
+                          src={preview}
+                          alt={title || mainImageAlt || "Product image"}
+                          className={`h-full w-full object-contain transition-opacity duration-300 ${isImageLoading ? "opacity-0" : "opacity-100"}`}
                           onLoad={() => setIsImageLoading(false)}
                           onError={() => {
                             setIsImageLoading(false);
@@ -1370,33 +1383,32 @@ const ReadyToGoProductForm = () => {
                     <p className="text-xs font-medium text-gray-600 mb-3">Or select main cover from Drive:</p>
                     <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
                       {driveImages.map((url, idx) => {
-                        const isSelected = preview === url; 
+                        const isSelected = preview === url;
                         return (
-                          <div 
+                          <div
                             key={idx}
                             onClick={() => {
                               if (isFetchingData) return;
                               if (preview === url) return; // Prevent unnecessary reload if already selected
-                              
+
                               setIsImageLoading(true); // Trigger loading overlay
                               setPreview(url);
                               clearError("image");
-                              
+
                               fetch(url)
                                 .then(r => r.blob())
                                 .then(blob => {
                                   const ext = blob.type.split('/')[1] || 'jpg';
                                   const file = new File([blob], `drive-cover.${ext}`, { type: blob.type });
                                   setProductImage(file);
-                                  setMainImageUrl(null); 
+                                  setMainImageUrl(null);
                                 })
                                 .catch(() => setIsImageLoading(false)); // Cleanup if fetch strictly fails
                             }}
-                            className={`flex-shrink-0 rounded-md overflow-hidden border-2 transition-all duration-200 ${
-                              isSelected 
-                                ? "border-blue-500 shadow-md ring-2 ring-blue-200 scale-105" 
+                            className={`flex-shrink-0 rounded-md overflow-hidden border-2 transition-all duration-200 ${isSelected
+                                ? "border-blue-500 shadow-md ring-2 ring-blue-200 scale-105"
                                 : "border-gray-200 opacity-70"
-                            } ${!isFetchingData ? "cursor-pointer hover:border-blue-300 hover:opacity-100" : "cursor-not-allowed"}`}
+                              } ${!isFetchingData ? "cursor-pointer hover:border-blue-300 hover:opacity-100" : "cursor-not-allowed"}`}
                             style={{ width: "60px", height: "80px" }}
                           >
                             {/* Dynamically bind the title to drive image thumbnails */}
@@ -1457,7 +1469,7 @@ const ReadyToGoProductForm = () => {
 
             <div className="bg-white rounded-xl border border-gray-300 p-4">
               <h2 className="mb-3 font-medium text-gray-700">Category {isPublishing && <Req />}</h2>
-              
+
               <div className={`max-h-56 overflow-y-auto space-y-2 bg-gray-50 p-5 rounded-lg ${isFetchingData ? "opacity-70 pointer-events-none" : ""}`}>
                 {categoryTree.length > 0 ? (
                   categoryTree.map((cat) => (
@@ -1482,7 +1494,7 @@ const ReadyToGoProductForm = () => {
             <ReadyToGoProductGallery
               ref={galleryRef}
               initialGalleryUrls={importedGallery}
-              bookId={bookId} 
+              bookId={bookId}
               title={title}
               error={errors.gallery}
               onValidChange={() => clearError("gallery")}
@@ -1505,7 +1517,7 @@ const ReadyToGoProductForm = () => {
         onClose={() => {
           setPopup({ ...popup, open: false });
           if (popup.type === "success") {
-            router.push(`/admin/product/ProductsPage`); 
+            router.push(`/admin/product/ProductsPage`);
           }
         }}
       />

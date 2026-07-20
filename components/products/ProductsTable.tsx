@@ -498,7 +498,7 @@ export default function ProductsTable() {
       <div className="mb-4 text-sm text-gray-600 space-x-2">
         {(["all", "published", "draft", "trash"] as const).map(tab => (
           <React.Fragment key={tab}>
-            <button onClick={() => setActiveTab(tab)} className={activeTab === tab ? "font-medium text-blue-600" : ""}>
+            <button onClick={() => { setActiveTab(tab); setCurrentPage(1); }} className={activeTab === tab ? "font-medium text-blue-600" : ""}>
               {tab.charAt(0).toUpperCase() + tab.slice(1)} ({count[tab]})
             </button>
             <span>|</span>
@@ -551,7 +551,7 @@ export default function ProductsTable() {
           {/* Filter dropdowns */}
           <select
             value={category}
-            onChange={e => setCategory(e.target.value)}
+            onChange={e => { setCategory(e.target.value); setCurrentPage(1); }}
             className="rounded border px-2 py-1 text-sm border-gray-300"
           >
             <option value="">All categories</option>
@@ -561,7 +561,7 @@ export default function ProductsTable() {
             {allCategories.map(cat => <option key={cat.id} value={cat.name}>{cat.name}</option>)}
           </select>
 
-          <select value={stockFilter} onChange={e => setStockFilter(e.target.value)} className="rounded border px-2 py-1 text-sm border-gray-300">
+          <select value={stockFilter} onChange={e => { setStockFilter(e.target.value); setCurrentPage(1); }} className="rounded border px-2 py-1 text-sm border-gray-300">
             <option value="">Filter by stock</option>
             <option value="instock">In stock</option>
             <option value="outofstock">Out of stock</option>
@@ -569,7 +569,7 @@ export default function ProductsTable() {
 
           <select
             value={productType}
-            onChange={e => setProductType(e.target.value)}
+            onChange={e => { setProductType(e.target.value); setCurrentPage(1); }}
             className="rounded border px-2 py-1 text-sm border-gray-300"
           >
             <option value="">All types</option>
@@ -580,7 +580,7 @@ export default function ProductsTable() {
 
           <select
             value={imprint}
-            onChange={e => setImprint(e.target.value)}
+            onChange={e => { setImprint(e.target.value); setCurrentPage(1); }}
             className="rounded border px-2 py-1 text-sm border-gray-300"
           >
             <option value="">All imprints</option>
@@ -591,7 +591,7 @@ export default function ProductsTable() {
 
         <div className="flex items-center gap-2">
           <input type="text" placeholder="Search products" value={search}
-            onChange={e => setSearch(e.target.value)} className="rounded border border-gray-300 px-3 py-1 text-sm" />
+            onChange={e => { setSearch(e.target.value); setCurrentPage(1); }} className="rounded border border-gray-300 px-3 py-1 text-sm" />
           <button className="rounded px-3 p-2 text-xs shadow-lg bg-[#e7f2ff] text-[#385dfc]">
             <Search className="w-5 h-5" />
           </button>
