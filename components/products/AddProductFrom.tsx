@@ -13,6 +13,8 @@ import SeoPanel from "./SeoPanel";
 import MediaLibraryModal from "./MediaLibraryModal";
 import Link from "next/link";
 import ProductSubjects from "./Productsubjects";
+import ProductSections from "./ProductSections";
+
 
 // ── Types ────────────────────────────────────────────────────────
 type Category = {
@@ -192,6 +194,9 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
   const isDirtyRef = useRef(false);
   isDirtyRef.current = isDirty;
 
+  const sectionsRef = useRef<any>(null);
+  const [initialSections, setInitialSections] = useState<any[]>([]);
+
   // Watch every field that counts as a user change
   useEffect(() => {
     if (isInitialLoad.current) return;
@@ -341,6 +346,7 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
         setEbookSellPrice(data.ebook_sell_price ?? "");
         setBookId(data.book_id ? String(data.book_id) : "");
         setSelectedUserId(data.user_id ? String(data.user_id) : ""); // Populates existing user if editing
+        setInitialSections(data.sections || []);
         
         setTimeout(() => {
           isInitialLoad.current = false;
@@ -467,6 +473,10 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
     formData.append("subjects", JSON.stringify(selectedSubjects));
     formData.append("book_id", bookId);
     formData.append("user_id", selectedUserId); // Pass user to normal API
+    const sectionFiles = sectionsRef.current?.getSectionImageFiles() || {};
+    Object.entries(sectionFiles).forEach(([key, file]) => {
+      formData.append(key, file as File);
+    });
     if (ebookCoverFile) {
       formData.append("ebook_cover", ebookCoverFile);
     }
@@ -532,7 +542,14 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
     formData.append("keywords", keywords);
     formData.append("book_id", bookId);
     formData.append("user_id", selectedUserId); // Pass user to normal API
+    const sectionsData = sectionsRef.current?.getSectionsData() || [];
+    formData.append("sections", JSON.stringify(sectionsData));
     
+    const sectionFiles = sectionsRef.current?.getSectionImageFiles() || {};
+    Object.entries(sectionFiles).forEach(([key, file]) => {
+      formData.append(key, file as File);
+    });
+
     if (galleryData) {
       formData.append("existingGallery", JSON.stringify(galleryData.existing));
       formData.append("deletedGallery", JSON.stringify(galleryData.deleted));
@@ -667,6 +684,41 @@ useEffect(() => {
     imprintAutoSet.current = true;
   }
 }, [categories, selectedCategories]);
+
+
+
+// 👇 NEW: Fetch assigned user in EDIT mode
+  useEffect(() => {
+    // Only run this if we are editing and have a valid bookId
+    if (mode === "edit" && bookId) {
+      const fetchAssignedUser = async () => {
+        try {
+          // Generate token if your CRM API requires authentication
+          const token = await generateLocalToken(FRONTEND_JWT_SECRET);
+          
+          const res = await fetch(`${CRMSERVER_API_URL}/api/books/${bookId}/assigned-user`, {
+            headers: { "Authorization": `Bearer ${token}` }
+          });
+          
+          const json = await res.json();
+          
+          if (json.success && json.user_id) {
+            setSelectedUserId(String(json.user_id));
+            
+            // Because this updates the state after initial load, prevent it from triggering the unsaved changes warning
+            setTimeout(() => {
+              setIsDirty(false);
+              isDirtyRef.current = false;
+            }, 50);
+          }
+        } catch (err) {
+          console.error("Failed to fetch assigned user for this book ID", err);
+        }
+      };
+      
+      fetchAssignedUser();
+    }
+  }, [mode, bookId]);
 
   return (
     <div className="p-6 pr-2">
@@ -997,6 +1049,12 @@ useEffect(() => {
             productId={productId}
             error={errors.authors}
             onValidChange={() => clearError("authors")}
+          />
+
+          <ProductSections
+            ref={sectionsRef}
+            productId={mode === "edit" ? productId : undefined}
+            initialSections={initialSections}
           />
 
           <SeoPanel

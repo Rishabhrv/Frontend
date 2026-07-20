@@ -14,14 +14,15 @@ import {
   isInGuestWishlist,
   toggleGuestWishlist,
 } from "@/utils/guestStorage"; // ← add this
+import ProductSectionsRenderer from "./ProductSectionsRenderer";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
-type Attribute    = { name: string; value: string };
+type Attribute = { name: string; value: string };
 type GalleryImage = { image_path: string };
-type Subject      = { id: number; name: string; slug: string };
-type Author       = { id: number; name: string; image: string | null; bio?: string | null; slug: string };
-type Category     = { id: number; name: string; slug: string };
+type Subject = { id: number; name: string; slug: string };
+type Author = { id: number; name: string; image: string | null; bio?: string | null; slug: string };
+type Category = { id: number; name: string; slug: string };
 
 type Product = {
   id: number;
@@ -43,11 +44,12 @@ type Product = {
   gallery: GalleryImage[];
   categories: Category[];
   subjects?: Subject[];
+  sections?: any[];
 };
 
 /* ─── Share dropdown ─────────────────────────────────────────────────────── */
 function ShareButton({ title }: { title: string }) {
-  const [open,   setOpen]   = useState(false);
+  const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -157,23 +159,23 @@ function ShareButton({ title }: { title: string }) {
 
 /* ─── Main component ─────────────────────────────────────────────────────── */
 export default function SingleProductPage({ product }: { product: Product }) {
-  const [liked,            setLiked]            = useState(false);
-  const [activeImage,      setActiveImage]      = useState(product.main_image);
-  const [format,           setFormat]           = useState<"paperback" | "ebook">(
+  const [liked, setLiked] = useState(false);
+  const [activeImage, setActiveImage] = useState(product.main_image);
+  const [format, setFormat] = useState<"paperback" | "ebook">(
     product.product_type === "ebook" ? "ebook" : "paperback"
   );
-  const [qty,              setQty]              = useState(1);
-  const [galleryIndex,     setGalleryIndex]     = useState(0);
-  const [showFullDesc,     setShowFullDesc]     = useState(false);
-  const [expandedAuthors,  setExpandedAuthors]  = useState<Record<number, boolean>>({});
-  const [stockWarning,     setStockWarning]     = useState(false);
-  const [addedToCart,      setAddedToCart]      = useState(false);
-  const [avgRating,        setAvgRating]        = useState<number>(0);
-  const [reviewCount,      setReviewCount]      = useState<number>(0);
+  const [qty, setQty] = useState(1);
+  const [galleryIndex, setGalleryIndex] = useState(0);
+  const [showFullDesc, setShowFullDesc] = useState(false);
+  const [expandedAuthors, setExpandedAuthors] = useState<Record<number, boolean>>({});
+  const [stockWarning, setStockWarning] = useState(false);
+  const [addedToCart, setAddedToCart] = useState(false);
+  const [avgRating, setAvgRating] = useState<number>(0);
+  const [reviewCount, setReviewCount] = useState<number>(0);
 
-  const touchStartX          = useRef<number>(0);
-  const touchEndX            = useRef<number>(0);
-  const mobileThumbnailRef   = useRef<HTMLDivElement>(null);
+  const touchStartX = useRef<number>(0);
+  const touchEndX = useRef<number>(0);
+  const mobileThumbnailRef = useRef<HTMLDivElement>(null);
 
   const allImages = [{ image_path: product.main_image }, ...product.gallery];
 
@@ -182,15 +184,15 @@ export default function SingleProductPage({ product }: { product: Product }) {
     fetch(`${API_URL}/api/reviews/product/${product.id}/summary`)
       .then((r) => r.json())
       .then((d) => { setAvgRating(d.average ?? 0); setReviewCount(d.total ?? 0); })
-      .catch(() => {});
+      .catch(() => { });
   }, [product.id]);
 
   /* ── Auto-cycle images every 5 s ── */
   useEffect(() => {
     if (!product.gallery?.length) return;
-    const images       = allImages;
+    const images = allImages;
     const visibleCount = 5;
-    let currentIndex   = 0;
+    let currentIndex = 0;
 
     const interval = setInterval(() => {
       currentIndex = currentIndex >= images.length - 1 ? 0 : currentIndex + 1;
@@ -233,7 +235,7 @@ export default function SingleProductPage({ product }: { product: Product }) {
   const scrollMobileStrip = (index: number) => {
     if (!mobileThumbnailRef.current) return;
     mobileThumbnailRef.current.scrollTo({
-      left:     Math.max(0, index * (56 + 8) - (56 + 8)),
+      left: Math.max(0, index * (56 + 8) - (56 + 8)),
       behavior: "smooth",
     });
   };
@@ -245,13 +247,13 @@ export default function SingleProductPage({ product }: { product: Product }) {
   };
 
   const handleTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.changedTouches[0].clientX; };
-  const handleTouchEnd   = (e: React.TouchEvent) => {
+  const handleTouchEnd = (e: React.TouchEvent) => {
     touchEndX.current = e.changedTouches[0].clientX;
-    const diff         = touchStartX.current - touchEndX.current;
+    const diff = touchStartX.current - touchEndX.current;
     if (Math.abs(diff) < 50) return;
     const currentIndex = allImages.findIndex((img) => img.image_path === activeImage);
     if (diff > 0) jumpToImage(currentIndex < allImages.length - 1 ? currentIndex + 1 : 0);
-    else          jumpToImage(currentIndex > 0 ? currentIndex - 1 : allImages.length - 1);
+    else jumpToImage(currentIndex > 0 ? currentIndex - 1 : allImages.length - 1);
   };
 
   /* ── Toggle wishlist ── */
@@ -261,7 +263,7 @@ export default function SingleProductPage({ product }: { product: Product }) {
     if (token) {
       // Logged-in: sync with server
       await fetch(`${API_URL}/api/wishlist/${product.id}`, {
-        method:  "POST",
+        method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
       setLiked((v) => !v);
@@ -269,13 +271,13 @@ export default function SingleProductPage({ product }: { product: Product }) {
     } else {
       // Guest: persist to localStorage
       const nowLiked = toggleGuestWishlist({
-        id:           product.id,
-        title:        product.title,
-        slug:         product.categories?.[0]?.slug ?? "",  // fallback; slug comes from product page URL
-        sell_price:   format === "ebook" ? (product.ebook_sell_price ?? product.sell_price) : product.sell_price,
-        image:        `${API_URL}${product.main_image}`,
+        id: product.id,
+        title: product.title,
+        slug: product.categories?.[0]?.slug ?? "",  // fallback; slug comes from product page URL
+        sell_price: format === "ebook" ? (product.ebook_sell_price ?? product.sell_price) : product.sell_price,
+        image: `${API_URL}${product.main_image}`,
         product_type: product.product_type,
-        stock:        product.stock,
+        stock: product.stock,
       });
       setLiked(nowLiked);
     }
@@ -283,10 +285,10 @@ export default function SingleProductPage({ product }: { product: Product }) {
 
   /* ── Add to cart ── */
   const addToCart = async () => {
-    const token      = localStorage.getItem("token");
+    const token = localStorage.getItem("token");
     const cartFormat = format === "ebook" ? "ebook" : "paperback";
-    const cartQty    = format === "ebook" ? 1 : qty;
-    const cartPrice  = format === "ebook"
+    const cartQty = format === "ebook" ? 1 : qty;
+    const cartPrice = format === "ebook"
       ? (product.ebook_sell_price ?? product.sell_price)
       : product.sell_price;
 
@@ -294,9 +296,9 @@ export default function SingleProductPage({ product }: { product: Product }) {
       // Logged-in: sync with server
       try {
         const res = await fetch(`${API_URL}/api/cart/add`, {
-          method:  "POST",
+          method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-          body:    JSON.stringify({ product_id: product.id, format: cartFormat, quantity: cartQty }),
+          body: JSON.stringify({ product_id: product.id, format: cartFormat, quantity: cartQty }),
         });
         if (!res.ok) throw new Error("Add to cart failed");
         window.dispatchEvent(new Event("cart-change"));
@@ -305,13 +307,13 @@ export default function SingleProductPage({ product }: { product: Product }) {
       // Guest: persist to localStorage
       addToGuestCart({
         product_id: product.id,
-        format:     cartFormat,
-        quantity:   cartQty,
-        title:      product.title,
-        slug:       product.categories?.[0]?.slug ?? "",
-        image:      `${API_URL}${product.main_image}`,
-        price:      cartPrice,
-        stock:      product.stock,
+        format: cartFormat,
+        quantity: cartQty,
+        title: product.title,
+        slug: product.categories?.[0]?.slug ?? "",
+        image: `${API_URL}${product.main_image}`,
+        price: cartPrice,
+        stock: product.stock,
       });
     }
 
@@ -331,7 +333,7 @@ export default function SingleProductPage({ product }: { product: Product }) {
       ? Math.round(((product.ebook_price - product.ebook_sell_price) / product.ebook_price) * 100)
       : 0;
 
-// Strip HTML tags to get an accurate word count for the Read More button logic
+  // Strip HTML tags to get an accurate word count for the Read More button logic
   const plainTextDesc = product.description ? product.description.replace(/<[^>]+>/g, '') : "";
   const isLongDescription = plainTextDesc.split(" ").length > 150; // Adjusted threshold
 
@@ -341,7 +343,7 @@ export default function SingleProductPage({ product }: { product: Product }) {
   };
 
   const isPaperbackOnly = product.product_type === "physical";
-  const activeIndex     = allImages.findIndex((img) => img.image_path === activeImage);
+  const activeIndex = allImages.findIndex((img) => img.image_path === activeImage);
 
   return (
     <div className="max-w-7xl mx-auto px-3 sm:px-5 md:px-8 lg:px-14 xl:px-20 py-4 sm:py-6">
@@ -390,9 +392,8 @@ export default function SingleProductPage({ product }: { product: Product }) {
                   <button
                     key={i}
                     onClick={() => jumpToImage(i)}
-                    className={`h-1.5 rounded-full transition-all duration-300 ${
-                      i === activeIndex ? "bg-gray-800 w-4" : "bg-gray-300 w-1.5"
-                    }`}
+                    className={`h-1.5 rounded-full transition-all duration-300 ${i === activeIndex ? "bg-gray-800 w-4" : "bg-gray-300 w-1.5"
+                      }`}
                   />
                 ))}
               </div>
@@ -422,9 +423,8 @@ export default function SingleProductPage({ product }: { product: Product }) {
                 <button
                   key={i}
                   onClick={() => jumpToImage(i)}
-                  className={`border rounded p-0.5 flex-shrink-0 transition-all duration-200 ${
-                    i === activeIndex ? "border-red-400 scale-100 shadow-sm" : "border-gray-200"
-                  }`}
+                  className={`border rounded p-0.5 flex-shrink-0 transition-all duration-200 ${i === activeIndex ? "border-red-400 scale-100 shadow-sm" : "border-gray-200"
+                    }`}
                 >
                   <Image
                     src={`${API_URL}${img.image_path}`}
@@ -439,7 +439,7 @@ export default function SingleProductPage({ product }: { product: Product }) {
 
           {/* Desktop thumbnail strip */}
           {product.gallery?.length > 0 && (() => {
-            const images       = allImages;
+            const images = allImages;
             const visibleCount = 5;
 
             return (
@@ -453,11 +453,10 @@ export default function SingleProductPage({ product }: { product: Product }) {
                       <button
                         key={i}
                         onClick={() => setActiveImage(img.image_path)}
-                        className={`border rounded p-1 flex-shrink-0 transition-all duration-200 ${
-                          activeImage === img.image_path
+                        className={`border rounded p-1 flex-shrink-0 transition-all duration-200 ${activeImage === img.image_path
                             ? "border-red-400 scale-100 shadow-sm"
                             : "border-gray-300"
-                        }`}
+                          }`}
                       >
                         <Image
                           src={`${API_URL}${img.image_path}`}
@@ -499,9 +498,9 @@ export default function SingleProductPage({ product }: { product: Product }) {
           <div className="flex items-center gap-1 mb-4">
             <div className="flex items-center gap-0.5">
               {[1, 2, 3, 4, 5].map((i) => {
-                const filled       = avgRating >= i;
-                const partial      = !filled && avgRating > i - 1;
-                const fillPercent  = partial ? Math.round((avgRating - (i - 1)) * 100) : 0;
+                const filled = avgRating >= i;
+                const partial = !filled && avgRating > i - 1;
+                const fillPercent = partial ? Math.round((avgRating - (i - 1)) * 100) : 0;
                 return (
                   <span key={i} className="relative inline-block w-3.5 h-3.5">
                     <Star size={14} className="text-gray-300 absolute inset-0" fill="currentColor" />
@@ -561,9 +560,8 @@ export default function SingleProductPage({ product }: { product: Product }) {
               {product.product_type !== "ebook" && (
                 <button
                   onClick={() => setFormat("paperback")}
-                  className={`border rounded-md px-3 sm:px-4 py-2.5 sm:py-3 w-36 sm:w-40 text-left cursor-pointer transition-shadow ${
-                    format === "paperback" ? "border-black shadow-sm" : "border-gray-300"
-                  }`}
+                  className={`border rounded-md px-3 sm:px-4 py-2.5 sm:py-3 w-36 sm:w-40 text-left cursor-pointer transition-shadow ${format === "paperback" ? "border-black shadow-sm" : "border-gray-300"
+                    }`}
                 >
                   <p className="text-[11px] sm:text-xs text-gray-500">Paperback</p>
                   <p className="font-semibold text-sm sm:text-base">₹{product.sell_price}</p>
@@ -572,9 +570,8 @@ export default function SingleProductPage({ product }: { product: Product }) {
               {product.product_type !== "physical" && (
                 <button
                   onClick={() => setFormat("ebook")}
-                  className={`border rounded-md px-3 sm:px-4 py-2.5 sm:py-3 w-36 sm:w-40 text-left cursor-pointer transition-shadow ${
-                    format === "ebook" ? "border-black shadow-sm" : "border-gray-300"
-                  }`}
+                  className={`border rounded-md px-3 sm:px-4 py-2.5 sm:py-3 w-36 sm:w-40 text-left cursor-pointer transition-shadow ${format === "ebook" ? "border-black shadow-sm" : "border-gray-300"
+                    }`}
                 >
                   <p className="text-[11px] sm:text-xs text-gray-500">eBook</p>
                   <p className="font-semibold text-sm sm:text-base">₹{product.ebook_sell_price}</p>
@@ -623,11 +620,10 @@ export default function SingleProductPage({ product }: { product: Product }) {
                   <button
                     onClick={addToCart}
                     disabled={addedToCart || (format === "paperback" && product.stock === 0)}
-                    className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 sm:px-10 py-3 rounded-md transition cursor-pointer text-sm sm:text-base font-medium ${
-                      addedToCart
+                    className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 sm:px-10 py-3 rounded-md transition cursor-pointer text-sm sm:text-base font-medium ${addedToCart
                         ? "bg-green-600 text-white cursor-default"
                         : "bg-black text-white hover:bg-gray-800"
-                    } ${format === "paperback" && product.stock === 0 ? "opacity-50 cursor-not-allowed" : ""}`}
+                      } ${format === "paperback" && product.stock === 0 ? "opacity-50 cursor-not-allowed" : ""}`}
                   >
                     {addedToCart ? <><CircleCheck size={16} /> Added</> : <><ShoppingCart size={16} /> Add to Cart</>}
                   </button>
@@ -638,9 +634,9 @@ export default function SingleProductPage({ product }: { product: Product }) {
             {/* Trust strip */}
             <div className="grid grid-cols-3 gap-2 sm:gap-3 pt-4 sm:pt-6 border-t border-gray-200">
               {[
-                { icon: "/images/icons/quality.png",       title: "Premium Quality", sub: "High-grade paper & binding" },
-                { icon: "/images/icons/fast_delivery.png", title: "Fast Shipping",   sub: "Dispatch in 24–48 hours" },
-                { icon: "/images/icons/best_price.png",    title: "Best Price",      sub: "Direct publisher pricing" },
+                { icon: "/images/icons/quality.png", title: "Premium Quality", sub: "High-grade paper & binding" },
+                { icon: "/images/icons/fast_delivery.png", title: "Fast Shipping", sub: "Dispatch in 24–48 hours" },
+                { icon: "/images/icons/best_price.png", title: "Best Price", sub: "Direct publisher pricing" },
               ].map((item, i) => (
                 <div key={i} className="flex flex-col sm:flex-row items-center sm:items-start gap-1 sm:gap-3 text-center sm:text-left">
                   <img src={item.icon} alt="" className="h-10 w-10 sm:h-12 sm:w-12 object-contain flex-shrink-0" />
@@ -655,13 +651,12 @@ export default function SingleProductPage({ product }: { product: Product }) {
         </div>
       </div>
 
-{/* ── DESCRIPTION ── */}
+      {/* ── DESCRIPTION ── */}
       <div className="mt-10 sm:mt-14 border-y border-gray-300 py-6 sm:py-8 px-5 xl:px-1">
         <h2 className="text-lg sm:text-xl font-serif font-semibold mb-4">Description</h2>
         <div
-          className={`text-gray-700 leading-relaxed text-justify prose max-w-none transition-all duration-300 ${
-            showFullDesc ? "" : "line-clamp-[12] overflow-hidden"
-          } [&>p]:mb-4  [&>p]:text-base sm:[&>p]:text-sm [&>p]:leading-relaxed [&>h1]:text-xl [&>h1]:font-serif [&>h1]:font-bold [&>h1]:mt-6 [&>h1]:mb-2 [&>h2]:text-lg [&>h2]:font-serif [&>h2]:font-bold [&>h2]:mt-6 [&>h2]:mb-2 [&>h3]:text-base [&>h3]:font-serif [&>h3]:font-bold [&>h3]:mt-5 [&>h3]:mb-2 [&>strong]:font-semibold [&>ul]:list-disc [&>ul]:ml-5 [&>ul]:mb-4`}
+          className={`text-gray-700 leading-relaxed text-justify prose max-w-none transition-all duration-300 ${showFullDesc ? "" : "line-clamp-[12] overflow-hidden"
+            } [&>p]:mb-4  [&>p]:text-base sm:[&>p]:text-sm [&>p]:leading-relaxed [&>h1]:text-xl [&>h1]:font-serif [&>h1]:font-bold [&>h1]:mt-6 [&>h1]:mb-2 [&>h2]:text-lg [&>h2]:font-serif [&>h2]:font-bold [&>h2]:mt-6 [&>h2]:mb-2 [&>h3]:text-base [&>h3]:font-serif [&>h3]:font-bold [&>h3]:mt-5 [&>h3]:mb-2 [&>strong]:font-semibold [&>ul]:list-disc [&>ul]:ml-5 [&>ul]:mb-4`}
           dangerouslySetInnerHTML={{
             __html: product.description,
           }}
@@ -707,25 +702,28 @@ export default function SingleProductPage({ product }: { product: Product }) {
 
       {/* ── SHIPPING ── */}
       {(product.weight || product.length) && (
-        <div className="mt-5 border-b border-gray-300 pb-8 sm:pb-10 px-5 xl:px-1">
+        <div className="mt-5 border-b border-gray-300 pb-8 sm:pb-10 px-5 xl:px-1 ">
           <h2 className="text-lg sm:text-xl font-serif font-semibold mb-3 sm:mb-4">Shipping Details</h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 text-xs sm:text-sm">
             {product.weight && <div>Weight: {product.weight} kg</div>}
             {product.length && <div>Length: {product.length} cm</div>}
-            {product.width  && <div>Width: {product.width} cm</div>}
+            {product.width && <div>Width: {product.width} cm</div>}
             {product.height && <div>Height: {product.height} cm</div>}
           </div>
         </div>
       )}
 
-{/* ── AUTHORS ── */}
+      {/* ── PRODUCT SECTIONS (A+ CONTENT) ── */}
+      <ProductSectionsRenderer sections={product.sections} />
+
+      {/* ── AUTHORS ── */}
       {product.authors?.length > 0 && (
         <div className="mt-8 sm:mt-10 px-5 xl:px-1">
           <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6">About the Author</h2>
           <div className="space-y-6">
             {product.authors.map((a) => {
               const isLongBio = a.bio && a.bio.split(" ").length > 40;
-              
+
               return (
                 <div key={a.id} className="flex items-start gap-4 sm:gap-6  rounded-lg p-4 sm:p-5 border border-gray-100">
                   <div className="flex-shrink-0 w-16 h-16 sm:w-24 sm:h-24">
@@ -747,11 +745,10 @@ export default function SingleProductPage({ product }: { product: Product }) {
                     </Link>
                     {a.bio && (
                       <div className="relative">
-                        <p 
+                        <p
                           // 👇 Add whitespace-pre-wrap right here
-                          className={`whitespace-pre-wrap text-sm text-gray-600 leading-relaxed break-words text-justify ${
-                            expandedAuthors[a.id] ? "" : "line-clamp-3 overflow-hidden"
-                          }`}
+                          className={`whitespace-pre-wrap text-sm text-gray-600 leading-relaxed break-words text-justify ${expandedAuthors[a.id] ? "" : "line-clamp-3 overflow-hidden"
+                            }`}
                         >
                           {a.bio}
                         </p>

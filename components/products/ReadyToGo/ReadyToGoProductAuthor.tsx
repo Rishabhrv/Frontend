@@ -9,11 +9,11 @@ type Author = {
   profile_image?: string;
   bio?: string;
   status?: string;
-  python_id?: number; 
+  python_id?: number;
 };
 
 type ReadyToGoProductAuthorProps = {
-  initialAuthors?: { id: number; name: string }[]; 
+  initialAuthors?: { id: number; name: string }[];
   error?: string;
   onValidChange?: () => void;
 };
@@ -25,10 +25,10 @@ const normalizeName = (name: string) => {
   if (!name) return "";
   return name
     .toLowerCase()
-    .normalize("NFD") 
-    .replace(/[\u0300-\u036f]/g, "") 
-    .replace(/^(dr\.|dr|prof\.|prof|mr\.|mr|mrs\.|mrs|ms\.|ms)\s+/gi, "") 
-    .replace(/[^a-z0-9]/gi, ""); 
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/^(dr\.|dr|prof\.|prof|mr\.|mr|mrs\.|mrs|ms\.|ms)\s+/gi, "")
+    .replace(/[^a-z0-9]/gi, "");
 };
 
 const ReadyToGoProductAuthor = forwardRef<any, ReadyToGoProductAuthorProps>(
@@ -36,22 +36,25 @@ const ReadyToGoProductAuthor = forwardRef<any, ReadyToGoProductAuthorProps>(
     const [search, setSearch] = useState("");
     const [authors, setAuthors] = useState<Author[]>([]);
     const [selectedAuthors, setSelectedAuthors] = useState<Author[]>([]);
-    
+
     // Form States
     const [authorImage, setAuthorImage] = useState<File | null>(null);
     const [authorBio, setAuthorBio] = useState("");
     const [showCreateForm, setShowCreateForm] = useState(false);
     const [authorImagePreview, setAuthorImagePreview] = useState<string | null>(null);
-    
+
     // New: Track the author currently being edited
     const [editingAuthorId, setEditingAuthorId] = useState<number | null>(null);
-    
+
     const [imageErrors, setImageErrors] = useState<Record<number, boolean>>({});
     const [dbAuthorsFetched, setDbAuthorsFetched] = useState(false);
     const hasImportedRef = useRef(false);
 
     useImperativeHandle(ref, () => ({
       getAuthors: () => selectedAuthors.map((a) => a.id),
+      getFullAuthors: () => selectedAuthors,
+      hasUnsavedAuthor: () => showCreateForm,
+      getSearchTerm: () => search,
     }));
 
     const initialAuthorsStr = JSON.stringify(initialAuthors || []);
@@ -68,7 +71,7 @@ const ReadyToGoProductAuthor = forwardRef<any, ReadyToGoProductAuthorProps>(
           }
         })
         .catch(err => console.error("Failed to fetch authors", err));
-      
+
       return () => { isMounted = false; };
     }, []);
 
@@ -77,7 +80,7 @@ const ReadyToGoProductAuthor = forwardRef<any, ReadyToGoProductAuthorProps>(
       if (!dbAuthorsFetched || hasImportedRef.current) return;
 
       const parsedInitialAuthors = JSON.parse(initialAuthorsStr);
-      
+
       if (parsedInitialAuthors && parsedInitialAuthors.length > 0) {
         hasImportedRef.current = true;
 
@@ -88,7 +91,7 @@ const ReadyToGoProductAuthor = forwardRef<any, ReadyToGoProductAuthorProps>(
           for (const imported of parsedInitialAuthors) {
             const importedClean = normalizeName(imported.name);
             let expressAuthor = authors.find((a) => normalizeName(a.name) === importedClean);
-            
+
             if (expressAuthor) {
               expressAuthor = { ...expressAuthor, python_id: imported.id };
 
@@ -100,7 +103,7 @@ const ReadyToGoProductAuthor = forwardRef<any, ReadyToGoProductAuthorProps>(
                     if (blob.type.startsWith("image/")) {
                       const ext = blob.type.split('/')[1] || 'jpg';
                       const file = new File([blob], `drive-author-${imported.id}.${ext}`, { type: blob.type });
-                      
+
                       const updateData = new FormData();
                       updateData.append("name", expressAuthor.name);
                       updateData.append("profile_image", file);
@@ -128,7 +131,7 @@ const ReadyToGoProductAuthor = forwardRef<any, ReadyToGoProductAuthorProps>(
                     fileToUpload = new File([blob], `drive-author-${imported.id}.${ext}`, { type: blob.type });
                   }
                 }
-              } catch(e) {
+              } catch (e) {
                 setImageErrors((prev) => ({ ...prev, [imported.id]: true }));
               }
 
@@ -142,10 +145,10 @@ const ReadyToGoProductAuthor = forwardRef<any, ReadyToGoProductAuthorProps>(
                 const res = await fetch(`${API_URL}/api/authors`, { method: "POST", body: formData });
                 if (res.ok) {
                   const newDbAuthor = await res.json();
-                  expressAuthor = { ...newDbAuthor, python_id: imported.id }; 
+                  expressAuthor = { ...newDbAuthor, python_id: imported.id };
                   didCreateOrUpdate = true;
                 } else {
-                  continue; 
+                  continue;
                 }
               } catch (e) {
                 console.error("Failed to auto-create author", e);
@@ -157,7 +160,7 @@ const ReadyToGoProductAuthor = forwardRef<any, ReadyToGoProductAuthorProps>(
           }
 
           setSelectedAuthors(allSelected);
-          
+
           if (didCreateOrUpdate) {
             const res = await fetch(`${API_URL}/api/authors`);
             if (res.ok) {
@@ -169,7 +172,7 @@ const ReadyToGoProductAuthor = forwardRef<any, ReadyToGoProductAuthorProps>(
               }));
             }
           }
-          
+
           onValidChange?.();
         };
 
@@ -186,7 +189,7 @@ const ReadyToGoProductAuthor = forwardRef<any, ReadyToGoProductAuthorProps>(
     const addAuthor = (author: Author) => {
       setSelectedAuthors((prev) => [...prev, author]);
       setSearch("");
-      onValidChange?.(); 
+      onValidChange?.();
     };
 
     const removeAuthor = (id: number) => {
@@ -209,9 +212,9 @@ const ReadyToGoProductAuthor = forwardRef<any, ReadyToGoProductAuthorProps>(
       setSearch(author.name);
       setAuthorBio(author.bio || "");
       setEditingAuthorId(author.id);
-      
+
       const pythonId = author.python_id || author.id;
-      
+
       if (author.profile_image) {
         setAuthorImagePreview(`${API_URL}${author.profile_image}`);
       } else if (!imageErrors[pythonId]) {
@@ -219,7 +222,7 @@ const ReadyToGoProductAuthor = forwardRef<any, ReadyToGoProductAuthorProps>(
       } else {
         setAuthorImagePreview(null);
       }
-      
+
       setShowCreateForm(true);
     };
 
@@ -250,9 +253,9 @@ const ReadyToGoProductAuthor = forwardRef<any, ReadyToGoProductAuthorProps>(
           // Update both the main pool and selected list
           setAuthors(prev => prev.map(a => a.id === editingAuthorId ? updatedAuthor : a));
           setSelectedAuthors(prev => prev.map(a => a.id === editingAuthorId ? updatedAuthor : a));
-          
+
           resetForm();
-          onValidChange?.(); 
+          onValidChange?.();
         }
       } else {
         // --- CREATE NEW AUTHOR ---
@@ -266,7 +269,7 @@ const ReadyToGoProductAuthor = forwardRef<any, ReadyToGoProductAuthorProps>(
           setAuthors((prev) => [...prev, data]);
           setSelectedAuthors((prev) => [...prev, data]);
           resetForm();
-          onValidChange?.(); 
+          onValidChange?.();
         }
       }
     };
@@ -392,7 +395,7 @@ const ReadyToGoProductAuthor = forwardRef<any, ReadyToGoProductAuthorProps>(
               >
                 <div className="flex items-center gap-2">
                   <div className="h-8 w-8 rounded-full overflow-hidden bg-gray-300 flex items-center justify-center border border-gray-400">
-                    
+
                     {a.profile_image ? (
                       <img
                         src={`${API_URL}${a.profile_image}`}
@@ -415,7 +418,7 @@ const ReadyToGoProductAuthor = forwardRef<any, ReadyToGoProductAuthorProps>(
                   </div>
                   <span className="text-sm font-medium text-gray-700">{a.name}</span>
                 </div>
-                
+
                 {/* Actions: Edit & Remove */}
                 <div className="flex items-center gap-1">
                   <button
