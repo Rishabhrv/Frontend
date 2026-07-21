@@ -24,18 +24,18 @@ const FIXED_ATTRIBUTES = ["No. Of Pages", "Publication Date", "ISBN"];
 
 const ReadyToGoProductAttributes = forwardRef<any, ReadyToGoProductAttributesProps>(
   ({ initialAttributes, error, onValidChange }, ref) => {
-    
+
     // Initialize state with the 3 fixed attributes
     const [attributes, setAttributes] = useState<Attribute[]>([
       { id: 1, name: "No. Of Pages", values: "", open: true, isCustom: false },
       { id: 2, name: "Publication Date", values: "", open: true, isCustom: false },
       { id: 3, name: "ISBN", values: "", open: true, isCustom: false },
     ]);
-    
+
     const [availableAttributes, setAvailableAttributes] = useState<string[]>([]);
     const [search, setSearch] = useState("");
     const [localError, setLocalError] = useState("");
-    
+
     // Lock ref to prevent infinite loops after populating data
     const hasImportedRef = useRef(false);
     const initialAttributesStr = JSON.stringify(initialAttributes || []);
@@ -70,7 +70,7 @@ const ReadyToGoProductAttributes = forwardRef<any, ReadyToGoProductAttributesPro
       if (hasImportedRef.current) return;
 
       const parsed = JSON.parse(initialAttributesStr);
-      
+
       // Wait until we actually receive data from the parent's API fetch
       if (parsed && parsed.length > 0) {
         hasImportedRef.current = true; // Lock it
@@ -80,8 +80,8 @@ const ReadyToGoProductAttributes = forwardRef<any, ReadyToGoProductAttributesPro
 
           parsed.forEach((importedAttr: { name: string; value: string }) => {
             // Safely handle nulls from the database
-            const safeValue = String(importedAttr.value || ""); 
-            
+            const safeValue = String(importedAttr.value || "");
+
             // Find existing attribute (case insensitive)
             const existingIndex = newAttrs.findIndex(
               (a) => a.name.toLowerCase() === importedAttr.name.toLowerCase()
@@ -102,9 +102,9 @@ const ReadyToGoProductAttributes = forwardRef<any, ReadyToGoProductAttributesPro
             }
           });
 
-          return newAttrs; 
+          return newAttrs;
         });
-        
+
         onValidChange?.();
       }
     }, [initialAttributesStr, onValidChange]);
@@ -141,17 +141,17 @@ const ReadyToGoProductAttributes = forwardRef<any, ReadyToGoProductAttributesPro
         // 2. If missing, set a local error and return empty to fail validation
         if (missingFixed.length > 0) {
           setLocalError(`Required attributes missing: ${missingFixed.join(", ")}`);
-          return []; 
+          return [];
         }
 
-        setLocalError(""); 
-        
+        setLocalError("");
+
         // 3. Return valid filled attributes
         return attributes.filter(
           (a) => a.name.trim() !== "" && a.values.trim() !== ""
         );
       },
-      
+
       // 👇 NEW METHOD: Expose exactly which fixed attributes are missing for the UI list
       getMissingFixedAttributes: () => {
         return FIXED_ATTRIBUTES.filter((name) => {
@@ -202,7 +202,7 @@ const ReadyToGoProductAttributes = forwardRef<any, ReadyToGoProductAttributesPro
                   type={inputType}
                   value={displayValue}
                   onChange={(e) => update(attr.id, "values", e.target.value)}
-                  className={`w-full rounded border px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 ${localError && attr.values.trim() === "" ? "border-red-400" : "border-gray-300"}`}
+                  className={`w-full rounded border px-3 py-2 text-sm focus:outline-none  focus:ring-blue-500 ${localError && attr.values.trim() === "" ? "border-red-400" : "border-gray-300"}`}
                   placeholder={`Enter ${attr.name.toLowerCase()}`}
                   min={name === "No. Of Pages" ? "1" : undefined}
                 />
@@ -229,7 +229,7 @@ const ReadyToGoProductAttributes = forwardRef<any, ReadyToGoProductAttributesPro
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search existing attribute"
-              className="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:outline-none  focus:ring-blue-500"
             />
             {search.length >= 2 && filteredAttributes.length > 0 && (
               <div className="absolute z-10 mt-1 w-full rounded border border-gray-300 bg-white shadow-lg max-h-48 overflow-y-auto">
@@ -280,7 +280,7 @@ const ReadyToGoProductAttributes = forwardRef<any, ReadyToGoProductAttributesPro
                       value={attr.name}
                       disabled={!attr.isCustom}
                       onChange={(e) => update(attr.id, "name", e.target.value)}
-                      className={`w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 ${!attr.isCustom ? "bg-gray-100 text-gray-500 cursor-not-allowed" : ""}`}
+                      className={`w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none  focus:ring-blue-500 ${!attr.isCustom ? "bg-gray-100 text-gray-500 cursor-not-allowed" : ""}`}
                     />
                   </div>
                   <div>
@@ -290,7 +290,7 @@ const ReadyToGoProductAttributes = forwardRef<any, ReadyToGoProductAttributesPro
                       placeholder="Use | to separate values"
                       value={attr.values}
                       onChange={(e) => update(attr.id, "values", e.target.value)}
-                      className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none  focus:ring-blue-500"
                     />
                   </div>
                 </div>

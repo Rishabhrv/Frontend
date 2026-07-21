@@ -16,7 +16,7 @@ export default function ProductSectionsRenderer({ sections }: { sections?: Secti
   if (!sections || sections.length === 0) return null;
 
   return (
-    <div className="mt-12 sm:mt-20 space-y-16 sm:space-y-24 px-5 xl:px-1 border-b border-gray-200 pb-10">
+    <div className="mt-12 sm:mt-20  px-5 xl:px-1 border-b border-gray-200 pb-10">
       {sections.map((section, idx) => {
         const { type, data } = section;
 
@@ -24,7 +24,7 @@ export default function ProductSectionsRenderer({ sections }: { sections?: Secti
           <div key={section.id || idx} className="w-full">
             {/* Section Title */}
             {data.title && (
-              <h2 className="text-xl sm:text-2xl font-serif font-semibold my-6 mt-10">
+              <h2 className="text-xl sm:text-2xl font-serif font-semibold my-6 mt-7 sm:mt-8 sm:my-6">
                 {data.title}
               </h2>
             )}
@@ -43,12 +43,12 @@ export default function ProductSectionsRenderer({ sections }: { sections?: Secti
                   />
                 </div>
                 {data.heading && (
-                  <h3 className="text-lg sm:text-xl font-serif font-semibold text-gray-900 py-5 pb-0">
+                  <h3 className="text-lg sm:text-xl font-serif font-semibold text-gray-900 py-4  pb-0 sm:pb-0">
                     {data.heading}
                   </h3>
                 )}
                 {data.caption && (
-                  <p className=" mt-5 text-sm text-gray-500 text-left content-justify italic">{data.caption}</p>
+                  <p className=" mt-2 sm:mt-0 text-sm text-gray-500 text-left content-justify italic">{data.caption}</p>
                 )}
               </div>
             )}

@@ -25,14 +25,14 @@ const FIXED_ATTRIBUTES = ["No. Of Pages", "Publication Date", "ISBN"];
 
 const ProductAttributes = forwardRef<any, ProductAttributesProps>(
   ({ mode = "add", productId, error, onValidChange }, ref) => {
-    
+
     // Initialize state with the 3 fixed attributes
     const [attributes, setAttributes] = useState<Attribute[]>([
       { id: 1, name: "No. Of Pages", values: "", open: true, isCustom: false },
       { id: 2, name: "Publication Date", values: "", open: true, isCustom: false },
       { id: 3, name: "ISBN", values: "", open: true, isCustom: false },
     ]);
-    
+
     const [availableAttributes, setAvailableAttributes] = useState<string[]>([]);
     const [search, setSearch] = useState("");
     const [localError, setLocalError] = useState(""); // ← NEW: Tracks missing required fields
@@ -122,11 +122,11 @@ const ProductAttributes = forwardRef<any, ProductAttributesProps>(
         // 2. If missing, set a local error and return empty to fail the parent form's validation
         if (missingFixed.length > 0) {
           setLocalError(`Required attributes missing: ${missingFixed.join(", ")}`);
-          return []; 
+          return [];
         }
 
         setLocalError(""); // Clear if passed
-        
+
         // 3. Return all valid filled attributes to the parent
         return attributes.filter(
           (a) => a.name.trim() !== "" && a.values.trim() !== ""
@@ -180,7 +180,7 @@ const ProductAttributes = forwardRef<any, ProductAttributesProps>(
                   type={inputType}
                   value={displayValue}
                   onChange={(e) => update(attr.id, "values", e.target.value)}
-                  className={`w-full rounded border px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 ${localError && attr.values.trim() === "" ? "border-red-400" : "border-gray-300"}`}
+                  className={`w-full rounded border px-3 py-2 text-sm focus:outline-none  focus:ring-blue-500 ${localError && attr.values.trim() === "" ? "border-red-400" : "border-gray-300"}`}
                   placeholder={`Enter ${attr.name.toLowerCase()}`}
                   min={name === "No. Of Pages" ? "1" : undefined}
                 />
@@ -207,7 +207,7 @@ const ProductAttributes = forwardRef<any, ProductAttributesProps>(
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search existing attribute"
-              className="w-full rounded border border-gray-300 px-3 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full rounded border border-gray-300 px-3 py-1 text-sm focus:outline-none  focus:ring-blue-500"
             />
             {search.length >= 2 && filteredAttributes.length > 0 && (
               <div className="absolute z-10 mt-1 w-full rounded border border-gray-300 bg-white shadow-lg max-h-48 overflow-y-auto">
@@ -258,7 +258,7 @@ const ProductAttributes = forwardRef<any, ProductAttributesProps>(
                       value={attr.name}
                       disabled={!attr.isCustom}
                       onChange={(e) => update(attr.id, "name", e.target.value)}
-                      className={`w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 ${!attr.isCustom ? "bg-gray-100 text-gray-500 cursor-not-allowed" : ""}`}
+                      className={`w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none  focus:ring-blue-500 ${!attr.isCustom ? "bg-gray-100 text-gray-500 cursor-not-allowed" : ""}`}
                     />
                   </div>
                   <div>
@@ -268,7 +268,7 @@ const ProductAttributes = forwardRef<any, ProductAttributesProps>(
                       placeholder="Use | to separate values"
                       value={attr.values}
                       onChange={(e) => update(attr.id, "values", e.target.value)}
-                      className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none  focus:ring-blue-500"
                     />
                   </div>
                 </div>

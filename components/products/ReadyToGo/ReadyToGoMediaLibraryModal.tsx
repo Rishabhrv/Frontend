@@ -63,7 +63,7 @@ export default function ReadyToGoMediaLibraryModal({
   const [fileName, setFileName] = useState("");
   const [toastOpen, setToastOpen] = useState(false);
   const [toastMsg, setToastMsg] = useState("");
-  
+
   const [tempImages, setTempImages] = useState<MediaImage[]>(globalSessionTempImages[folder] || []);
 
   const activeImage = selected.length > 0 ? selected[selected.length - 1] : null;
@@ -146,7 +146,7 @@ export default function ReadyToGoMediaLibraryModal({
         const res = await fetch(`${API_URL}/api/media/upload?folder=${folder}`, { method: "POST", body: fd });
         const data = await res.json();
         const fileUrl = data.url || data.image || data.filePath || data.path;
-        
+
         if (fileUrl) {
           newlyUploaded.push({
             id: data.id || data.filename || `temp-${Date.now()}-${Math.random()}`,
@@ -154,7 +154,7 @@ export default function ReadyToGoMediaLibraryModal({
             filename: data.filename || file.name,
           });
         }
-      } catch {}
+      } catch { }
     }
 
     setUploading(false);
@@ -259,7 +259,7 @@ export default function ReadyToGoMediaLibraryModal({
                 <div className="flex items-center gap-3 px-4 py-2.5 border-b border-gray-100 bg-gray-50 shrink-0">
                   <div className="relative w-56">
                     <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-                    <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search images…" className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                    <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search images…" className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded focus:outline-none  focus:ring-blue-500" />
                   </div>
                   <span className="text-xs text-gray-400 ml-auto">
                     {displayImages.length > 0 ? `${displayImages.length} image${displayImages.length !== 1 ? "s" : ""}` : ""}
@@ -283,9 +283,9 @@ export default function ReadyToGoMediaLibraryModal({
                     <div className="grid grid-cols-5 sm:grid-cols-7 md:grid-cols-8 gap-1.5">
                       {displayImages.map((img) => {
                         const isSel = selected.some((s) => s.id === img.id);
-                        
-                        const imgSrc = img.url.startsWith("http") || img.url.startsWith("blob:") 
-                          ? img.url 
+
+                        const imgSrc = img.url.startsWith("http") || img.url.startsWith("blob:")
+                          ? img.url
                           : `${API_URL}${img.url}`;
 
                         return (
@@ -303,11 +303,11 @@ export default function ReadyToGoMediaLibraryModal({
                             }}
                             className={`relative aspect-square rounded overflow-hidden border-2 transition-all ${isSel ? "border-blue-600 shadow-md" : "border-transparent hover:border-gray-300"}`}
                           >
-                            <img 
-                              src={imgSrc} 
-                              alt={productTitle ? `${productTitle} - ${img.alt_text || img.filename}` : (img.alt_text || img.filename)} 
-                              className="w-full h-full object-cover" 
-                              loading="lazy" 
+                            <img
+                              src={imgSrc}
+                              alt={productTitle ? `${productTitle} - ${img.alt_text || img.filename}` : (img.alt_text || img.filename)}
+                              className="w-full h-full object-cover"
+                              loading="lazy"
                             />
                             {isSel && (
                               <div className="absolute top-1 right-1 w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center shadow">
@@ -326,24 +326,24 @@ export default function ReadyToGoMediaLibraryModal({
                 <div className="w-60 border-l border-gray-200 overflow-y-auto shrink-0 flex flex-col">
                   <div className="p-4 border-b border-gray-100 bg-gray-50">
                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Attachment Details</p>
-                    <img 
-                      src={activeImage.url.startsWith("http") || activeImage.url.startsWith("blob:") ? activeImage.url : `${API_URL}${activeImage.url}`} 
-                      alt={productTitle ? `${productTitle} - ${activeImage.filename}` : activeImage.filename} 
-                      className="w-full rounded border border-gray-200 object-cover max-h-36" 
+                    <img
+                      src={activeImage.url.startsWith("http") || activeImage.url.startsWith("blob:") ? activeImage.url : `${API_URL}${activeImage.url}`}
+                      alt={productTitle ? `${productTitle} - ${activeImage.filename}` : activeImage.filename}
+                      className="w-full rounded border border-gray-200 object-cover max-h-36"
                     />
                   </div>
                   <div className="p-4 space-y-2 text-xs text-gray-600 flex-1">
                     <p className="font-medium text-gray-800 break-all leading-snug">{activeImage.filename}</p>
-                    
+
                     <div className="pt-2 space-y-3">
                       <div>
                         <label className="block text-xs font-semibold text-gray-600 mb-1">File Name</label>
-                        <input type="text" value={fileName} onChange={(e) => setFileName(e.target.value)} className="w-full border border-gray-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                        <input type="text" value={fileName} onChange={(e) => setFileName(e.target.value)} className="w-full border border-gray-300 rounded px-2 py-1.5 text-xs focus:outline-none  focus:ring-blue-500" />
                       </div>
                       <div>
                         <label className="block text-xs font-semibold text-gray-600 mb-1">Alt Text</label>
                         {/* 👇 Input field binds perfectly to altText state */}
-                        <input type="text" value={altText} onChange={(e) => setAltText(e.target.value)} placeholder="Describe the image…" className="w-full border border-gray-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                        <input type="text" value={altText} onChange={(e) => setAltText(e.target.value)} placeholder="Describe the image…" className="w-full border border-gray-300 rounded px-2 py-1.5 text-xs focus:outline-none  focus:ring-blue-500" />
                       </div>
                     </div>
 
