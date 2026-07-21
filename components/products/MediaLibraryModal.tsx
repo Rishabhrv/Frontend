@@ -21,12 +21,12 @@ export type MediaImage = {
 type Props = {
   open: boolean;
   onClose: () => void;
-  onSelect: (data: any) => void; 
+  onSelect: (data: any) => void;
   folder: "products" | "gallery";
   productId?: number;
   title?: string;
   confirmLabel?: string;
-  multiple?: boolean; 
+  multiple?: boolean;
 };
 
 export default function MediaLibraryModal({
@@ -37,7 +37,7 @@ export default function MediaLibraryModal({
   productId,
   title = "Product image",
   confirmLabel = "Set product image",
-  multiple = false, 
+  multiple = false,
 }: Props) {
   const [tab, setTab] = useState<"library" | "upload">("library");
   const [images, setImages] = useState<MediaImage[]>([]);
@@ -139,7 +139,7 @@ export default function MediaLibraryModal({
             filename: data.filename,
           });
         }
-      } catch {}
+      } catch { }
     }
 
     setUploading(false);
@@ -187,7 +187,7 @@ export default function MediaLibraryModal({
   };
 
   // 🔥 FIX: Added search filtering for temporary images 
-  const displayImages = !productId 
+  const displayImages = !productId
     ? tempImages.filter(img => img.filename.toLowerCase().includes(search.toLowerCase()))
     : images;
 
@@ -241,7 +241,7 @@ export default function MediaLibraryModal({
                 <div className="flex items-center gap-3 px-4 py-2.5 border-b border-gray-100 bg-gray-50 shrink-0">
                   <div className="relative w-56">
                     <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-                    <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search images…" className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                    <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search images…" className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded focus:outline-none  focus:ring-blue-500" />
                   </div>
                   <span className="text-xs text-gray-400 ml-auto">
                     {displayImages.length > 0 ? `${displayImages.length} image${displayImages.length !== 1 ? "s" : ""}` : ""}
@@ -328,16 +328,16 @@ export default function MediaLibraryModal({
                     )}
                     {activeImage.size && <p className="text-gray-400">{(activeImage.size / 1024).toFixed(0)} KB</p>}
                     {activeImage.width && activeImage.height && <p className="text-gray-400">{activeImage.width} × {activeImage.height} px</p>}
-                    
+
                     <div className="pt-2 space-y-3">
                       <div>
                         <label className="block text-xs font-semibold text-gray-600 mb-1">File Name</label>
-                        <input type="text" value={fileName} onChange={(e) => setFileName(e.target.value)} className="w-full border border-gray-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                        <input type="text" value={fileName} onChange={(e) => setFileName(e.target.value)} className="w-full border border-gray-300 rounded px-2 py-1.5 text-xs focus:outline-none  focus:ring-blue-500" />
                         <p className="text-[10px] text-gray-400 mt-1">Extension will remain same</p>
                       </div>
                       <div>
                         <label className="block text-xs font-semibold text-gray-600 mb-1">Alt Text</label>
-                        <input type="text" value={altText} onChange={(e) => setAltText(e.target.value)} placeholder="Describe the image…" className="w-full border border-gray-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                        <input type="text" value={altText} onChange={(e) => setAltText(e.target.value)} placeholder="Describe the image…" className="w-full border border-gray-300 rounded px-2 py-1.5 text-xs focus:outline-none  focus:ring-blue-500" />
                       </div>
                     </div>
 

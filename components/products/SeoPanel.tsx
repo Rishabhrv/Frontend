@@ -28,7 +28,7 @@ type Props = {
   onKeywordsChange: (v: string) => void;
   onSlugChange?: (v: string) => void;
   productImages?: ProductImage[];
-  errors?: SeoErrors; 
+  errors?: SeoErrors;
   imprint?: "agph" | "agclassics"; // ← NEW: Accept imprint prop
 };
 
@@ -38,7 +38,7 @@ const stripHtml = (html: string) =>
 const wordCount = (text: string) =>
   text.trim().split(/\s+/).filter(Boolean).length;
 
-const escapeRegExp = (text: string) => 
+const escapeRegExp = (text: string) =>
   text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 type TabType = "seo" | "readability";
@@ -80,25 +80,25 @@ export default function SeoPanel({
   const { internalLinksCount, outboundLinksCount } = useMemo(() => {
     let internal = 0;
     let outbound = 0;
-    
+
     const regex = /<a\s+(?:[^>]*?\s+)?href=(["'])(.*?)\1/gi;
     let match;
-    
+
     // Choose base domain for internal link tracking based on imprint
     const activeUrl = imprint === "agclassics" ? AGCLASSIC_URL : SITE_URL;
     const baseDomain = activeUrl ? activeUrl.replace(/^https?:\/\//, '') : '';
 
     while ((match = regex.exec(description)) !== null) {
       const href = match[2].toLowerCase();
-      
+
       if (href.startsWith('/') || href.startsWith('#') || href.startsWith('mailto:') || (baseDomain && href.includes(baseDomain))) {
         internal++;
-      } 
+      }
       else if (href.startsWith('http')) {
         outbound++;
       }
     }
-    
+
     return { internalLinksCount: internal, outboundLinksCount: outbound };
   }, [description, imprint]); // ← Added imprint to dependencies
 
@@ -134,13 +134,13 @@ export default function SeoPanel({
     const density = words > 0 ? (kpCount / words) * 100 : 0;
 
     return [
-      { 
-        id: "outbound", 
-        label: "Outbound links", 
-        pass: outboundLinksCount > 0, 
-        msg: outboundLinksCount > 0 
-          ? `Good job! You have ${outboundLinksCount} outbound link(s).` 
-          : "No outbound links appear in this page. Add some!" 
+      {
+        id: "outbound",
+        label: "Outbound links",
+        pass: outboundLinksCount > 0,
+        msg: outboundLinksCount > 0
+          ? `Good job! You have ${outboundLinksCount} outbound link(s).`
+          : "No outbound links appear in this page. Add some!"
       },
       {
         id: "img_alt", label: "Keyphrase in image alt attributes",
@@ -164,13 +164,13 @@ export default function SeoPanel({
             ? `${totalImages} image${totalImages > 1 ? "s" : ""} found — all have alt text. Good job!`
             : `${totalImages} image${totalImages > 1 ? "s" : ""} found, but ${imagesWithoutAlt.length} ${imagesWithoutAlt.length > 1 ? "are" : "is"} missing alt text.`,
       },
-      { 
-        id: "internal_links", 
-        label: "Internal links", 
-        pass: internalLinksCount > 0, 
-        msg: internalLinksCount > 0 
-          ? `You have ${internalLinksCount} internal link(s). Good job!` 
-          : "No internal links appear in this page, make sure to add some!" 
+      {
+        id: "internal_links",
+        label: "Internal links",
+        pass: internalLinksCount > 0,
+        msg: internalLinksCount > 0
+          ? `You have ${internalLinksCount} internal link(s). Good job!`
+          : "No internal links appear in this page, make sure to add some!"
       },
       {
         id: "kp_intro", label: "Keyphrase in introduction",
@@ -254,7 +254,7 @@ export default function SeoPanel({
       if (beginnings[i] && beginnings[i - 1] && beginnings[i].length > 2 && beginnings[i] === beginnings[i - 1]) consecutiveCount++;
     }
     const subheadingOk = h2h3Count >= 1 || words < 300;
-    const transitionWords = ["however","therefore","furthermore","moreover","consequently","additionally","nevertheless","meanwhile","thus","hence","subsequently","accordingly","although","because","since","while","whereas","unless","despite","besides","instead","otherwise","similarly","likewise","first","second","third","finally","in conclusion","in summary","for example","for instance","in addition","as a result","on the other hand","in contrast","in fact"];
+    const transitionWords = ["however", "therefore", "furthermore", "moreover", "consequently", "additionally", "nevertheless", "meanwhile", "thus", "hence", "subsequently", "accordingly", "although", "because", "since", "while", "whereas", "unless", "despite", "besides", "instead", "otherwise", "similarly", "likewise", "first", "second", "third", "finally", "in conclusion", "in summary", "for example", "for instance", "in addition", "as a result", "on the other hand", "in contrast", "in fact"];
     const transitionSentences = sentences.filter(s => transitionWords.some(tw => s.toLowerCase().includes(tw)));
     const transitionRate = sentenceCount > 0 ? (transitionSentences.length / sentenceCount) * 100 : 0;
     return [
@@ -277,10 +277,10 @@ export default function SeoPanel({
   const isAgClassics = imprint === "agclassics";
   const siteName = isAgClassics ? "AG Classics" : "AGPH Books Store";
   const siteFavicon = isAgClassics ? "/images/logo/AGClaasiclogo2.png" : "/images/logo/AGPH-Logo-Black-600x290.webp"; // Assuming you have an agclassics icon, fallback defaults otherwise
-  
+
   const baseUrl = isAgClassics ? AGCLASSIC_URL : SITE_URL;
   const cleanBaseUrl = baseUrl ? baseUrl.replace(/^https?:\/\//, '') : (isAgClassics ? 'agclassics.in' : 'agphbooks.com');
-  
+
   const previewTitle = metaTitle || title || "Page Title";
   const previewSlug = slug || "page-slug";
   const previewDesc = metaDescription || plainDesc.slice(0, 155) || "Page description appears here…";
@@ -326,7 +326,7 @@ export default function SeoPanel({
       {tab === "seo" && (
         <div className="divide-y divide-gray-100">
 
-{/* Focus keyphrase */}
+          {/* Focus keyphrase */}
           <div className="px-4 py-4 space-y-1">
             <label className="block text-xs font-semibold text-gray-700">
               Focus keyphrase <span className="text-red-500">*</span>
@@ -339,7 +339,7 @@ export default function SeoPanel({
                 onKeywordsChange(sanitizedValue);
               }}
               placeholder="e.g. 35 Inspiring Stories"
-              className={`w-full border rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 ${errors.keywords ? "border-red-400 bg-red-50" : "border-gray-300"}`}
+              className={`w-full border rounded px-2.5 py-1.5 text-sm focus:outline-none  focus:ring-green-500 focus:border-green-500 ${errors.keywords ? "border-red-400 bg-red-50" : "border-gray-300"}`}
             />
             {errors.keywords && <p className="text-red-500 text-xs mt-1">{errors.keywords}</p>}
           </div>
@@ -397,7 +397,7 @@ export default function SeoPanel({
                 value={metaTitle}
                 onChange={(e) => onMetaTitleChange(e.target.value)}
                 placeholder={title || "Enter SEO title"}
-                className={`w-full border rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 ${errors.metaTitle ? "border-red-400 bg-red-50" : "border-gray-300"}`}
+                className={`w-full border rounded px-2.5 py-1.5 text-sm focus:outline-none  focus:ring-green-500 focus:border-green-500 ${errors.metaTitle ? "border-red-400 bg-red-50" : "border-gray-300"}`}
               />
               {errors.metaTitle && <p className="text-red-500 text-xs mt-1">{errors.metaTitle}</p>}
               <div className="mt-1.5 flex items-center gap-2">
@@ -419,7 +419,7 @@ export default function SeoPanel({
                 onChange={(e) => onSlugChange?.(e.target.value)}
                 placeholder="page-url-slug"
                 readOnly={!onSlugChange}
-                className={`w-full border rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 ${errors.slug ? "border-red-400 bg-red-50" : "border-gray-300"} ${!onSlugChange ? "bg-gray-50 text-gray-500" : ""}`}
+                className={`w-full border rounded px-2.5 py-1.5 text-sm focus:outline-none  focus:ring-green-500 focus:border-green-500 ${errors.slug ? "border-red-400 bg-red-50" : "border-gray-300"} ${!onSlugChange ? "bg-gray-50 text-gray-500" : ""}`}
               />
               {errors.slug && <p className="text-red-500 text-xs mt-1">{errors.slug}</p>}
             </div>
@@ -434,7 +434,7 @@ export default function SeoPanel({
                 value={metaDescription}
                 onChange={(e) => onMetaDescriptionChange(e.target.value)}
                 placeholder="Write a compelling meta description (120–160 chars)…"
-                className={`w-full border rounded px-2.5 py-1.5 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 ${errors.metaDescription ? "border-red-400 bg-red-50" : "border-gray-300"}`}
+                className={`w-full border rounded px-2.5 py-1.5 text-sm resize-none focus:outline-none  focus:ring-green-500 focus:border-green-500 ${errors.metaDescription ? "border-red-400 bg-red-50" : "border-gray-300"}`}
               />
               {errors.metaDescription && <p className="text-red-500 text-xs mt-1">{errors.metaDescription}</p>}
               <div className="mt-1.5 flex items-center gap-2">

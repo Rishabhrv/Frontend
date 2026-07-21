@@ -69,7 +69,7 @@ const FieldInput = ({
         onChange={onChange}
         step={step}
         placeholder={placeholder}
-        className={`border border-slate-200 rounded-md ${prefix ? 'pl-6 pr-3' : 'px-2.5'} py-1.5 text-sm text-slate-800 placeholder:text-slate-300 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none w-full bg-white transition-colors ${mono ? 'font-mono' : ''}`}
+        className={`border border-slate-200 rounded-md ${prefix ? 'pl-6 pr-3' : 'px-2.5'} py-1.5 text-sm text-slate-800 placeholder:text-slate-300  focus:ring-blue-500 focus:border-blue-500 outline-none w-full bg-white transition-colors ${mono ? 'font-mono' : ''}`}
       />
     </div>
   </div>
@@ -138,7 +138,7 @@ const BookRow = ({ book, onSyncComplete }: { book: any, onSyncComplete: () => vo
         setFormData(prev => ({
           ...prev,
           title: json.data.title || prev.title,
-          description: json.data.description || prev.description,
+          description: json.data.description ? json.data.description.replace(/(<([^>]+)>)/gi, "") : prev.description,
           sell_price: json.data.sell_price || prev.sell_price, // <-- Catch and set the sell_price here
           image_url: json.data.image_url ? `${API_URL}${json.data.image_url}` : prev.image_url,
           other_image_1: json.data.other_image_1 ? `${API_URL}${json.data.other_image_1}` : prev.other_image_1,
@@ -192,7 +192,7 @@ const BookRow = ({ book, onSyncComplete }: { book: any, onSyncComplete: () => vo
     other_image_2: "",
     other_image_3: "",
     keywords: book.amazon_defaults?.keywords || book.tags || "",
-    description: book.amazon_defaults?.description || book.about_book || "",
+    description: (book.amazon_defaults?.description || book.about_book || "").replace(/(<([^>]+)>)/gi, ""),
   });
 
   useEffect(() => {
@@ -341,6 +341,7 @@ const BookRow = ({ book, onSyncComplete }: { book: any, onSyncComplete: () => vo
 
       const payload = {
         ...formData,
+        description: formData.description ? formData.description.replace(/(<([^>]+)>)/gi, "") : "",
         session_id: "admin_dash_" + Date.now()
       };
 
@@ -488,7 +489,7 @@ const BookRow = ({ book, onSyncComplete }: { book: any, onSyncComplete: () => vo
               value={selectedUserId}
               onChange={(e) => setSelectedUserId(e.target.value)}
               disabled={status === 'loading' || status === 'success' || isPending}
-              className={`w-32 px-2 py-1.5 text-xs border rounded-md bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-slate-700 disabled:bg-slate-50 disabled:text-slate-400 ${!selectedUserId && status === 'error' ? 'border-rose-300' : 'border-slate-200'}`}
+              className={`w-32 px-2 py-1.5 text-xs border rounded-md bg-white focus:outline-none  focus:ring-blue-500 focus:border-blue-500 text-slate-700 disabled:bg-slate-50 disabled:text-slate-400 ${!selectedUserId && status === 'error' ? 'border-rose-300' : 'border-slate-200'}`}
             >
               <option value="" disabled>Assign User *</option>
               {activeUsers.map(u => (
@@ -637,7 +638,7 @@ const BookRow = ({ book, onSyncComplete }: { book: any, onSyncComplete: () => vo
                     name="binding"
                     value={formData.binding}
                     onChange={handleChange}
-                    className="border border-slate-200 rounded-md px-2.5 py-1.5 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none w-full bg-white text-slate-700"
+                    className="border border-slate-200 rounded-md px-2.5 py-1.5 text-sm  focus:ring-blue-500 focus:border-blue-500 outline-none w-full bg-white text-slate-700"
                   >
                     <option value="paperback">Paperback</option>
                     <option value="hardcover">Hardcover</option>
@@ -684,7 +685,7 @@ const BookRow = ({ book, onSyncComplete }: { book: any, onSyncComplete: () => vo
                     name="language_type"
                     value={formData.language_type}
                     onChange={handleChange}
-                    className="border border-slate-200 rounded-md px-2.5 py-1.5 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none w-full bg-white text-slate-700"
+                    className="border border-slate-200 rounded-md px-2.5 py-1.5 text-sm  focus:ring-blue-500 focus:border-blue-500 outline-none w-full bg-white text-slate-700"
                   >
                     <option value="original">Original Language</option>
                     <option value="published">Published</option>
@@ -743,13 +744,13 @@ const BookRow = ({ book, onSyncComplete }: { book: any, onSyncComplete: () => vo
           <SectionCard title="Content & Description">
             <FieldInput label="Keywords" hint="(comma separated, max 5)" name="keywords" value={formData.keywords} onChange={handleChange} />
             <div className="flex flex-col gap-1">
-              <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Product Description (HTML supported)</label>
+              <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Product Description</label>
               <textarea
                 name="description"
                 value={formData.description}
                 onChange={handleChange}
                 rows={10}
-                className="border border-slate-200 rounded-md px-2.5 py-1.5 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none w-full resize-y font-mono text-[13px] bg-white text-slate-800"
+                className="border border-slate-200 rounded-md px-2.5 py-1.5 text-sm  focus:ring-blue-500 focus:border-blue-500 outline-none w-full resize-y font-mono text-[13px] bg-white text-slate-800"
               />
             </div>
           </SectionCard>
@@ -835,7 +836,7 @@ export default function AmazonProductTable() {
               placeholder="Search titles..."
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              className="rounded-md border border-slate-200 pl-8 pr-3 py-1.5 text-sm text-slate-800 placeholder:text-slate-300 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 w-full sm:w-64 bg-white transition-colors"
+              className="rounded-md border border-slate-200 pl-8 pr-3 py-1.5 text-sm text-slate-800 placeholder:text-slate-300 focus:outline-none  focus:ring-blue-500 focus:border-blue-500 w-full sm:w-64 bg-white transition-colors"
             />
           </div>
           <button type="submit" className="rounded-md px-3.5 py-1.5 text-sm bg-blue-600 text-white font-semibold cursor-pointer hover:bg-blue-700 transition-colors">
@@ -992,7 +993,7 @@ const ImagePreviewInput = ({
               if (e.key === 'Enter') setIsEditing(false);
             }}
             className={`border ${hasError ? 'border-rose-300 focus:ring-rose-500' : 'border-slate-200 focus:ring-blue-500 focus:border-blue-500'
-              } rounded-md px-2.5 py-1.5 text-sm focus:ring-1 outline-none w-full bg-white transition-colors text-slate-800`}
+              } rounded-md px-2.5 py-1.5 text-sm  outline-none w-full bg-white transition-colors text-slate-800`}
           />
           <button
             type="button"
@@ -1094,7 +1095,7 @@ const CascadingBrowseNodeSelect = ({
           key={i}
           value={selections[i] || ""}
           onChange={(e) => handleSelectChange(i, e.target.value)}
-          className="border border-slate-200 rounded-md px-2.5 py-1.5 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none w-full bg-slate-50 text-slate-700"
+          className="border border-slate-200 rounded-md px-2.5 py-1.5 text-sm  focus:ring-blue-500 focus:border-blue-500 outline-none w-full bg-slate-50 text-slate-700"
         >
           <option value="" disabled>Select {i === 0 ? 'category' : 'subcategory'}...</option>
           {level.options.map((opt: string) => (

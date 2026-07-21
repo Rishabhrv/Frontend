@@ -290,7 +290,7 @@ const ReadyToGoProductAuthor = forwardRef<any, ReadyToGoProductAuthorProps>(
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder={editingAuthorId ? "Edit author name" : "Search or add author"}
-          className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="w-full border rounded px-3 py-2 text-sm focus:outline-none  focus:ring-blue-500"
         />
 
         {/* Hide dropdown if currently editing to prevent UI confusion */}
@@ -359,7 +359,7 @@ const ReadyToGoProductAuthor = forwardRef<any, ReadyToGoProductAuthorProps>(
                 placeholder="Author bio"
                 value={authorBio}
                 onChange={(e) => setAuthorBio(e.target.value)}
-                className="w-full border rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full border rounded px-2 py-1 text-sm focus:outline-none  focus:ring-blue-500"
                 rows={3}
               />
             </div>

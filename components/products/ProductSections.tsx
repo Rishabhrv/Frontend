@@ -51,6 +51,11 @@ const ProductSections = forwardRef(({ productId, initialSections }: Props, ref) 
   }));
 
   const addSection = (type: SectionType) => {
+    if (sections.length >= 10) {
+      alert("Maximum of 10 sections allowed.");
+      setPickerOpen(false);
+      return;
+    }
     const def = getSectionDef(type);
     setSections((prev) => [...prev, { uid: nextUid(), type, data: { ...(def?.defaultData || {}) } }]);
     setPickerOpen(false);
@@ -264,8 +269,14 @@ const ProductSections = forwardRef(({ productId, initialSections }: Props, ref) 
           </div>
           <button
             type="button"
-            onClick={() => setPickerOpen(true)}
-            className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2 text-sm font-medium text-white hover:from-blue-700 hover:to-indigo-700 shadow-sm hover:shadow transition-all cursor-pointer"
+            onClick={() => {
+              if (sections.length < 10) setPickerOpen(true);
+            }}
+            disabled={sections.length >= 10}
+            className={`flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium text-white shadow-sm transition-all ${sections.length >= 10
+                ? "bg-gray-400 cursor-not-allowed opacity-70"
+                : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 hover:shadow cursor-pointer"
+              }`}
           >
             <Plus className="w-4 h-4" /> Add Section
           </button>
@@ -385,7 +396,7 @@ const ProductSections = forwardRef(({ productId, initialSections }: Props, ref) 
                         placeholder="e.g. Behind the Scenes"
                         value={section.data.title || ""}
                         onChange={(e) => updateField(section.uid, "title", e.target.value)}
-                        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-800 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all"
+                        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-800 placeholder:text-gray-300 focus:outline-none  focus:border-blue-400 transition-all"
                       />
                     </div>
 
@@ -417,7 +428,7 @@ const ProductSections = forwardRef(({ productId, initialSections }: Props, ref) 
                                 updateField(section.uid, "alt", e.target.value);
                               }}
                               placeholder="Enter heading and alt text"
-                              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all"
+                              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-300 focus:outline-none  focus:border-blue-400 transition-all"
                             />
                           </div>
                           <div>
@@ -434,7 +445,7 @@ const ProductSections = forwardRef(({ productId, initialSections }: Props, ref) 
                                 }
                               }}
                               placeholder="Visible caption below the image"
-                              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all resize-none"
+                              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-300 focus:outline-none  focus:border-blue-400 transition-all resize-none"
                             />
                           </div>
                         </div>
@@ -465,7 +476,7 @@ const ProductSections = forwardRef(({ productId, initialSections }: Props, ref) 
                                 placeholder="Alt text"
                                 value={section.data[altField] || ""}
                                 onChange={(e) => updateField(section.uid, altField, e.target.value)}
-                                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all"
+                                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-300 focus:outline-none  focus:border-blue-400 transition-all"
                               />
                               <textarea
                                 rows={2}
@@ -477,7 +488,7 @@ const ProductSections = forwardRef(({ productId, initialSections }: Props, ref) 
                                     updateField(section.uid, capField, val);
                                   }
                                 }}
-                                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all resize-none"
+                                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-300 focus:outline-none  focus:border-blue-400 transition-all resize-none"
                               />
                             </div>
                           );
@@ -528,7 +539,7 @@ const ProductSections = forwardRef(({ productId, initialSections }: Props, ref) 
                               placeholder="Alt text"
                               value={section.data.alt || ""}
                               onChange={(e) => updateField(section.uid, "alt", e.target.value)}
-                              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all"
+                              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-300 focus:outline-none  focus:border-blue-400 transition-all"
                             />
                           </div>
                           <div className="space-y-3">
@@ -541,7 +552,7 @@ const ProductSections = forwardRef(({ productId, initialSections }: Props, ref) 
                                 value={section.data.heading || ""}
                                 onChange={(e) => updateField(section.uid, "heading", e.target.value)}
                                 placeholder="Section heading"
-                                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-800 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all"
+                                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-800 placeholder:text-gray-300 focus:outline-none  focus:border-blue-400 transition-all"
                               />
                             </div>
                             <div>
@@ -553,7 +564,7 @@ const ProductSections = forwardRef(({ productId, initialSections }: Props, ref) 
                                 value={section.data.content || ""}
                                 onChange={(e) => updateField(section.uid, "content", e.target.value)}
                                 placeholder="Write your content here..."
-                                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all resize-none"
+                                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-300 focus:outline-none  focus:border-blue-400 transition-all resize-none"
                               />
                             </div>
                           </div>
@@ -591,7 +602,7 @@ const ProductSections = forwardRef(({ productId, initialSections }: Props, ref) 
                                 updateItemField(section.uid, idx, "heading", e.target.value);
                                 updateItemField(section.uid, idx, "alt", e.target.value);
                               }}
-                              className="w-full rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs text-gray-700 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all"
+                              className="w-full rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs text-gray-700 placeholder:text-gray-300 focus:outline-none  focus:border-blue-400 transition-all"
                             />
                             <textarea
                               rows={3}
@@ -603,7 +614,7 @@ const ProductSections = forwardRef(({ productId, initialSections }: Props, ref) 
                                   updateItemField(section.uid, idx, "content", val);
                                 }
                               }}
-                              className="w-full rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs text-gray-700 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all resize-none"
+                              className="w-full rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs text-gray-700 placeholder:text-gray-300 focus:outline-none  focus:border-blue-400 transition-all resize-none"
                             />
                           </div>
                         ))}
@@ -617,7 +628,7 @@ const ProductSections = forwardRef(({ productId, initialSections }: Props, ref) 
         </div>
 
         {/* ── Add another section (when sections exist) ───── */}
-        {sections.length > 0 && (
+        {sections.length > 0 && sections.length < 10 && (
           <button
             type="button"
             onClick={() => setPickerOpen(true)}
@@ -626,6 +637,11 @@ const ProductSections = forwardRef(({ productId, initialSections }: Props, ref) 
             <Plus className="w-4 h-4" />
             Add another section
           </button>
+        )}
+        {sections.length >= 10 && (
+          <div className="mt-3 w-full py-2.5 rounded-xl text-sm text-gray-400 text-center bg-gray-50 border border-gray-200">
+            Maximum limit of 10 sections reached.
+          </div>
         )}
       </div>
 

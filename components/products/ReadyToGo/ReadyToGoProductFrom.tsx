@@ -1406,8 +1406,8 @@ const ReadyToGoProductForm = () => {
                                 .catch(() => setIsImageLoading(false)); // Cleanup if fetch strictly fails
                             }}
                             className={`flex-shrink-0 rounded-md overflow-hidden border-2 transition-all duration-200 ${isSelected
-                                ? "border-blue-500 shadow-md ring-2 ring-blue-200 scale-105"
-                                : "border-gray-200 opacity-70"
+                              ? "border-blue-500 shadow-md ring-2 ring-blue-200 scale-105"
+                              : "border-gray-200 opacity-70"
                               } ${!isFetchingData ? "cursor-pointer hover:border-blue-300 hover:opacity-100" : "cursor-not-allowed"}`}
                             style={{ width: "60px", height: "80px" }}
                           >

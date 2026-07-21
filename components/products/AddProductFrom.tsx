@@ -574,56 +574,58 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
     }
 
     // 👇 NEW: Trigger Store Webhook Logic
-    try {
-      let userName = "Admin";
-      const token = localStorage.getItem("admin_token");
-      
-      if (token) {
-        const decoded = parseJwt(token);
-        if (decoded && decoded.name) {
-          userName = decoded.name;
+    if (mode !== "edit") {
+      try {
+        let userName = "Admin";
+        const token = localStorage.getItem("admin_token");
+        
+        if (token) {
+          const decoded = parseJwt(token);
+          if (decoded && decoded.name) {
+            userName = decoded.name;
+          }
         }
-      }
 
-      let finalSellPrice = sellPrice;
-      if (productType === "ebook" && !sellPrice) {
-        finalSellPrice = ebookSellPrice;
-      }
-
-      let finalImageUrl = mainImageUrl || (preview && !preview.startsWith("blob:") ? preview : "");
-      if (data && data.image) {
-        if (data.image.startsWith("/")) {
-          finalImageUrl = `${API_URL}${data.image}`;
-        } else {
-          finalImageUrl = data.image; 
+        let finalSellPrice = sellPrice;
+        if (productType === "ebook" && !sellPrice) {
+          finalSellPrice = ebookSellPrice;
         }
+
+        let finalImageUrl = mainImageUrl || (preview && !preview.startsWith("blob:") ? preview : "");
+        if (data && data.image) {
+          if (data.image.startsWith("/")) {
+            finalImageUrl = `${API_URL}${data.image}`;
+          } else {
+            finalImageUrl = data.image; 
+          }
+        }
+
+        const finalSlug = data.slug || slug;
+
+        const webhookPayload = {
+          book_id: bookId,
+          user_id: selectedUserId,
+          sell_price: finalSellPrice || 0,
+          stock: stock || 0,
+          product_url: `${SITE_URL}/product/${finalSlug}`,
+          image_url: finalImageUrl 
+        };
+
+        const WEBHOOK_API_URL = `${CRMSERVER_API_URL}/api/store-webhook`; 
+        
+        fetch(WEBHOOK_API_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(webhookPayload)
+        })
+        .then(res => console.log("Webhook triggered successfully"))
+        .catch(err => console.error("Webhook failed to trigger", err));
+
+      } catch (err) {
+        console.error("Error setting up webhook", err);
       }
-
-      const finalSlug = data.slug || slug;
-
-      const webhookPayload = {
-        book_id: bookId,
-        user_id: selectedUserId,
-        sell_price: finalSellPrice || 0,
-        stock: stock || 0,
-        product_url: `${SITE_URL}/product/${finalSlug}`,
-        image_url: finalImageUrl 
-      };
-
-      const WEBHOOK_API_URL = `${CRMSERVER_API_URL}/api/store-webhook`; 
-      
-      fetch(WEBHOOK_API_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(webhookPayload)
-      })
-      .then(res => console.log("Webhook triggered successfully"))
-      .catch(err => console.error("Webhook failed to trigger", err));
-
-    } catch (err) {
-      console.error("Error setting up webhook", err);
     }
 
     // Clear dirty so no guard fires after a successful save

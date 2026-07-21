@@ -24,7 +24,7 @@ const ProductAuthor = forwardRef<any, ProductAuthorProps>(
     const [search, setSearch] = useState("");
     const [authors, setAuthors] = useState<Author[]>([]);
     const [selectedAuthors, setSelectedAuthors] = useState<Author[]>([]);
-    
+
     // Form States
     const [authorImage, setAuthorImage] = useState<File | null>(null);
     const [authorBio, setAuthorBio] = useState("");
@@ -60,7 +60,7 @@ const ProductAuthor = forwardRef<any, ProductAuthorProps>(
     const addAuthor = (author: Author) => {
       setSelectedAuthors((prev) => [...prev, author]);
       setSearch("");
-      onValidChange?.(); 
+      onValidChange?.();
     };
 
     const removeAuthor = (id: number) => {
@@ -83,13 +83,13 @@ const ProductAuthor = forwardRef<any, ProductAuthorProps>(
       setSearch(author.name);
       setAuthorBio(author.bio || "");
       setEditingAuthorId(author.id);
-      
+
       if (author.profile_image) {
         setAuthorImagePreview(`${API_URL}${author.profile_image}`);
       } else {
         setAuthorImagePreview(null);
       }
-      
+
       setShowCreateForm(true);
     };
 
@@ -120,9 +120,9 @@ const ProductAuthor = forwardRef<any, ProductAuthorProps>(
           // Update both the main pool and selected list
           setAuthors(prev => prev.map(a => a.id === editingAuthorId ? updatedAuthor : a));
           setSelectedAuthors(prev => prev.map(a => a.id === editingAuthorId ? updatedAuthor : a));
-          
+
           resetForm();
-          onValidChange?.(); 
+          onValidChange?.();
         }
       } else {
         // --- CREATE NEW AUTHOR ---
@@ -130,13 +130,13 @@ const ProductAuthor = forwardRef<any, ProductAuthorProps>(
           method: "POST",
           body: formData,
         });
-        
+
         if (res.ok) {
           const data = await res.json();
           setAuthors((prev) => [...prev, data]);
           setSelectedAuthors((prev) => [...prev, data]);
           resetForm();
-          onValidChange?.(); 
+          onValidChange?.();
         }
       }
     };
@@ -157,7 +157,7 @@ const ProductAuthor = forwardRef<any, ProductAuthorProps>(
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder={editingAuthorId ? "Edit author name" : "Search or add author"}
-          className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="w-full border rounded px-3 py-2 text-sm focus:outline-none "
         />
 
         {/* Hide dropdown if currently editing to prevent UI confusion */}
@@ -177,8 +177,8 @@ const ProductAuthor = forwardRef<any, ProductAuthorProps>(
               <button
                 type="button"
                 onClick={() => {
-                  resetForm(); 
-                  setSearch(search); 
+                  resetForm();
+                  setSearch(search);
                   setShowCreateForm(true);
                 }}
                 className="block w-full px-3 py-2 text-left text-blue-600 text-sm cursor-pointer"
@@ -226,7 +226,7 @@ const ProductAuthor = forwardRef<any, ProductAuthorProps>(
                 placeholder="Author bio"
                 value={authorBio}
                 onChange={(e) => setAuthorBio(e.target.value)}
-                className="w-full border rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full border rounded px-2 py-1 text-sm focus:outline-none "
                 rows={3}
               />
             </div>
@@ -273,7 +273,7 @@ const ProductAuthor = forwardRef<any, ProductAuthorProps>(
                 </div>
                 <span className="text-sm font-medium text-gray-700">{a.name}</span>
               </div>
-              
+
               {/* Actions: Edit & Remove */}
               <div className="flex items-center gap-1">
                 <button
