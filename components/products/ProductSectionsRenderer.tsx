@@ -12,6 +12,28 @@ type Section = {
   data: Record<string, any>;
 };
 
+const formatValue = (val: any) => {
+  if (!val) return undefined;
+  if (typeof val === "string" && /^\d+$/.test(val.trim())) {
+    return `${val}px`;
+  }
+  return val;
+};
+
+const getStyle = (styles?: any) => {
+  if (!styles) return undefined;
+  const style: React.CSSProperties = {};
+  if (styles.marginTop) style.marginTop = formatValue(styles.marginTop);
+  if (styles.marginRight) style.marginRight = formatValue(styles.marginRight);
+  if (styles.marginBottom) style.marginBottom = formatValue(styles.marginBottom);
+  if (styles.marginLeft) style.marginLeft = formatValue(styles.marginLeft);
+  if (styles.paddingTop) style.paddingTop = formatValue(styles.paddingTop);
+  if (styles.paddingRight) style.paddingRight = formatValue(styles.paddingRight);
+  if (styles.paddingBottom) style.paddingBottom = formatValue(styles.paddingBottom);
+  if (styles.paddingLeft) style.paddingLeft = formatValue(styles.paddingLeft);
+  return Object.keys(style).length > 0 ? style : undefined;
+};
+
 export default function ProductSectionsRenderer({ sections }: { sections?: Section[] }) {
   if (!sections || sections.length === 0) return null;
 
@@ -24,7 +46,7 @@ export default function ProductSectionsRenderer({ sections }: { sections?: Secti
           <div key={section.id || idx} className="w-full">
             {/* Section Title */}
             {data.title && (
-              <h2 className="text-xl sm:text-2xl font-serif font-semibold my-6 mt-7 sm:mt-8 sm:my-6">
+              <h2 className="text-xl sm:text-2xl font-serif font-semibold my-6 mt-7 sm:mt-8 sm:my-6" style={getStyle(data.titleStyles)}>
                 {data.title}
               </h2>
             )}
@@ -32,7 +54,7 @@ export default function ProductSectionsRenderer({ sections }: { sections?: Secti
             {/* ── Single Image ── */}
             {type === "single_image" && data.image && (
               <div className="flex flex-col ">
-                <div className="relative w-full rounded-lg overflow-hidden shadow-sm group">
+                <div className="relative w-full rounded-lg overflow-hidden shadow-sm group" style={getStyle(data.imageStyles)}>
                   <Image
                     src={`${API_URL}${data.image}`}
                     alt={data.heading || data.alt || "Product image"}
@@ -43,12 +65,12 @@ export default function ProductSectionsRenderer({ sections }: { sections?: Secti
                   />
                 </div>
                 {data.heading && (
-                  <h3 className="text-lg sm:text-xl font-serif font-semibold text-gray-900 py-4  pb-0 sm:pb-0">
+                  <h3 className="text-lg sm:text-xl font-serif font-semibold text-gray-900 py-4  pb-0 sm:pb-0" style={getStyle(data.headingStyles)}>
                     {data.heading}
                   </h3>
                 )}
                 {data.caption && (
-                  <p className=" mt-2 sm:mt-0 text-sm text-gray-500 text-left content-justify italic">{data.caption}</p>
+                  <p className=" mt-2 sm:mt-0 text-sm text-gray-500 text-left content-justify italic" style={getStyle(data.captionStyles)}>{data.caption}</p>
                 )}
               </div>
             )}
@@ -58,7 +80,7 @@ export default function ProductSectionsRenderer({ sections }: { sections?: Secti
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {data.imageLeft && (
                   <div className="flex flex-col">
-                    <div className="relative w-full rounded-lg overflow-hidden shadow-sm group">
+                    <div className="relative w-full rounded-lg overflow-hidden shadow-sm group" style={getStyle(data.imageLeftStyles)}>
                       <Image
                         src={`${API_URL}${data.imageLeft}`}
                         alt={data.altLeft || "Product image"}
@@ -69,13 +91,13 @@ export default function ProductSectionsRenderer({ sections }: { sections?: Secti
                       />
                     </div>
                     {data.captionLeft && (
-                      <p className="mt-3 text-sm text-gray-500 italic text-justify">{data.captionLeft}</p>
+                      <p className="mt-3 text-sm text-gray-500 italic text-justify" style={getStyle(data.captionLeftStyles)}>{data.captionLeft}</p>
                     )}
                   </div>
                 )}
                 {data.imageRight && (
                   <div className="flex flex-col">
-                    <div className="relative w-full rounded-lg overflow-hidden shadow-sm group">
+                    <div className="relative w-full rounded-lg overflow-hidden shadow-sm group" style={getStyle(data.imageRightStyles)}>
                       <Image
                         src={`${API_URL}${data.imageRight}`}
                         alt={data.altRight || "Product image"}
@@ -86,7 +108,7 @@ export default function ProductSectionsRenderer({ sections }: { sections?: Secti
                       />
                     </div>
                     {data.captionRight && (
-                      <p className="mt-3 text-sm text-gray-500 italic text-justify">{data.captionRight}</p>
+                      <p className="mt-3 text-sm text-gray-500 italic text-justify" style={getStyle(data.captionRightStyles)}>{data.captionRight}</p>
                     )}
                   </div>
                 )}
@@ -99,7 +121,7 @@ export default function ProductSectionsRenderer({ sections }: { sections?: Secti
                 className={`flex flex-col gap-8 sm:gap-12 items-start ${data.layout === "image-right" ? "md:flex-row-reverse" : "md:flex-row"
                   }`}
               >
-                <div className="w-full md:w-1/2 rounded-2xl overflow-hidden shadow-sm group relative">
+                <div className="w-full md:w-1/2 rounded-2xl overflow-hidden shadow-sm group relative" style={getStyle(data.imageStyles)}>
                   <Image
                     src={`${API_URL}${data.image}`}
                     alt={data.alt || "Product image"}
@@ -111,12 +133,12 @@ export default function ProductSectionsRenderer({ sections }: { sections?: Secti
                 </div>
                 <div className="w-full md:w-1/2 flex flex-col justify-start space-y-4 mb-auto">
                   {data.heading && (
-                    <h3 className="text-lg sm:text-xl font-serif font-semibold text-gray-900 leading-tight">
+                    <h3 className="text-lg sm:text-xl font-serif font-semibold text-gray-900 leading-tight" style={getStyle(data.headingStyles)}>
                       {data.heading}
                     </h3>
                   )}
                   {data.content && (
-                    <p className="text-gray-600 leading-relaxed text-justify whitespace-pre-wrap">
+                    <p className="text-gray-600 leading-relaxed text-justify whitespace-pre-wrap" style={getStyle(data.contentStyles)}>
                       {data.content}
                     </p>
                   )}
@@ -130,7 +152,7 @@ export default function ProductSectionsRenderer({ sections }: { sections?: Secti
                 {data.items.map((item: any, i: number) => (
                   <div key={i} className="flex flex-col group border border-gray-200 rounded-lg ">
                     {item.image && (
-                      <div className="relative w-full mb-6 rounded-t-lg overflow-hidden shadow-sm bg-gray-50">
+                      <div className="relative w-full mb-6 rounded-t-lg overflow-hidden shadow-sm bg-gray-50" style={getStyle(item.imageStyles)}>
 
                         <Image
                           src={`${API_URL}${item.image}`}
@@ -143,12 +165,12 @@ export default function ProductSectionsRenderer({ sections }: { sections?: Secti
                       </div>
                     )}
                     {item.heading && (
-                      <h4 className="text-md font-semibold text-gray-900 mb-2 px-3">
+                      <h4 className="text-md font-semibold text-gray-900 mb-2 px-3" style={getStyle(item.headingStyles)}>
                         {item.heading}
                       </h4>
                     )}
                     {item.content && (
-                      <p className="text-sm text-gray-500 leading-relaxed pb-2 px-3">
+                      <p className="text-sm text-gray-500 leading-relaxed pb-2 px-3" style={getStyle(item.contentStyles)}>
                         {item.content}
                       </p>
                     )}
