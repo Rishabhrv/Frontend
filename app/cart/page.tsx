@@ -19,27 +19,26 @@ const imgSrc = (src: string) => (src.startsWith("http") ? src : `${API_URL}${src
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type CartItem = {
-  id:                 number;   // cart row id  (0 for guest items)
-  product_id:         number;
-  format:             "ebook" | "paperback";
-  quantity:           number;
-  title:              string;
-  slug:               string;
-  main_image:         string;
-  price:              number;
-  stock:              number;
+  id: number;   // cart row id  (0 for guest items)
+  product_id: number;
+  format: "ebook" | "paperback";
+  quantity: number;
+  title: string;
+  slug: string;
+  main_image: string;
+  price: number;
+  stock: number;
   category_imprints?: string;
-  _guest?:            boolean;  // true for localStorage-backed items
+  _guest?: boolean;  // true for localStorage-backed items
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function CartPage() {
-  const [cart,           setCart]           = useState<CartItem[]>([]);
-  const [loading,        setLoading]        = useState(true);
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [stockWarningId, setStockWarningId] = useState<number | null>(null);
-  const [isGuest,        setIsGuest]        = useState(false);
-  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [isGuest, setIsGuest] = useState(false);
 
   // ── Load cart ────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -53,17 +52,17 @@ export default function CartPage() {
           !i.category_imprints || i.category_imprints.split(",").includes("agph")
         )
         .map((i: GuestCartItem, idx: number) => ({
-          id:                idx,          // synthetic id
-          product_id:        i.product_id,
-          format:            i.format,
-          quantity:          i.quantity,
-          title:             i.title,
-          slug:              i.slug,
-          main_image:        i.image,
-          price:             i.price,
-          stock:             i.stock,
+          id: idx,          // synthetic id
+          product_id: i.product_id,
+          format: i.format,
+          quantity: i.quantity,
+          title: i.title,
+          slug: i.slug,
+          main_image: i.image,
+          price: i.price,
+          stock: i.stock,
           category_imprints: i.category_imprints,
-          _guest:            true,
+          _guest: true,
         }));
       setCart(guestItems);
       setLoading(false);
@@ -92,16 +91,16 @@ export default function CartPage() {
       if (!localStorage.getItem("token")) {
         const guestItems: CartItem[] = getGuestCart().map(
           (i: GuestCartItem, idx: number) => ({
-            id:         idx,
+            id: idx,
             product_id: i.product_id,
-            format:     i.format,
-            quantity:   i.quantity,
-            title:      i.title,
-            slug:       i.slug,
+            format: i.format,
+            quantity: i.quantity,
+            title: i.title,
+            slug: i.slug,
             main_image: i.image,
-            price:      i.price,
-            stock:      i.stock,
-            _guest:     true,
+            price: i.price,
+            stock: i.stock,
+            _guest: true,
           })
         );
         setCart(guestItems);
@@ -130,9 +129,9 @@ export default function CartPage() {
 
     const token = localStorage.getItem("token")!;
     await fetch(`${API_URL}/api/cart/update/${item.id}`, {
-      method:  "PUT",
+      method: "PUT",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body:    JSON.stringify({ quantity: qty }),
+      body: JSON.stringify({ quantity: qty }),
     });
     setCart((prev) => prev.map((i) => (i.id === item.id ? { ...i, quantity: qty } : i)));
   };
@@ -149,7 +148,7 @@ export default function CartPage() {
 
     const token = localStorage.getItem("token")!;
     await fetch(`${API_URL}/api/cart/remove/${item.id}`, {
-      method:  "DELETE",
+      method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
     });
     setCart((prev) => prev.filter((i) => i.id !== item.id));
@@ -158,61 +157,20 @@ export default function CartPage() {
 
   // ── Checkout ──────────────────────────────────────────────────────────────
   const handleCheckout = () => {
-    if (isGuest) { setShowLoginModal(true); return; }
     window.location.href = "/checkout";
   };
 
   // ── Derived totals ────────────────────────────────────────────────────────
-  const total              = cart.reduce((sum, i) => sum + i.price * i.quantity, 0);
-  const outOfStockItems    = cart.filter((i) => i.format === "paperback" && i.stock === 0);
+  const total = cart.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  const outOfStockItems = cart.filter((i) => i.format === "paperback" && i.stock === 0);
   const exceededStockItems = cart.filter((i) => i.format === "paperback" && i.stock > 0 && i.quantity > i.stock);
-  const canCheckout        = outOfStockItems.length === 0 && exceededStockItems.length === 0;
+  const canCheckout = outOfStockItems.length === 0 && exceededStockItems.length === 0;
 
   if (loading) return <p className="p-10 text-sm text-gray-500">Loading cart…</p>;
 
   return (
     <div className="max-w-7xl min-h-[100dvh] mx-auto px-4 sm:px-6 md:px-10 lg:px-16 py-6 sm:py-10">
       <h1 className="text-2xl sm:text-3xl font-serif mb-6 sm:mb-8">Shopping Cart</h1>
-
-      {/* ── Login-required modal ── */}
-      {showLoginModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
-          onClick={() => setShowLoginModal(false)}
-        >
-          <div
-            className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full mx-4 text-center"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <LogIn className="mx-auto mb-4 text-gray-700" size={36} />
-            <h2 className="text-lg font-semibold mb-2">Sign in to Checkout</h2>
-            <p className="text-sm text-gray-500 mb-6">
-              Your cart is saved! Log in or create an account to complete your order.
-              Your items will be waiting for you.
-            </p>
-            <div className="flex flex-col gap-3">
-              <Link
-                href="/login?redirect=/checkout"
-                className="block w-full py-2.5 bg-black text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition"
-              >
-                Log in
-              </Link>
-              <Link
-                href="/register?redirect=/checkout"
-                className="block w-full py-2.5 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition"
-              >
-                Create account
-              </Link>
-              <button
-                onClick={() => setShowLoginModal(false)}
-                className="text-xs text-gray-400 hover:text-gray-600 transition mt-1 cursor-pointer"
-              >
-                Continue browsing
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {cart.length === 0 ? (
         <div className="text-center py-20">
@@ -249,16 +207,15 @@ export default function CartPage() {
 
             <div className="space-y-4 sm:space-y-6">
               {cart.map((item) => {
-                const isOutOfStock  = item.format === "paperback" && item.stock === 0;
-                const isOverStock   = item.format === "paperback" && item.stock > 0 && item.quantity > item.stock;
+                const isOutOfStock = item.format === "paperback" && item.stock === 0;
+                const isOverStock = item.format === "paperback" && item.stock > 0 && item.quantity > item.stock;
                 const hasStockIssue = isOutOfStock || isOverStock;
 
                 return (
                   <div
                     key={`${item.product_id}-${item.format}`}
-                    className={`flex gap-3 sm:gap-5 pb-4 sm:pb-6 border-b ${
-                      hasStockIssue ? "border-red-200" : "border-gray-200"
-                    }`}
+                    className={`flex gap-3 sm:gap-5 pb-4 sm:pb-6 border-b ${hasStockIssue ? "border-red-200" : "border-gray-200"
+                      }`}
                   >
                     {/* IMAGE */}
                     <div className="relative shrink-0">
@@ -417,8 +374,7 @@ export default function CartPage() {
                   onClick={handleCheckout}
                   className="w-full bg-red-600 text-white py-3 rounded-lg cursor-pointer hover:bg-red-700 transition font-medium text-sm flex items-center justify-center gap-2"
                 >
-                  {isGuest && <LogIn size={15} />}
-                  {isGuest ? "Sign in to Checkout" : "Proceed to Checkout"}
+                  Proceed to Checkout
                 </button>
               ) : (
                 <button

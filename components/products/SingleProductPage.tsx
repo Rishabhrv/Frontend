@@ -15,6 +15,7 @@ import {
   toggleGuestWishlist,
 } from "@/utils/guestStorage"; // ← add this
 import ProductSectionsRenderer from "./ProductSectionsRenderer";
+import ProductMetaPixel from "./ProductMetaPixel";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
@@ -45,6 +46,7 @@ type Product = {
   categories: Category[];
   subjects?: Subject[];
   sections?: any[];
+  pixel_ids?: string[];
 };
 
 /* ─── Share dropdown ─────────────────────────────────────────────────────── */
@@ -345,8 +347,19 @@ export default function SingleProductPage({ product }: { product: Product }) {
   const isPaperbackOnly = product.product_type === "physical";
   const activeIndex = allImages.findIndex((img) => img.image_path === activeImage);
 
+  const videoSections = product.sections?.filter((s) => s.type === "video") || [];
+  const otherSections = product.sections?.filter((s) => s.type !== "video") || [];
+
   return (
     <div className="max-w-7xl mx-auto px-3 sm:px-5 md:px-8 lg:px-14 xl:px-20 py-4 sm:py-6">
+      <ProductMetaPixel
+        pixelIds={product.pixel_ids || []}
+        product={{
+          id: product.id,
+          title: product.title,
+          price: product.sell_price || product.price,
+        }}
+      />
 
       {/* ── BREADCRUMB ── */}
       <nav className="text-xs sm:text-sm text-gray-500 mb-4 sm:mb-6 border-b border-t border-gray-300 py-3 sm:py-4">
@@ -454,8 +467,8 @@ export default function SingleProductPage({ product }: { product: Product }) {
                         key={i}
                         onClick={() => setActiveImage(img.image_path)}
                         className={`border rounded p-1 flex-shrink-0 transition-all duration-200 ${activeImage === img.image_path
-                            ? "border-red-400 scale-100 shadow-sm"
-                            : "border-gray-300"
+                          ? "border-red-400 scale-100 shadow-sm"
+                          : "border-gray-300"
                           }`}
                       >
                         <Image
@@ -621,8 +634,8 @@ export default function SingleProductPage({ product }: { product: Product }) {
                     onClick={addToCart}
                     disabled={addedToCart || (format === "paperback" && product.stock === 0)}
                     className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 sm:px-10 py-3 rounded-md transition cursor-pointer text-sm sm:text-base font-medium ${addedToCart
-                        ? "bg-green-600 text-white cursor-default"
-                        : "bg-black text-white hover:bg-gray-800"
+                      ? "bg-green-600 text-white cursor-default"
+                      : "bg-black text-white hover:bg-gray-800"
                       } ${format === "paperback" && product.stock === 0 ? "opacity-50 cursor-not-allowed" : ""}`}
                   >
                     {addedToCart ? <><CircleCheck size={16} /> Added</> : <><ShoppingCart size={16} /> Add to Cart</>}
@@ -651,8 +664,13 @@ export default function SingleProductPage({ product }: { product: Product }) {
         </div>
       </div>
 
+      {/* ── VIDEO SECTIONS ── */}
+      {videoSections.length > 0 && (
+        <ProductSectionsRenderer sections={videoSections} className="mt-10 sm:mt-14 px-5 xl:px-1 border-t border-gray-200 " />
+      )}
+
       {/* ── DESCRIPTION ── */}
-      <div className="mt-10 sm:mt-14 border-y border-gray-300 py-6 sm:py-8 px-5 xl:px-1">
+      <div className="mt-10 sm:mt-10 border-y border-gray-300 py-6 sm:py-8 px-5 xl:px-1">
         <h2 className="text-lg sm:text-xl font-serif font-semibold mb-4">Description</h2>
         <div
           className={`text-gray-700 leading-relaxed text-justify prose max-w-none transition-all duration-300 ${showFullDesc ? "" : "line-clamp-[12] overflow-hidden"
@@ -714,7 +732,7 @@ export default function SingleProductPage({ product }: { product: Product }) {
       )}
 
       {/* ── PRODUCT SECTIONS (A+ CONTENT) ── */}
-      <ProductSectionsRenderer sections={product.sections} />
+      <ProductSectionsRenderer sections={otherSections} />
 
       {/* ── AUTHORS ── */}
       {product.authors?.length > 0 && (

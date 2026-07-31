@@ -21,6 +21,7 @@ import {
   Sparkles,
   LayoutGrid,
   Settings,
+  Video,
 } from "lucide-react";
 import {
   SECTION_TYPES,
@@ -74,6 +75,12 @@ const SECTION_META: Record<
     bg: "bg-amber-50",
     border: "border-amber-200",
     icon: Grid2x2,
+  },
+  video: {
+    color: "text-red-700",
+    bg: "bg-red-50",
+    border: "border-red-200",
+    icon: Video,
   },
 };
 
@@ -1048,6 +1055,85 @@ const ProductSections = forwardRef(
                               </div>
                             ),
                           )}
+                        </div>
+                      )}
+
+                      {/* ── Video ────────────────────────────── */}
+                      {section.type === "video" && (
+                        <div className="space-y-4">
+                          <div>
+                            <FieldWithStyles
+                              label="Video URL"
+                              styles={section.data.videoUrlStyles}
+                              onChange={(val: any) =>
+                                updateField(section.uid, "videoUrlStyles", val)
+                              }
+                              labelPrefix="Video URL"
+                            >
+                              <input
+                                type="text"
+                                placeholder="e.g. https://www.youtube.com/watch?v=..."
+                                value={section.data.videoUrl || ""}
+                                onChange={(e) =>
+                                  updateField(section.uid, "videoUrl", e.target.value)
+                                }
+                                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-300 focus:outline-none  focus:border-blue-400 transition-all"
+                              />
+                            </FieldWithStyles>
+                            {/* Video Preview */}
+                            {section.data.videoUrl && (
+                              <div 
+                                className="mt-4 w-full rounded-lg overflow-hidden border border-gray-200 bg-gray-50 flex items-center justify-center relative"
+                                style={{ paddingBottom: '56.25%' }}
+                              >
+                                {(() => {
+                                  let embedUrl = section.data.videoUrl;
+                                  try {
+                                    const parsed = new URL(embedUrl);
+                                    if (parsed.hostname.includes("youtube.com") || parsed.hostname.includes("youtu.be")) {
+                                      const videoId = parsed.hostname.includes("youtu.be") ? parsed.pathname.slice(1) : parsed.searchParams.get("v");
+                                      if (videoId) embedUrl = `https://www.youtube.com/embed/${videoId}`;
+                                    } else if (parsed.hostname.includes("facebook.com")) {
+                                      embedUrl = `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(section.data.videoUrl)}&show_text=0`;
+                                    } else if (parsed.hostname.includes("instagram.com")) {
+                                      embedUrl = `${section.data.videoUrl.replace(/\/$/, "")}/embed`;
+                                    } else if (parsed.hostname.includes("vimeo.com")) {
+                                      const videoId = parsed.pathname.split("/").pop();
+                                      if (videoId) embedUrl = `https://player.vimeo.com/video/${videoId}`;
+                                    }
+                                  } catch(e) {}
+                                  return (
+                                    <iframe
+                                      src={embedUrl}
+                                      className="absolute top-0 left-0 w-full h-full"
+                                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                      allowFullScreen
+                                    />
+                                  );
+                                })()}
+                              </div>
+                            )}
+                          </div>
+                          <div>
+                            <FieldWithStyles
+                              label="Caption"
+                              styles={section.data.captionStyles}
+                              onChange={(val: any) =>
+                                updateField(section.uid, "captionStyles", val)
+                              }
+                              labelPrefix="Caption"
+                            >
+                              <textarea
+                                rows={3}
+                                placeholder="Caption below the video..."
+                                value={section.data.caption || ""}
+                                onChange={(e) =>
+                                  updateField(section.uid, "caption", e.target.value)
+                                }
+                                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-300 focus:outline-none  focus:border-blue-400 transition-all resize-none"
+                              />
+                            </FieldWithStyles>
+                          </div>
                         </div>
                       )}
                     </div>

@@ -34,11 +34,11 @@ const getStyle = (styles?: any) => {
   return Object.keys(style).length > 0 ? style : undefined;
 };
 
-export default function ProductSectionsRenderer({ sections }: { sections?: Section[] }) {
+export default function ProductSectionsRenderer({ sections, className }: { sections?: Section[], className?: string }) {
   if (!sections || sections.length === 0) return null;
 
   return (
-    <div className="mt-12 sm:mt-20  px-5 xl:px-1 border-b border-gray-200 pb-10">
+    <div className={className || "mt-12 sm:mt-20  px-5 xl:px-1 border-b border-gray-200 pb-10"}>
       {sections.map((section, idx) => {
         const { type, data } = section;
 
@@ -176,6 +176,45 @@ export default function ProductSectionsRenderer({ sections }: { sections?: Secti
                     )}
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* ── Video ── */}
+            {type === "video" && data.videoUrl && (
+              <div className="flex flex-col">
+                <div 
+                  className="w-full rounded-lg overflow-hidden shadow-sm bg-black relative" 
+                  style={{ paddingBottom: '56.25%', ...getStyle(data.videoUrlStyles) }}
+                >
+                  {(() => {
+                    let embedUrl = data.videoUrl;
+                    try {
+                      const parsed = new URL(embedUrl);
+                      if (parsed.hostname.includes("youtube.com") || parsed.hostname.includes("youtu.be")) {
+                        const videoId = parsed.hostname.includes("youtu.be") ? parsed.pathname.slice(1) : parsed.searchParams.get("v");
+                        if (videoId) embedUrl = `https://www.youtube.com/embed/${videoId}`;
+                      } else if (parsed.hostname.includes("facebook.com")) {
+                        embedUrl = `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(data.videoUrl)}&show_text=0`;
+                      } else if (parsed.hostname.includes("instagram.com")) {
+                        embedUrl = `${data.videoUrl.replace(/\/$/, "")}/embed`;
+                      } else if (parsed.hostname.includes("vimeo.com")) {
+                        const videoId = parsed.pathname.split("/").pop();
+                        if (videoId) embedUrl = `https://player.vimeo.com/video/${videoId}`;
+                      }
+                    } catch(e) {}
+                    return (
+                      <iframe
+                        src={embedUrl}
+                        className="absolute top-0 left-0 w-full h-full"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    );
+                  })()}
+                </div>
+                {data.caption && (
+                  <p className="mt-4 text-sm text-gray-500 italic text-justify" style={getStyle(data.captionStyles)}>{data.caption}</p>
+                )}
               </div>
             )}
           </div>
