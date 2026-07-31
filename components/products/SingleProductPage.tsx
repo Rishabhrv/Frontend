@@ -9,6 +9,7 @@ import Link from "next/link";
 import NotifyMeButton from "../notification/NotifyMeButton";
 import BottomBannerAd from "../ads/BottomBannerAd";
 import PopupAd from "../ads/PopupAd";
+import { useRouter } from "next/navigation";
 import {
   addToGuestCart,
   isInGuestWishlist,
@@ -23,7 +24,7 @@ type Attribute = { name: string; value: string };
 type GalleryImage = { image_path: string };
 type Subject = { id: number; name: string; slug: string };
 type Author = { id: number; name: string; image: string | null; bio?: string | null; slug: string };
-type Category = { id: number; name: string; slug: string };
+type Category = { id: number; name: string; slug: string; imprint: string };
 
 type Product = {
   id: number;
@@ -174,6 +175,7 @@ export default function SingleProductPage({ product }: { product: Product }) {
   const [addedToCart, setAddedToCart] = useState(false);
   const [avgRating, setAvgRating] = useState<number>(0);
   const [reviewCount, setReviewCount] = useState<number>(0);
+  const router = useRouter();
 
   const touchStartX = useRef<number>(0);
   const touchEndX = useRef<number>(0);
@@ -323,6 +325,30 @@ export default function SingleProductPage({ product }: { product: Product }) {
     setTimeout(() => setAddedToCart(false), 1500);
   };
 
+  /* ── Buy Now ── */
+  const handleBuyNow = () => {
+    const buyNowFormat = format === "ebook" ? "ebook" : "paperback";
+    const buyNowQty = format === "ebook" ? 1 : qty;
+    const buyNowPrice = format === "ebook"
+      ? (product.ebook_sell_price ?? product.sell_price)
+      : product.sell_price;
+
+    const buyNowItem = {
+      product_id: product.id,
+      format: buyNowFormat,
+      quantity: buyNowQty,
+      title: product.title,
+      slug: product.categories?.[0]?.slug ?? "",
+      image: `${API_URL}${product.main_image}`,
+      price: buyNowPrice,
+      stock: product.stock,
+      category_imprints: product.categories?.map(c => c.imprint || "agph").join(",") || "agph",
+    };
+
+    sessionStorage.setItem("buyNowItem", JSON.stringify(buyNowItem));
+    router.push("/checkout?buyNow=true");
+  };
+
   if (!product) return null;
 
   const paperbackDiscount =
@@ -347,8 +373,8 @@ export default function SingleProductPage({ product }: { product: Product }) {
   const isPaperbackOnly = product.product_type === "physical";
   const activeIndex = allImages.findIndex((img) => img.image_path === activeImage);
 
-  const videoSections = product.sections?.filter((s) => s.type === "video") || [];
-  const otherSections = product.sections?.filter((s) => s.type !== "video") || [];
+  const videoSections = product.sections?.filter((s) => s.type === "video" || s.type === "two_video") || [];
+  const otherSections = product.sections?.filter((s) => s.type !== "video" && s.type !== "two_video") || [];
 
   return (
     <div className="max-w-7xl mx-auto px-3 sm:px-5 md:px-8 lg:px-14 xl:px-20 py-4 sm:py-6">
@@ -643,6 +669,16 @@ export default function SingleProductPage({ product }: { product: Product }) {
                 </>
               )}
             </div>
+
+            {!(isPaperbackOnly && product.stock === 0) && (
+              <button
+                onClick={handleBuyNow}
+                disabled={format === "paperback" && product.stock === 0}
+                className={`w-full max-w-xs flex items-center justify-center gap-2 px-6 py-3 rounded-md transition cursor-pointer text-sm sm:text-base font-medium border-2 border-black ${format === "paperback" && product.stock === 0 ? "opacity-50 cursor-not-allowed border-gray-300 text-gray-400" : "bg-white text-black hover:bg-black hover:text-white"}`}
+              >
+                Buy Now
+              </button>
+            )}
 
             {/* Trust strip */}
             <div className="grid grid-cols-3 gap-2 sm:gap-3 pt-4 sm:pt-6 border-t border-gray-200">
