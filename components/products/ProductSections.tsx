@@ -82,6 +82,18 @@ const SECTION_META: Record<
     border: "border-red-200",
     icon: Video,
   },
+  video_content: {
+    color: "text-rose-700",
+    bg: "bg-rose-50",
+    border: "border-rose-200",
+    icon: Columns2,
+  },
+  two_video: {
+    color: "text-rose-700",
+    bg: "bg-rose-50",
+    border: "border-rose-200",
+    icon: Columns2,
+  },
 };
 
 const FieldWithStyles = ({
@@ -931,6 +943,58 @@ const ProductSections = forwardRef(
                                 </FieldWithStyles>
                               </div>
                             </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* ── Two Videos Side-by-Side ── */}
+                      {section.type === "two_video" && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                          <div className="space-y-2">
+                            <FieldWithStyles
+                              label="Left Video URL"
+                              styles={section.data.videoLeftStyles}
+                              onChange={(val: any) => updateField(section.uid, "videoLeftStyles", val)}
+                              labelPrefix="Left Video"
+                            >
+                              <input
+                                type="text"
+                                placeholder="YouTube URL or Video Link"
+                                value={section.data.videoUrlLeft || ""}
+                                onChange={(e) => updateField(section.uid, "videoUrlLeft", e.target.value)}
+                                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-300 focus:outline-none focus:border-rose-400 transition-all"
+                              />
+                            </FieldWithStyles>
+                            <input
+                              type="text"
+                              placeholder="Left Video Caption (optional)"
+                              value={section.data.captionLeft || ""}
+                              onChange={(e) => updateField(section.uid, "captionLeft", e.target.value)}
+                              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-300 focus:outline-none focus:border-rose-400 transition-all"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <FieldWithStyles
+                              label="Right Video URL"
+                              styles={section.data.videoRightStyles}
+                              onChange={(val: any) => updateField(section.uid, "videoRightStyles", val)}
+                              labelPrefix="Right Video"
+                            >
+                              <input
+                                type="text"
+                                placeholder="YouTube URL or Video Link"
+                                value={section.data.videoUrlRight || ""}
+                                onChange={(e) => updateField(section.uid, "videoUrlRight", e.target.value)}
+                                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-300 focus:outline-none focus:border-rose-400 transition-all"
+                              />
+                            </FieldWithStyles>
+                            <input
+                              type="text"
+                              placeholder="Right Video Caption (optional)"
+                              value={section.data.captionRight || ""}
+                              onChange={(e) => updateField(section.uid, "captionRight", e.target.value)}
+                              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-300 focus:outline-none focus:border-rose-400 transition-all"
+                            />
                           </div>
                         </div>
                       )}

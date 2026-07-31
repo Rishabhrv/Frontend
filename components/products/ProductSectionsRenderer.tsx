@@ -146,6 +146,86 @@ export default function ProductSectionsRenderer({ sections, className }: { secti
               </div>
             )}
 
+            {/* ── Two Videos Side-by-Side ── */}
+            {type === "two_video" && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {data.videoUrlLeft && (
+                  <div className="flex flex-col">
+                    <div 
+                      className="w-full rounded-lg overflow-hidden shadow-sm bg-black relative" 
+                      style={{ paddingBottom: '56.25%', ...getStyle(data.videoLeftStyles) }}
+                    >
+                      {(() => {
+                        let embedUrl = data.videoUrlLeft;
+                        try {
+                          const parsed = new URL(embedUrl);
+                          if (parsed.hostname.includes("youtube.com") || parsed.hostname.includes("youtu.be")) {
+                            const videoId = parsed.hostname.includes("youtu.be") ? parsed.pathname.slice(1) : parsed.searchParams.get("v");
+                            if (videoId) embedUrl = `https://www.youtube.com/embed/${videoId}`;
+                          } else if (parsed.hostname.includes("facebook.com")) {
+                            embedUrl = `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(data.videoUrlLeft)}&show_text=0`;
+                          } else if (parsed.hostname.includes("instagram.com")) {
+                            embedUrl = `${data.videoUrlLeft.replace(/\/$/, "")}/embed`;
+                          } else if (parsed.hostname.includes("vimeo.com")) {
+                            const videoId = parsed.pathname.split("/").pop();
+                            if (videoId) embedUrl = `https://player.vimeo.com/video/${videoId}`;
+                          }
+                        } catch(e) {}
+                        return (
+                          <iframe
+                            src={embedUrl}
+                            className="absolute top-0 left-0 w-full h-full"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                          />
+                        );
+                      })()}
+                    </div>
+                    {data.captionLeft && (
+                      <p className="mt-4 text-sm text-gray-500 italic text-justify" style={getStyle(data.captionLeftStyles)}>{data.captionLeft}</p>
+                    )}
+                  </div>
+                )}
+                {data.videoUrlRight && (
+                  <div className="flex flex-col">
+                    <div 
+                      className="w-full rounded-lg overflow-hidden shadow-sm bg-black relative" 
+                      style={{ paddingBottom: '56.25%', ...getStyle(data.videoRightStyles) }}
+                    >
+                      {(() => {
+                        let embedUrl = data.videoUrlRight;
+                        try {
+                          const parsed = new URL(embedUrl);
+                          if (parsed.hostname.includes("youtube.com") || parsed.hostname.includes("youtu.be")) {
+                            const videoId = parsed.hostname.includes("youtu.be") ? parsed.pathname.slice(1) : parsed.searchParams.get("v");
+                            if (videoId) embedUrl = `https://www.youtube.com/embed/${videoId}`;
+                          } else if (parsed.hostname.includes("facebook.com")) {
+                            embedUrl = `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(data.videoUrlRight)}&show_text=0`;
+                          } else if (parsed.hostname.includes("instagram.com")) {
+                            embedUrl = `${data.videoUrlRight.replace(/\/$/, "")}/embed`;
+                          } else if (parsed.hostname.includes("vimeo.com")) {
+                            const videoId = parsed.pathname.split("/").pop();
+                            if (videoId) embedUrl = `https://player.vimeo.com/video/${videoId}`;
+                          }
+                        } catch(e) {}
+                        return (
+                          <iframe
+                            src={embedUrl}
+                            className="absolute top-0 left-0 w-full h-full"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                          />
+                        );
+                      })()}
+                    </div>
+                    {data.captionRight && (
+                      <p className="mt-4 text-sm text-gray-500 italic text-justify" style={getStyle(data.captionRightStyles)}>{data.captionRight}</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* ── Four Columns ── */}
             {type === "four_column" && data.items && data.items.length > 0 && (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-4">

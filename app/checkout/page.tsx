@@ -147,6 +147,18 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (!authChecked) return;
 
+    if (new URLSearchParams(window.location.search).get("buyNow") === "true") {
+      const stored = sessionStorage.getItem("buyNowItem");
+      if (stored) {
+        try {
+          const item = JSON.parse(stored);
+          setCart([{ ...item, id: 0, main_image: item.image || item.main_image }]); // Ensure id exists for mapping
+          setLoading(false);
+          return;
+        } catch (e) {}
+      }
+    }
+
     if (isLoggedIn) {
       loadLoggedInCart();
     } else {
@@ -592,12 +604,20 @@ export default function CheckoutPage() {
       }
 
       /* 2️⃣ Create DB order */
+      const isBuyNow = new URLSearchParams(window.location.search).get("buyNow") === "true";
+      const buyNowItemStr = isBuyNow ? sessionStorage.getItem("buyNowItem") : null;
+      let buyNowItem = null;
+      if (buyNowItemStr) {
+        try { buyNowItem = JSON.parse(buyNowItemStr); } catch (e) {}
+      }
+
       const orderRes = await fetch(`${API_URL}/api/checkout/create`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           shipping,
           couponCode: couponApplied ? couponCode : null,
+          buyNowItem,
           address: {
             first_name: form.first_name,
             last_name: form.last_name,
@@ -641,7 +661,7 @@ export default function CheckoutPage() {
           const verifyRes = await fetch(`${API_URL}/api/payment/verify`, {
             method: "POST",
             headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ ...response, order_id: orderData.order_id }),
+            body: JSON.stringify({ ...response, order_id: orderData.order_id, is_buy_now: isBuyNow }),
           });
           const verifyData = await verifyRes.json();
 

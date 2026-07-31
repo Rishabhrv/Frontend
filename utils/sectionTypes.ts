@@ -1,6 +1,6 @@
 import { Image as ImageIcon, Columns2, PanelLeft, Grid2x2, Video } from "lucide-react";
 
-export type SectionType = "single_image" | "two_image" | "image_content" | "four_column" | "video";
+export type SectionType = "single_image" | "two_image" | "image_content" | "four_column" | "video" | "two_video";
 
 export interface SectionDef {
   type: SectionType;
@@ -29,6 +29,12 @@ export const SECTION_TYPES: SectionDef[] = [
     label: "Image + Content",
     icon: PanelLeft,
     defaultData: { title: "", image: "", alt: "", heading: "", content: "", layout: "image-left" },
+  },
+  {
+    type: "two_video",
+    label: "Two Videos Side-by-Side",
+    icon: Columns2,
+    defaultData: { title: "", videoUrlLeft: "", captionLeft: "", videoUrlRight: "", captionRight: "" },
   },
   {
     type: "four_column",
