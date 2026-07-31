@@ -80,6 +80,16 @@ const LayoutPreview: React.FC<{ type: SectionType }> = ({ type }) => {
     );
   }
 
+  if (type === "video") {
+    return (
+      <div style={previewWrapStyle}>
+        <div style={{ ...boxStyle, width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ width: 0, height: 0, borderTop: "8px solid transparent", borderBottom: "8px solid transparent", borderLeft: "12px solid white" }} />
+        </div>
+      </div>
+    );
+  }
+
   // Fallback so a new/unmatched type is never blank
   return (
     <div style={previewWrapStyle}>
@@ -110,7 +120,7 @@ const SectionPickerModal: React.FC<Props> = ({ open, onClose, onSelect }) => {
               className="group border border-gray-200 rounded-lg overflow-hidden text-left hover:border-blue-500 hover:shadow-card transition-all cursor-pointer flex flex-col"
             >
               <div style={{ position: "relative", height: 112, flexShrink: 0, backgroundColor: "#f9fafb" }}
-                   className="border-b border-gray-200">
+                className="border-b border-gray-200">
                 <LayoutPreview type={def.type} />
               </div>
               <div className="px-3 py-2 flex items-center gap-2">

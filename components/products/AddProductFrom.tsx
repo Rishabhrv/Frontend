@@ -187,6 +187,7 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
   // 👇 NEW: User States
   const [activeUsers, setActiveUsers] = useState<{id: number, username: string}[]>([]);
   const [selectedUserId, setSelectedUserId] = useState("");
+  const [pixelIds, setPixelIds] = useState("");
 
   // ── Unsaved-changes guard ────────────────────────────────────────
   const [isDirty, setIsDirty] = useState(false);
@@ -346,6 +347,7 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
         setEbookSellPrice(data.ebook_sell_price ?? "");
         setBookId(data.book_id ? String(data.book_id) : "");
         setSelectedUserId(data.user_id ? String(data.user_id) : ""); // Populates existing user if editing
+        setPixelIds(data.pixel_ids ? data.pixel_ids.join(", ") : "");
         setInitialSections(data.sections || []);
         
         setTimeout(() => {
@@ -541,6 +543,12 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
     formData.append("meta_description", metaDescription);
     formData.append("keywords", keywords);
     formData.append("book_id", bookId);
+    
+    const parsedPixelIds = pixelIds.split(",").map(id => id.trim()).filter(Boolean);
+    if (parsedPixelIds.length > 0) {
+      formData.append("pixelIds", JSON.stringify(parsedPixelIds));
+    }
+    
     formData.append("user_id", selectedUserId); // Pass user to normal API
     const sectionsData = sectionsRef.current?.getSectionsData() || [];
     formData.append("sections", JSON.stringify(sectionsData));
@@ -1079,6 +1087,21 @@ useEffect(() => {
               metaDescription: errors.metaDescription,
             }}
           />
+
+          <div className="bg-white rounded-xl border border-gray-300 p-6 shadow-sm mb-6 mt-6">
+            <h2 className="font-semibold text-lg text-gray-800 mb-4">Tracking (Meta Pixel)</h2>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Pixel ID(s)</label>
+              <input
+                type="text"
+                placeholder="e.g. 123456789012345, 987654321098765"
+                className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-black focus:border-black transition"
+                value={pixelIds}
+                onChange={(e) => setPixelIds(e.target.value)}
+              />
+              <p className="text-xs text-gray-500 mt-1">Comma-separated Meta Pixel IDs for this product.</p>
+            </div>
+          </div>
         </div>
 
         {/* ══════════════ RIGHT SIDEBAR ══════════════ */}
