@@ -197,22 +197,34 @@ export default function CheckoutPage() {
   }, [isLoggedIn]);
 
   /* ── Shipping cost on state change ── */
+  /* ── Shipping cost on state change ── */
   useEffect(() => {
-    if (!hasPaperback || !form.state) { setShipping(0); return; }
+    // Abort if no paperback is in the cart, state is missing, or cart is empty.
+    if (!hasPaperback || !form.state || cart.length === 0) {
+      setShipping(0);
+      return;
+    }
 
-    // For guests, we can't calculate shipping via API (needs auth)
-    // but once logged in, fetch the real cost
     const token = localStorage.getItem("token");
-    if (!token) { setShipping(0); return; }
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+
+    // Attach token if the user happens to be logged in
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
 
     fetch(`${API_URL}/api/checkout/shipping-cost`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ state: form.state }),
+      headers,
+      body: JSON.stringify({ state: form.state, items: cart }), // Sending cart items for guests!
     })
       .then(r => r.json())
-      .then(data => setShipping(data.shipping || 0));
-  }, [form.state, hasPaperback, isLoggedIn]);
+      .then(data => {
+        console.log("Shipping Data:", data); // Helps you debug if it still says 0
+        setShipping(data.shipping || 0);
+      })
+      .catch(() => setShipping(0));
+  }, [form.state, hasPaperback, cart]); // Added cart to dependencies
 
   /* ── Lockout countdown ── */
   useEffect(() => {
@@ -1267,8 +1279,8 @@ export default function CheckoutPage() {
             {hasPaperback && (
               <div className="flex justify-between text-gray-600">
                 <span>Shipping</span>
-                {!isLoggedIn ? (
-                  <span className="text-gray-400 text-xs">Calculated after sign in</span>
+                {!form.state ? (
+                  <span className="text-gray-400 text-xs">Enter state to calculate</span>
                 ) : shipping > 0 ? (
                   <span>₹{shipping.toLocaleString("en-IN")}</span>
                 ) : (
