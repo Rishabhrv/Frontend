@@ -155,7 +155,7 @@ export default function CheckoutPage() {
           setCart([{ ...item, id: 0, main_image: item.image || item.main_image }]); // Ensure id exists for mapping
           setLoading(false);
           return;
-        } catch (e) {}
+        } catch (e) { }
       }
     }
 
@@ -608,7 +608,7 @@ export default function CheckoutPage() {
       const buyNowItemStr = isBuyNow ? sessionStorage.getItem("buyNowItem") : null;
       let buyNowItem = null;
       if (buyNowItemStr) {
-        try { buyNowItem = JSON.parse(buyNowItemStr); } catch (e) {}
+        try { buyNowItem = JSON.parse(buyNowItemStr); } catch (e) { }
       }
 
       const orderRes = await fetch(`${API_URL}/api/checkout/create`, {
