@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
@@ -50,19 +50,19 @@ type Order = {
 
 /* ── Confetti ─────────────────────────────────────────────────── */
 type Particle = { id: number; x: number; color: string; size: number; delay: number; duration: number };
-const COLORS = ["#f59e0b","#10b981","#3b82f6","#ef4444","#8b5cf6","#ec4899","#14b8a6"];
+const COLORS = ["#f59e0b", "#10b981", "#3b82f6", "#ef4444", "#8b5cf6", "#ec4899", "#14b8a6"];
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
 /* ── Shipping steps ───────────────────────────────────────────── */
 const STEPS = [
-  { key: null,               label: "Order Placed"      },
-  { key: "confirmed",        label: "Confirmed"          },
-  { key: "shipped",          label: "Shipped"            },
-  { key: "out_for_delivery", label: "Out for Delivery"   },
-  { key: "delivered",        label: "Delivered"          },
+  { key: null, label: "Order Placed" },
+  { key: "confirmed", label: "Confirmed" },
+  { key: "shipped", label: "Shipped" },
+  { key: "out_for_delivery", label: "Out for Delivery" },
+  { key: "delivered", label: "Delivered" },
 ] as const;
 
-const STATUS_ORDER = ["confirmed","shipped","out_for_delivery","delivered"] as const;
+const STATUS_ORDER = ["confirmed", "shipped", "out_for_delivery", "delivered"] as const;
 
 function getStepIndex(status: string | null) {
   if (!status) return 0;
@@ -73,12 +73,13 @@ function getStepIndex(status: string | null) {
 /* ─────────────────────────────────────────────────────────────── */
 export default function OrderConfirmedPage() {
   const searchParams = useSearchParams();
-  const orderId      = searchParams?.get("order_id");
+  const orderId = searchParams?.get("order_id");
 
-  const [order,     setOrder]     = useState<Order | null>(null);
-  const [loading,   setLoading]   = useState(true);
-  const [error,     setError]     = useState("");
+  const [order, setOrder] = useState<Order | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [particles, setParticles] = useState<Particle[]>([]);
+  const pixelFired = useRef(false);
 
   /* ── Fetch ── */
   useEffect(() => {
@@ -94,6 +95,15 @@ export default function OrderConfirmedPage() {
         setOrder(data);
         setLoading(false);
         if (data.payment_status === "success") {
+
+          if (typeof window !== "undefined" && (window as any).fbq && !pixelFired.current) {
+            (window as any).fbq("track", "Purchase", {
+              value: Number(data.total_amount),
+              currency: "INR"
+            });
+            pixelFired.current = true;
+          }
+
           setParticles(Array.from({ length: 55 }, (_, i) => ({
             id: i, x: Math.random() * 100, color: COLORS[Math.floor(Math.random() * COLORS.length)],
             size: Math.random() * 8 + 4, delay: Math.random() * 1.2, duration: Math.random() * 2 + 2,
@@ -116,32 +126,32 @@ export default function OrderConfirmedPage() {
     </div>
   );
 
-// ✅ After
-if (error || !order) {
-  return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="text-center">
-        <h2 className="text-2xl font-bold text-stone-700 mb-2">Order Not Found</h2>
-        <p className="text-stone-500 mb-6">{error || "We couldn't find this order."}</p>
-        <Link href="/orders" className="bg-stone-800 text-white px-6 py-3 rounded-xl text-sm">
-          View All Orders
-        </Link>
+  // ✅ After
+  if (error || !order) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-stone-700 mb-2">Order Not Found</h2>
+          <p className="text-stone-500 mb-6">{error || "We couldn't find this order."}</p>
+          <Link href="/orders" className="bg-stone-800 text-white px-6 py-3 rounded-xl text-sm">
+            View All Orders
+          </Link>
+        </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
-  const items     = order.items ?? [];
+  const items = order.items ?? [];
   const isOnlyEbook =
-  items.length > 0 && items.every(item => item.format === "ebook");
-  const subtotal  = items.reduce((s, i) => s + Number(i.price) * i.quantity, 0);
+    items.length > 0 && items.every(item => item.format === "ebook");
+  const subtotal = items.reduce((s, i) => s + Number(i.price) * i.quantity, 0);
   const stepIndex = getStepIndex(order.shipping_status);
 
   const tsMap: Record<string, string | null> = {
-    confirmed:        order.confirmed_at,
-    shipped:          order.shipped_at,
+    confirmed: order.confirmed_at,
+    shipped: order.shipped_at,
     out_for_delivery: order.out_for_delivery_at,
-    delivered:        order.delivered_at,
+    delivered: order.delivered_at,
   };
 
   return (
@@ -151,8 +161,10 @@ if (error || !order) {
       <div className="pointer-events-none fixed inset-0 z-50 overflow-hidden">
         {particles.map(p => (
           <span key={p.id} className="absolute top-0 block rounded-sm opacity-0"
-            style={{ left: `${p.x}%`, width: p.size, height: p.size * 1.4, background: p.color,
-              animation: `confettiFall ${p.duration}s ${p.delay}s ease-in forwards` }} />
+            style={{
+              left: `${p.x}%`, width: p.size, height: p.size * 1.4, background: p.color,
+              animation: `confettiFall ${p.duration}s ${p.delay}s ease-in forwards`
+            }} />
         ))}
       </div>
 
@@ -211,17 +223,17 @@ if (error || !order) {
             Order Confirmed!
           </h1>
           {!isOnlyEbook && (
-                   <p className="anim-s2 text-stone-500 text-lg italic mb-5">
-            Thank you for your purchase — your books are on their way.
-          </p>
+            <p className="anim-s2 text-stone-500 text-lg italic mb-5">
+              Thank you for your purchase — your books are on their way.
+            </p>
           )}
 
           {isOnlyEbook && (
-                   <p className="anim-s2 text-stone-500 text-lg italic mb-5">
-            Thank you for your purchase — your eBook is ready to read.
-          </p>
+            <p className="anim-s2 text-stone-500 text-lg italic mb-5">
+              Thank you for your purchase — your eBook is ready to read.
+            </p>
           )}
-   
+
 
           {/* Order ID + date pill */}
           <div className="anim-s3 inline-flex flex-wrap justify-center items-center gap-2 bg-amber-50 border border-amber-200 text-amber-800 text-sm px-4 py-2 rounded-full">
@@ -235,63 +247,63 @@ if (error || !order) {
         </div>
 
         {!isOnlyEbook && (
-  <div className="anim-s4 rounded-2xl">
-      {/* ── Shipping Timeline ── */}
-        
-        <div className="anim-s4 bg-white card-shadow rounded-2xl p-6 mb-6 border border-stone-100">
-          <div className="relative flex items-start justify-between">
-            {/* track bg */}
-            <div className="absolute left-[10%] right-[10%] top-5 h-0.5 bg-stone-100 z-0" />
-            {/* track fill */}
-            <div className="absolute left-[10%] top-5 h-0.5 bg-emerald-400 z-0 transition-all duration-700"
-              style={{ width: `calc(${(stepIndex / (STEPS.length - 1)) * 80}%)` }} />
+          <div className="anim-s4 rounded-2xl">
+            {/* ── Shipping Timeline ── */}
 
-            {STEPS.map((step, i) => {
-              // FIX: done=green tick for completed steps (i<=stepIndex), active=amber for next pending
-              const done   = i <= stepIndex;
-              const active = !done && i === stepIndex + 1;
-              const ts     = step.key ? tsMap[step.key] : order.created_at;
+            <div className="anim-s4 bg-white card-shadow rounded-2xl p-6 mb-6 border border-stone-100">
+              <div className="relative flex items-start justify-between">
+                {/* track bg */}
+                <div className="absolute left-[10%] right-[10%] top-5 h-0.5 bg-stone-100 z-0" />
+                {/* track fill */}
+                <div className="absolute left-[10%] top-5 h-0.5 bg-emerald-400 z-0 transition-all duration-700"
+                  style={{ width: `calc(${(stepIndex / (STEPS.length - 1)) * 80}%)` }} />
 
-              return (
-                <div key={i} className="flex flex-col items-center gap-1 z-10 flex-1 px-1">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xs border-2 transition-all
-                    ${done   ? "bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-100" :
-                      active ? "bg-white border-amber-400 text-amber-600 shadow-md ring-4 ring-amber-50" :
-                               "bg-white border-stone-200 text-stone-300"}`}>
-                    {done ? (
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                      </svg>
-                    ) : <span className="font-medium">{i + 1}</span>}
-                  </div>
-                  <span className={`text-xs text-center leading-tight mt-0.5
+                {STEPS.map((step, i) => {
+                  // FIX: done=green tick for completed steps (i<=stepIndex), active=amber for next pending
+                  const done = i <= stepIndex;
+                  const active = !done && i === stepIndex + 1;
+                  const ts = step.key ? tsMap[step.key] : order.created_at;
+
+                  return (
+                    <div key={i} className="flex flex-col items-center gap-1 z-10 flex-1 px-1">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xs border-2 transition-all
+                    ${done ? "bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-100" :
+                          active ? "bg-white border-amber-400 text-amber-600 shadow-md ring-4 ring-amber-50" :
+                            "bg-white border-stone-200 text-stone-300"}`}>
+                        {done ? (
+                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                        ) : <span className="font-medium">{i + 1}</span>}
+                      </div>
+                      <span className={`text-xs text-center leading-tight mt-0.5
                     ${done ? "text-emerald-600 font-semibold" : active ? "text-amber-600 font-semibold" : "text-stone-400"}`}>
-                    {step.label}
-                  </span>
-                  {(done || active) && ts && (
-                    <span className="text-[10px] text-stone-400">{fmtDate(ts)}</span>
-                  )}
+                        {step.label}
+                      </span>
+                      {(done || active) && ts && (
+                        <span className="text-[10px] text-stone-400">{fmtDate(ts)}</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Courier info */}
+              {order.tracking_number ? (
+                <div className="mt-5 pt-4 border-t border-stone-100 flex flex-wrap gap-4 text-xs text-stone-500">
+                  <span>Courier: <span className="font-medium text-stone-700">{order.courier || "DTDC"}</span></span>
+                  <span>Tracking: <span className="font-mono font-medium text-stone-700">{order.tracking_number}</span></span>
                 </div>
-              );
-            })}
-          </div>
-
-          {/* Courier info */}
-          {order.tracking_number ? (
-            <div className="mt-5 pt-4 border-t border-stone-100 flex flex-wrap gap-4 text-xs text-stone-500">
-              <span>Courier: <span className="font-medium text-stone-700">{order.courier || "DTDC"}</span></span>
-              <span>Tracking: <span className="font-mono font-medium text-stone-700">{order.tracking_number}</span></span>
+              ) : (
+                <p className="text-center text-xs text-stone-400 mt-5 italic">
+                  Your order is being processed. Shipping info will appear here soon.
+                </p>
+              )}
             </div>
-          ) : (
-            <p className="text-center text-xs text-stone-400 mt-5 italic">
-              Your order is being processed. Shipping info will appear here soon.
-            </p>
-          )}
-        </div>
-  </div>
-)}
+          </div>
+        )}
 
-      
+
 
         {/* ── Main grid ── */}
         <div className="grid md:grid-cols-5 gap-6 mb-6">
@@ -377,8 +389,8 @@ if (error || !order) {
                 <div className="flex items-center gap-2 mb-3">
                   <div className="w-8 h-8 rounded-full bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-500">
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
                   </div>
                   <h3 className="display font-semibold text-stone-700 text-sm">Delivery Address</h3>
@@ -399,7 +411,7 @@ if (error || !order) {
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-8 h-8 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                   </svg>
                 </div>
                 <h3 className="display font-semibold text-stone-700 text-sm">Payment</h3>
@@ -407,7 +419,7 @@ if (error || !order) {
               <div className="pl-10 space-y-1">
                 <p className="text-xs text-emerald-600 font-semibold flex items-center gap-1">
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
                   Payment successful
                 </p>
