@@ -86,6 +86,7 @@ export default function CheckoutPage() {
   const [couponError, setCouponError] = useState("");
   const [couponApplied, setCouponApplied] = useState(false);
   const [couponInfo, setCouponInfo] = useState<{ eligible_items?: string[]; applicable_on?: string }>({});
+  const [availableCoupons, setAvailableCoupons] = useState<any[]>([]);
   const [agreed, setAgreed] = useState(false);
 
   const [form, setForm] = useState({
@@ -194,6 +195,22 @@ export default function CheckoutPage() {
           pincode: data.pincode || prev.pincode,
         }));
       });
+  }, [isLoggedIn]);
+
+  /* ── Load Available Coupons ── */
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    fetch(`${API_URL}/api/coupons/available`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data)) setAvailableCoupons(data);
+      })
+      .catch(console.error);
   }, [isLoggedIn]);
 
   /* ── Shipping cost on state change ── */
@@ -567,14 +584,24 @@ export default function CheckoutPage() {
       document.body.appendChild(s);
     });
 
-  const applyCoupon = async () => {
+  const applyCoupon = async (overrideCode?: string | React.MouseEvent) => {
+    const code = typeof overrideCode === "string" ? overrideCode : couponCode;
+    if (typeof overrideCode === "string") setCouponCode(code);
+
     setCouponError("");
     const token = localStorage.getItem("token");
+
+    const isBuyNow = new URLSearchParams(window.location.search).get("buyNow") === "true";
+    const buyNowItemStr = isBuyNow ? sessionStorage.getItem("buyNowItem") : null;
+    let buyNowItem = null;
+    if (buyNowItemStr) {
+      try { buyNowItem = JSON.parse(buyNowItemStr); } catch (e) { }
+    }
 
     const res = await fetch(`${API_URL}/api/checkout/apply-coupon`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ code: couponCode }),
+      body: JSON.stringify({ code, buyNowItem }),
     });
     const data = await res.json();
 
@@ -1264,6 +1291,39 @@ export default function CheckoutPage() {
                   </div>
                 )}
                 {couponError && <p className="text-xs text-red-600 mt-1">{couponError}</p>}
+
+                {/* Available Coupons List */}
+                {!couponApplied && availableCoupons.length > 0 && (
+                  <div className="mt-5">
+                    <div className="flex justify-between items-center mb-3">
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Available Coupons</p>
+                      {availableCoupons.length > 2 && (
+                        <Link href="/account/coupons" className="text-xs font-medium text-blue-600 hover:underline">
+                          See all ({availableCoupons.length})
+                        </Link>
+                      )}
+                    </div>
+                    <div className="space-y-3 pr-1">
+                      {availableCoupons.slice(0, 2).map((c, i) => (
+                        <div key={i} className="flex items-center justify-between border border-dashed border-gray-300 rounded-lg p-2 bg-gray-50/50 hover:bg-gray-50 transition-colors">
+                          <div>
+                            <p className="text-sm font-bold text-gray-800 tracking-tight">{c.code}</p>
+                            <p className="text-xs text-gray-500 mt-0.5">
+                              {c.discount_type === "percent" ? `${c.discount_value}% OFF` : `₹${c.discount_value} OFF`}
+                              {c.min_cart_value > 0 ? ` on orders above ₹${c.min_cart_value}` : ""}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => applyCoupon(c.code)}
+                            className="text-xs font-semibold text-gray-700 bg-white border border-gray-300 px-3.5 py-1.5 rounded hover:bg-black hover:text-white hover:border-black transition-all shadow-sm cursor-pointer"
+                          >
+                            Apply
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <hr className="border-gray-200 mb-4" />

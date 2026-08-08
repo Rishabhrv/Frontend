@@ -16,10 +16,10 @@ const CRMSERVER_API_URL = process.env.NEXT_PUBLIC_CRMSERVER_API_URL;
 const FRONTEND_JWT_SECRET = process.env.NEXT_PUBLIC_FRONTEND_JWT_SECRET || "default_fallback_secret";
 
 type PageKey =
-  | "products" | "orders"   | "category" | "subject"
-  | "author"   | "users"    | "reviews"  | "shipping"
-  | "subscriptions" | "payment" | "coupons" | "ads" 
-  | "settings" | "analytics" | "ebook-analytics";
+  | "products" | "orders" | "category" | "subject"
+  | "author" | "users" | "reviews" | "shipping"
+  | "subscriptions" | "payment" | "coupons" | "ads"
+  | "settings" | "analytics" | "ebook-analytics" | "sales";
 
 interface NavItem {
   key: PageKey;
@@ -30,27 +30,28 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { key: "category",            label: "Category",          icon: Layers,                       href: "/admin/category/addcategories",                   pathPrefix: "/admin/category"             },
-  { key: "subject",             label: "Subject",           icon: AlignVerticalDistributeStart, href: "/admin/subject/SubjectPage",                      pathPrefix: "/admin/subject"              },
-  { key: "author",              label: "Book Authors",      icon: LibraryBig,                   href: "/admin/author/productauthortable",                pathPrefix: "/admin/author"               },
-  { key: "users",               label: "Users",             icon: Users,                        href: "/admin/users/UsersPage",                          pathPrefix: "/admin/users"                },
-  { key: "reviews",             label: "Review",            icon: UserStar,                     href: "/admin/reviews/ReviewsPage",                      pathPrefix: "/admin/reviews"              },
-  { key: "shipping",            label: "Shipping",          icon: Truck,                        href: "/admin/shipping/ShippingZone",                    pathPrefix: "/admin/shipping"             },
-  { key: "subscriptions",       label: "Subscription",      icon: BadgeCheck,                   href: "/admin/subscriptions/SubscriptionPage",           pathPrefix: "/admin/subscriptions"        },
-  { key: "payment",             label: "Payment",           icon: BadgeIndianRupee,             href: "/admin/payment/PaymentPage",                      pathPrefix: "/admin/payment"              },
-  { key: "coupons",             label: "Coupons",           icon: BadgePercent,                 href: "/admin/coupon/CouponPage",                        pathPrefix: "/admin/coupon"               },
-  { key: "ads",                 label: "Ads",               icon: Megaphone,                    href: "/admin/ads/AdPage",                               pathPrefix: "/admin/ads"                  },
-  { key: "settings",            label: "Settings",          icon: ShieldOff,                    href: "/admin/settings/SettingsPage",                    pathPrefix: "/admin/settings"             },
-  { key: "analytics",           label: "Analytics",         icon: ChartArea,                    href: "/admin/analytics/AnalyticsPage",                  pathPrefix: "/admin/analytics"            },
-  { key: "ebook-analytics",     label: "EbookAnalytics",    icon: ChartLine,                    href: "/admin/ebook-analytics/EbookAnalyticsPage",       pathPrefix: "/admin/ebook-analytics"      },
+  { key: "category", label: "Category", icon: Layers, href: "/admin/category/addcategories", pathPrefix: "/admin/category" },
+  { key: "subject", label: "Subject", icon: AlignVerticalDistributeStart, href: "/admin/subject/SubjectPage", pathPrefix: "/admin/subject" },
+  { key: "author", label: "Book Authors", icon: LibraryBig, href: "/admin/author/productauthortable", pathPrefix: "/admin/author" },
+  { key: "users", label: "Users", icon: Users, href: "/admin/users/UsersPage", pathPrefix: "/admin/users" },
+  { key: "reviews", label: "Review", icon: UserStar, href: "/admin/reviews/ReviewsPage", pathPrefix: "/admin/reviews" },
+  { key: "shipping", label: "Shipping", icon: Truck, href: "/admin/shipping/ShippingZone", pathPrefix: "/admin/shipping" },
+  { key: "subscriptions", label: "Subscription", icon: BadgeCheck, href: "/admin/subscriptions/SubscriptionPage", pathPrefix: "/admin/subscriptions" },
+  { key: "payment", label: "Payment", icon: BadgeIndianRupee, href: "/admin/payment/PaymentPage", pathPrefix: "/admin/payment" },
+  { key: "coupons", label: "Coupons", icon: BadgePercent, href: "/admin/coupon/CouponPage", pathPrefix: "/admin/coupon" },
+  { key: "ads", label: "Ads", icon: Megaphone, href: "/admin/ads/AdPage", pathPrefix: "/admin/ads" },
+  { key: "sales", label: "Sales", icon: ChartLine, href: "/admin/sales/SalesPage", pathPrefix: "/admin/sales" },
+  { key: "settings", label: "Settings", icon: ShieldOff, href: "/admin/settings/SettingsPage", pathPrefix: "/admin/settings" },
+  { key: "analytics", label: "Analytics", icon: ChartArea, href: "/admin/analytics/AnalyticsPage", pathPrefix: "/admin/analytics" },
+  { key: "ebook-analytics", label: "EbookAnalytics", icon: ChartLine, href: "/admin/ebook-analytics/EbookAnalyticsPage", pathPrefix: "/admin/ebook-analytics" },
 ];
 
 async function generateLocalToken(secret: string) {
   const header = { alg: "HS256", typ: "JWT" };
   const payload = {
-    user_id: 1, 
+    user_id: 1,
     session_id: "auto-generated-frontend-session",
-    exp: Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60) 
+    exp: Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60)
   };
   const base64UrlEncode = (obj: any) => btoa(JSON.stringify(obj)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   const data = `${base64UrlEncode(header)}.${base64UrlEncode(payload)}`;
@@ -65,13 +66,13 @@ export default function Sidebar() {
   const pathname = usePathname() ?? "";
 
   const [openMenu, setOpenMenu] = useState<"products" | "orders" | "listing" | null>(null);
-  
+
   // Badge Counter States
   const [newOrdersCount, setNewOrdersCount] = useState<number>(0);
   const [pendingReviewsCount, setPendingReviewsCount] = useState<number>(0);
   const [readyToGoCount, setReadyToGoCount] = useState<number>(0);
   const [amazonPendingCount, setAmazonPendingCount] = useState<number>(0);
-  
+
   const { can, loading } = usePermissions();
 
   // Highlight current active tabs based on explicit paths
@@ -79,14 +80,14 @@ export default function Sidebar() {
     // Specifically target listing routes so the correct parent menu stays open
     if (pathname === "/admin/product/ReadytoGoProduct" || pathname === "/admin/product/AmazonProduct") {
       setOpenMenu("listing");
-    } 
+    }
     // Handle the remaining product routes
     else if (pathname.startsWith("/admin/product")) {
       setOpenMenu("products");
-    } 
+    }
     else if (pathname.startsWith("/admin/order")) {
       setOpenMenu("orders");
-    } 
+    }
     else {
       setOpenMenu(null);
     }
@@ -145,15 +146,15 @@ export default function Sidebar() {
         const token = await generateLocalToken(FRONTEND_JWT_SECRET);
         const res = await fetch(`${CRMSERVER_API_URL}/api/amazon/pending_books`, {
           method: "GET",
-          headers: { 
-            "Content-Type": "application/json", 
-            "Authorization": `Bearer ${token}` 
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
           }
         });
-        
+
         if (!res.ok) throw new Error("Failed to fetch pending amazon books");
         const json = await res.json();
-        
+
         if (json.status === "success" && json.data) {
           setAmazonPendingCount(json.data.length);
         }
@@ -352,7 +353,7 @@ function SidebarItem({ icon, label, isOpen, badge, onClick, children }: SidebarI
       </button>
 
       {isOpen && <div className="ml-10 mt-1 space-y-1">{children}</div>}
-      
+
     </div>
   );
 }
