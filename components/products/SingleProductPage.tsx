@@ -633,13 +633,11 @@ export default function SingleProductPage({ product }: { product: Product }) {
             {format === "paperback" && paperbackDiscount > 0 && (
               <div className="flex items-center gap-2 bg-red-50 text-red-700 text-xs sm:text-sm px-3 sm:px-4 py-2 rounded">
                 <span>Save up to {paperbackDiscount}% Off on this book</span>
-                <button className="underline text-xs">Learn More</button>
               </div>
             )}
             {format === "ebook" && ebookDiscount > 0 && (
               <div className="flex items-center gap-2 bg-red-50 text-red-700 text-xs sm:text-sm px-3 sm:px-4 py-2 rounded">
                 <span>Save up to {ebookDiscount}% Off on this eBook</span>
-                <button className="underline text-xs">Learn More</button>
               </div>
             )}
 
