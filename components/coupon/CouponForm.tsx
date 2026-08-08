@@ -34,6 +34,9 @@ const CouponForm = ({ coupon, onClose, onSaved }: any) => {
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
 
+  const [productSearch, setProductSearch] = useState("");
+  const [categorySearch, setCategorySearch] = useState("");
+
   const [form, setForm] = useState(
     coupon || {
       code: "",
@@ -273,60 +276,128 @@ useEffect(() => {
             </Field>
 
             {form.applicable_on === "product" && (
-              <Field
-                label="Select Products"
-                span
-                hint="Hold Ctrl / Cmd to select multiple"
-              >
-                <select
-                  multiple
-                  className="w-full border border-gray-200 bg-white text-sm text-gray-700 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-300 transition h-40"
-                  value={form.selected_products.map(String)}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      selected_products: Array.from(
-                        e.target.selectedOptions,
-                        (o) => Number(o.value)
-                      ),
-                    })
-                  }
-                >
-                  {products.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name || p.title}
-                    </option>
-                  ))}
-                </select>
+              <Field label="Select Products" span hint="Search and select specific products">
+                <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
+                  {/* Search Bar */}
+                  <div className="p-2 border-b border-gray-100 flex items-center gap-2">
+                    <svg className="w-4 h-4 text-gray-400 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <input 
+                      type="text" 
+                      placeholder="Search products..." 
+                      className="w-full text-sm px-1 py-1 focus:outline-none text-gray-700 placeholder-gray-400"
+                      value={productSearch}
+                      onChange={e => setProductSearch(e.target.value)}
+                    />
+                  </div>
+                  {/* Select All */}
+                  <div className="p-2.5 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+                     <label className="flex items-center gap-2.5 text-sm cursor-pointer select-none text-gray-700">
+                       <input 
+                         type="checkbox" 
+                         className="rounded text-gray-900 focus:ring-gray-900"
+                         checked={form.selected_products.length === products.length && products.length > 0}
+                         onChange={(e) => {
+                           if (e.target.checked) {
+                             setForm({ ...form, selected_products: products.map(p => p.id) });
+                           } else {
+                             setForm({ ...form, selected_products: [] });
+                           }
+                         }}
+                       />
+                       <span className="font-medium">Select All</span>
+                     </label>
+                     <span className="text-xs text-gray-500 bg-gray-200 px-2 py-0.5 rounded-full">{form.selected_products.length} selected</span>
+                  </div>
+                  {/* Product List */}
+                  <div className="max-h-48 overflow-y-auto p-2">
+                    {products.filter(p => (p.name || p.title || "").toLowerCase().includes(productSearch.toLowerCase())).length === 0 ? (
+                      <div className="text-xs text-gray-400 text-center py-6">No products found</div>
+                    ) : (
+                      products.filter(p => (p.name || p.title || "").toLowerCase().includes(productSearch.toLowerCase())).map(p => (
+                        <label key={p.id} className="flex items-center gap-2.5 p-1.5 hover:bg-gray-50 rounded-md cursor-pointer text-sm text-gray-700 transition-colors">
+                          <input 
+                            type="checkbox"
+                            className="rounded text-gray-900 focus:ring-gray-900"
+                            checked={form.selected_products.includes(p.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setForm({ ...form, selected_products: [...form.selected_products, p.id] });
+                              } else {
+                                setForm({ ...form, selected_products: form.selected_products.filter((id: any) => id !== p.id) });
+                              }
+                            }}
+                          />
+                          <span className="truncate">{p.name || p.title}</span>
+                        </label>
+                      ))
+                    )}
+                  </div>
+                </div>
               </Field>
             )}
 
             {form.applicable_on === "category" && (
-              <Field
-                label="Select Categories"
-                span
-                hint="Hold Ctrl / Cmd to select multiple"
-              >
-                <select
-                  multiple
-                  className="w-full border border-gray-200 bg-white text-sm text-gray-700 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-300 transition h-40"
-                  value={form.selected_categories.map(String)}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      selected_categories: Array.from(
-                        e.target.selectedOptions,
-                        (o) => Number(o.value)
-                      ),
-                    })
-                  }
-                >
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
+              <Field label="Select Categories" span hint="Search and select specific categories">
+                <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
+                  {/* Search Bar */}
+                  <div className="p-2 border-b border-gray-100 flex items-center gap-2">
+                    <svg className="w-4 h-4 text-gray-400 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <input 
+                      type="text" 
+                      placeholder="Search categories..." 
+                      className="w-full text-sm px-1 py-1 focus:outline-none text-gray-700 placeholder-gray-400"
+                      value={categorySearch}
+                      onChange={e => setCategorySearch(e.target.value)}
+                    />
+                  </div>
+                  {/* Select All */}
+                  <div className="p-2.5 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+                     <label className="flex items-center gap-2.5 text-sm cursor-pointer select-none text-gray-700">
+                       <input 
+                         type="checkbox" 
+                         className="rounded text-gray-900 focus:ring-gray-900"
+                         checked={form.selected_categories.length === categories.length && categories.length > 0}
+                         onChange={(e) => {
+                           if (e.target.checked) {
+                             setForm({ ...form, selected_categories: categories.map(c => c.id) });
+                           } else {
+                             setForm({ ...form, selected_categories: [] });
+                           }
+                         }}
+                       />
+                       <span className="font-medium">Select All</span>
+                     </label>
+                     <span className="text-xs text-gray-500 bg-gray-200 px-2 py-0.5 rounded-full">{form.selected_categories.length} selected</span>
+                  </div>
+                  {/* Category List */}
+                  <div className="max-h-48 overflow-y-auto p-2">
+                    {categories.filter(c => (c.name || "").toLowerCase().includes(categorySearch.toLowerCase())).length === 0 ? (
+                      <div className="text-xs text-gray-400 text-center py-6">No categories found</div>
+                    ) : (
+                      categories.filter(c => (c.name || "").toLowerCase().includes(categorySearch.toLowerCase())).map(c => (
+                        <label key={c.id} className="flex items-center gap-2.5 p-1.5 hover:bg-gray-50 rounded-md cursor-pointer text-sm text-gray-700 transition-colors">
+                          <input 
+                            type="checkbox"
+                            className="rounded text-gray-900 focus:ring-gray-900"
+                            checked={form.selected_categories.includes(c.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setForm({ ...form, selected_categories: [...form.selected_categories, c.id] });
+                              } else {
+                                setForm({ ...form, selected_categories: form.selected_categories.filter((id: any) => id !== c.id) });
+                              }
+                            }}
+                          />
+                          <span className="truncate">{c.name}</span>
+                        </label>
+                      ))
+                    )}
+                  </div>
+                </div>
               </Field>
             )}
 

@@ -97,10 +97,13 @@ export default function OrderConfirmedPage() {
         if (data.payment_status === "success") {
 
           if (typeof window !== "undefined" && (window as any).fbq && !pixelFired.current) {
-            (window as any).fbq("track", "Purchase", {
-              value: Number(data.total_amount),
-              currency: "INR"
-            });
+            const purchaseValue = parseFloat(String(data.total_amount));
+            if (!isNaN(purchaseValue) && purchaseValue > 0) {
+              (window as any).fbq("track", "Purchase", {
+                value: purchaseValue,
+                currency: "INR"
+              }, { eventID: String(orderId) });
+            }
             pixelFired.current = true;
           }
 

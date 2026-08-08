@@ -238,11 +238,18 @@ const deleteCoupon = (id: number) => {
               </thead>
 
               <tbody className="divide-y divide-gray-50">
-                {paginated.map((c) => (
+                {paginated.map((c) => {
+                  const isExpired = c.expiry_date && new Date(c.expiry_date).setHours(23, 59, 59, 999) < Date.now();
+                  
+                  return (
                   <tr
                     key={c.id}
-                    className={`hover:bg-gray-50/60 transition-colors duration-100 ${
-                      selected.includes(c.id) ? "bg-blue-50/40" : ""
+                    className={`transition-colors duration-100 ${
+                      selected.includes(c.id) 
+                        ? "bg-blue-50 hover:bg-blue-100" 
+                        : isExpired 
+                          ? "bg-gray-100 opacity-60 hover:bg-gray-200" 
+                          : "hover:bg-gray-50"
                     }`}
                   >
                     <td className="px-5 py-4 text-center">
@@ -295,13 +302,15 @@ const deleteCoupon = (id: number) => {
                     <td className="px-4 py-4 text-center">
                       <span
                         className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
-                          c.status === "active"
+                          isExpired
+                            ? "bg-red-50 text-red-600 ring-1 ring-red-200"
+                            : c.status === "active"
                             ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
                             : "bg-gray-100 text-gray-500 ring-1 ring-gray-200"
                         }`}
                       >
-                        <span className={`w-1.5 h-1.5 rounded-full ${c.status === "active" ? "bg-emerald-500" : "bg-gray-400"}`} />
-                        {c.status}
+                        <span className={`w-1.5 h-1.5 rounded-full ${isExpired ? "bg-red-500" : c.status === "active" ? "bg-emerald-500" : "bg-gray-400"}`} />
+                        {isExpired ? "expired" : c.status}
                       </span>
                     </td>
 
@@ -324,7 +333,8 @@ const deleteCoupon = (id: number) => {
                       </div>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
 
                 {!paginated.length && (
                   <tr>

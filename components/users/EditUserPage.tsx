@@ -62,10 +62,10 @@ interface Review {
 
 /* ─── Page key type ─── */
 type PageKey =
-  | "products"      | "orders"   | "category"     | "subject"
-  | "author"        | "users"    | "reviews"      | "shipping"
-  | "subscriptions" | "payment"  | "coupons"      | "ads"
-  | "analytics"     | "ebook-analytics";
+  | "products" | "orders" | "category" | "subject"
+  | "author" | "users" | "reviews" | "shipping"
+  | "subscriptions" | "payment" | "coupons" | "ads"
+  | "analytics" | "ebook-analytics" | "sales";
 
 interface PageOption {
   key: PageKey;
@@ -75,49 +75,49 @@ interface PageOption {
 
 /* ─── All available pages ─── */
 const ALL_PAGES: PageOption[] = [
-  { key: "products",      label: "Products",      description: "View, add and edit products"          },
-  { key: "orders",        label: "Orders",        description: "View and manage customer orders"      },
-  { key: "category",      label: "Category",      description: "Manage product categories"            },
-  { key: "subject",       label: "Subject",       description: "Manage subjects"                      },
-  { key: "author",        label: "Book Authors",  description: "Manage book authors"                  },
-  { key: "users",         label: "Users",         description: "View and edit users"                  },
-  { key: "reviews",       label: "Reviews",       description: "Approve or reject reviews"            },
-  { key: "shipping",      label: "Shipping",      description: "Manage shipping zones and methods"    },
-  { key: "subscriptions", label: "Subscriptions", description: "View subscription plans and users"    },
-  { key: "payment",       label: "Payment",       description: "View payment history"                 },
-  { key: "coupons",       label: "Coupons",       description: "Create and manage coupons"            },
-  { key: "ads",           label: "Ads",           description: "Manage advertisements"               },
-  { key: "analytics",     label: "Analytics",     description: "View analytics and reports"            },
-  { key: "ebook-analytics", label: "EbookAnalytics", description: "View ebook analytics and reports"     },
+  { key: "products", label: "Products", description: "View, add and edit products" },
+  { key: "orders", label: "Orders", description: "View and manage customer orders" },
+  { key: "category", label: "Category", description: "Manage product categories" },
+  { key: "subject", label: "Subject", description: "Manage subjects" },
+  { key: "author", label: "Book Authors", description: "Manage book authors" },
+  { key: "users", label: "Users", description: "View and edit users" },
+  { key: "reviews", label: "Reviews", description: "Approve or reject reviews" },
+  { key: "shipping", label: "Shipping", description: "Manage shipping zones and methods" },
+  { key: "subscriptions", label: "Subscriptions", description: "View subscription plans and users" },
+  { key: "payment", label: "Payment", description: "View payment history" },
+  { key: "coupons", label: "Coupons", description: "Create and manage coupons" },
+  { key: "ads", label: "Ads", description: "Manage advertisements" },
+  { key: "sales", label: "Sales", description: "Manage Discount Sales" },
+  { key: "analytics", label: "Analytics", description: "View analytics and reports" },
+  { key: "ebook-analytics", label: "EbookAnalytics", description: "View ebook analytics and reports" },
 ];
 
 /* ─── Badge ─── */
 function Badge({ value }: { value: string }) {
   const styles: Record<string, string> = {
-    active:           "bg-green-100 text-green-700",
-    blocked:          "bg-red-100 text-red-600",
-    customer:         "bg-blue-100 text-blue-600",
-    admin:            "bg-purple-100 text-purple-600",
-    local:            "bg-gray-100 text-gray-600",
-    google:           "bg-orange-100 text-orange-600",
-    pending:          "bg-yellow-100 text-yellow-700",
-    paid:             "bg-green-100 text-green-700",
-    success:          "bg-green-100 text-green-700",
-    failed:           "bg-red-100 text-red-600",
-    shipped:          "bg-blue-100 text-blue-600",
-    completed:        "bg-green-100 text-green-700",
-    cancelled:        "bg-red-100 text-red-600",
-    approved:         "bg-green-100 text-green-700",
-    expired:          "bg-gray-100 text-gray-500",
-    confirmed:        "bg-blue-100 text-blue-600",
+    active: "bg-green-100 text-green-700",
+    blocked: "bg-red-100 text-red-600",
+    customer: "bg-blue-100 text-blue-600",
+    admin: "bg-purple-100 text-purple-600",
+    local: "bg-gray-100 text-gray-600",
+    google: "bg-orange-100 text-orange-600",
+    pending: "bg-yellow-100 text-yellow-700",
+    paid: "bg-green-100 text-green-700",
+    success: "bg-green-100 text-green-700",
+    failed: "bg-red-100 text-red-600",
+    shipped: "bg-blue-100 text-blue-600",
+    completed: "bg-green-100 text-green-700",
+    cancelled: "bg-red-100 text-red-600",
+    approved: "bg-green-100 text-green-700",
+    expired: "bg-gray-100 text-gray-500",
+    confirmed: "bg-blue-100 text-blue-600",
     out_for_delivery: "bg-indigo-100 text-indigo-600",
-    delivered:        "bg-green-100 text-green-700",
+    delivered: "bg-green-100 text-green-700",
   };
   return (
     <span
-      className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${
-        styles[value] ?? "bg-gray-100 text-gray-600"
-      }`}
+      className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${styles[value] ?? "bg-gray-100 text-gray-600"
+        }`}
     >
       {value.replace(/_/g, " ")}
     </span>
@@ -152,26 +152,26 @@ function Card({
 export default function EditUserPage({ userId }: { userId: string }) {
   const router = useRouter();
 
-  const [user, setUser]           = useState<User | null>(null);
-  const [address, setAddress]     = useState<Address | null>(null);
-  const [orders, setOrders]       = useState<Order[]>([]);
-  const [subscriptions, setSubs]  = useState<Subscription[]>([]);
-  const [reviews, setReviews]     = useState<Review[]>([]);
-  const [loading, setLoading]     = useState(true);
-  const [saving, setSaving]       = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [address, setAddress] = useState<Address | null>(null);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [subscriptions, setSubs] = useState<Subscription[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
   const [toastOpen, setToastOpen] = useState(false);
-  const [toastMsg, setToastMsg]   = useState("");
+  const [toastMsg, setToastMsg] = useState("");
 
   /* ── Permissions state ── */
-  const [assignedPages, setAssignedPages]   = useState<PageKey[]>([]);
-  const [permLoading, setPermLoading]       = useState(false);
-  const [permSaving, setPermSaving]         = useState(false);
-  const [permDirty, setPermDirty]           = useState(false);
+  const [assignedPages, setAssignedPages] = useState<PageKey[]>([]);
+  const [permLoading, setPermLoading] = useState(false);
+  const [permSaving, setPermSaving] = useState(false);
+  const [permDirty, setPermDirty] = useState(false);
   const permFetchedRef = useRef<string | null>(null);
 
   /* ── Superadmin OTP gate ── */
-  const [showOtpModal, setShowOtpModal]             = useState(false);
+  const [showOtpModal, setShowOtpModal] = useState(false);
   const [superAdminUnlocked, setSuperAdminUnlocked] = useState(false);
 
   const [form, setForm] = useState({
@@ -184,10 +184,10 @@ export default function EditUserPage({ userId }: { userId: string }) {
     address: "", city: "", state: "", country: "", pincode: "",
   });
   const [addrEditing, setAddrEditing] = useState(false);
-  const [addrSaving, setAddrSaving]   = useState(false);
+  const [addrSaving, setAddrSaving] = useState(false);
 
-  const isSuperAdmin    = user?.id === 1;
-  const isAdminUser     = user?.role === "admin" && !isSuperAdmin;
+  const isSuperAdmin = user?.id === 1;
+  const isAdminUser = user?.role === "admin" && !isSuperAdmin;
   const superAdminLocked = isSuperAdmin && !superAdminUnlocked;
 
   // ── Only show orders with a successful payment ──
@@ -197,11 +197,11 @@ export default function EditUserPage({ userId }: { userId: string }) {
   useEffect(() => {
     const h = authHeaders();
     Promise.all([
-      fetch(`${API_URL}/api/admin/users/${userId}`,              { headers: h }).then((r) => r.json()),
-      fetch(`${API_URL}/api/admin/users/${userId}/addresses`,    { headers: h }).then((r) => r.json()),
-      fetch(`${API_URL}/api/admin/users/${userId}/orders`,       { headers: h }).then((r) => r.json()),
-      fetch(`${API_URL}/api/admin/users/${userId}/subscriptions`,{ headers: h }).then((r) => r.json()),
-      fetch(`${API_URL}/api/admin/users/${userId}/reviews`,      { headers: h }).then((r) => r.json()),
+      fetch(`${API_URL}/api/admin/users/${userId}`, { headers: h }).then((r) => r.json()),
+      fetch(`${API_URL}/api/admin/users/${userId}/addresses`, { headers: h }).then((r) => r.json()),
+      fetch(`${API_URL}/api/admin/users/${userId}/orders`, { headers: h }).then((r) => r.json()),
+      fetch(`${API_URL}/api/admin/users/${userId}/subscriptions`, { headers: h }).then((r) => r.json()),
+      fetch(`${API_URL}/api/admin/users/${userId}/reviews`, { headers: h }).then((r) => r.json()),
     ]).then(([u, addr, ord, subs, revs]) => {
       setUser(u);
       setForm({
@@ -362,8 +362,8 @@ export default function EditUserPage({ userId }: { userId: string }) {
 
   // Spend is now based only on successful-payment orders
   const totalOrderSpend = successOrders.reduce((s, o) => s + Number(o.total_amount), 0);
-  const totalSubSpend   = subscriptions.reduce((s, sub) => s + Number(sub.amount_paid), 0);
-  const totalSpent      = totalOrderSpend + totalSubSpend;
+  const totalSubSpend = subscriptions.reduce((s, sub) => s + Number(sub.amount_paid), 0);
+  const totalSpent = totalOrderSpend + totalSubSpend;
 
   if (loading) {
     return (
@@ -379,11 +379,11 @@ export default function EditUserPage({ userId }: { userId: string }) {
 
   /* ── Build tabs dynamically ── */
   const tabs = [
-    { id: "profile",       label: "Profile" },
+    { id: "profile", label: "Profile" },
     // Tab count shows only successful-payment orders
-    { id: "orders",        label: `Orders (${successOrders.length})` },
+    { id: "orders", label: `Orders (${successOrders.length})` },
     { id: "subscriptions", label: `Subscriptions (${subscriptions.length})` },
-    { id: "reviews",       label: `Reviews (${reviews.length})` },
+    { id: "reviews", label: `Reviews (${reviews.length})` },
     ...(isAdminUser
       ? [{ id: "permissions", label: "Permissions" }]
       : []),
@@ -436,14 +436,14 @@ export default function EditUserPage({ userId }: { userId: string }) {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
         {[
           // Count reflects only successful-payment orders
-          { label: "Total Orders",  value: successOrders.length },
+          { label: "Total Orders", value: successOrders.length },
           {
             label: "Total Spent",
             value: `₹${totalSpent.toLocaleString("en-IN")}`,
             sub: `Orders ₹${totalOrderSpend.toLocaleString("en-IN")} + Subs ₹${totalSubSpend.toLocaleString("en-IN")}`,
           },
-          { label: "Active Subs",   value: subscriptions.filter((s) => s.status === "active").length },
-          { label: "Reviews",       value: reviews.length },
+          { label: "Active Subs", value: subscriptions.filter((s) => s.status === "active").length },
+          { label: "Reviews", value: reviews.length },
         ].map((s) => (
           <div key={s.label} className="bg-white border border-gray-200 rounded-xl px-4 py-4">
             <p className="text-xl font-bold text-gray-800">{s.value}</p>
@@ -461,11 +461,10 @@ export default function EditUserPage({ userId }: { userId: string }) {
           <button
             key={t.id}
             onClick={() => setActiveTab(t.id)}
-            className={`px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors -mb-px cursor-pointer ${
-              activeTab === t.id
-                ? "border-blue-500 text-blue-600"
-                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-            }`}
+            className={`px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors -mb-px cursor-pointer ${activeTab === t.id
+              ? "border-blue-500 text-blue-600"
+              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              }`}
           >
             {t.label}
             {t.id === "permissions" && permDirty && (
@@ -481,9 +480,8 @@ export default function EditUserPage({ userId }: { userId: string }) {
       {activeTab === "profile" && (
         <>
           {isSuperAdmin && (
-            <div className={`flex items-center justify-between gap-4 rounded-xl px-4 py-3 mb-5 border ${
-              superAdminUnlocked ? "bg-green-50 border-green-200" : "bg-yellow-50 border-yellow-200"
-            }`}>
+            <div className={`flex items-center justify-between gap-4 rounded-xl px-4 py-3 mb-5 border ${superAdminUnlocked ? "bg-green-50 border-green-200" : "bg-yellow-50 border-yellow-200"
+              }`}>
               <div className="flex items-center gap-2">
                 {superAdminUnlocked ? (
                   <>
@@ -759,11 +757,10 @@ export default function EditUserPage({ userId }: { userId: string }) {
                     return (
                       <label
                         key={key}
-                        className={`flex items-start gap-3 rounded-xl border px-4 py-3.5 cursor-pointer transition-all ${
-                          checked
-                            ? "border-blue-200 bg-blue-50"
-                            : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
-                        }`}
+                        className={`flex items-start gap-3 rounded-xl border px-4 py-3.5 cursor-pointer transition-all ${checked
+                          ? "border-blue-200 bg-blue-50"
+                          : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
+                          }`}
                       >
                         <div className="mt-0.5 shrink-0">
                           <input
@@ -772,9 +769,8 @@ export default function EditUserPage({ userId }: { userId: string }) {
                             checked={checked}
                             onChange={() => togglePage(key)}
                           />
-                          <div className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-colors ${
-                            checked ? "bg-blue-600 border-blue-600" : "bg-white border-gray-300"
-                          }`}>
+                          <div className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-colors ${checked ? "bg-blue-600 border-blue-600" : "bg-white border-gray-300"
+                            }`}>
                             {checked && (
                               <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -966,7 +962,7 @@ export default function EditUserPage({ userId }: { userId: string }) {
           onClose={() => setShowOtpModal(false)}
           onVerified={() => setSuperAdminUnlocked(true)}
           onSuccess={(msg) => { setToastMsg(msg); setToastOpen(true); }}
-          onError={(msg)   => { setToastMsg(msg); setToastOpen(true); }}
+          onError={(msg) => { setToastMsg(msg); setToastOpen(true); }}
         />
       )}
     </div>

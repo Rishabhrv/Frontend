@@ -48,6 +48,15 @@ type Product = {
   subjects?: Subject[];
   sections?: any[];
   pixel_ids?: string[];
+  active_sale?: {
+    id: number;
+    name: string;
+    discount_type: string;
+    discount_value: number;
+    end_date: string;
+  };
+  original_sell_price?: number;
+  original_ebook_sell_price?: number;
 };
 
 /* ─── Share dropdown ─────────────────────────────────────────────────────── */
@@ -156,6 +165,38 @@ function ShareButton({ title }: { title: string }) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+/* ─── Countdown Timer ────────────────────────────────────────────────────── */
+function SaleCountdown({ endDate }: { endDate: string }) {
+  const [timeLeft, setTimeLeft] = useState(() => {
+    const diff = new Date(endDate).getTime() - new Date().getTime();
+    return Math.max(0, Math.floor(diff / 1000));
+  });
+
+  useEffect(() => {
+    if (timeLeft <= 0) return;
+    const interval = setInterval(() => {
+      setTimeLeft((prev) => Math.max(0, prev - 1));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [timeLeft]);
+
+  if (timeLeft <= 0) return null;
+
+  const d = Math.floor(timeLeft / (3600 * 24));
+  const h = Math.floor((timeLeft % (3600 * 24)) / 3600);
+  const m = Math.floor((timeLeft % 3600) / 60);
+  const s = timeLeft % 60;
+
+  return (
+    <div className="flex items-center gap-1.5 text-xs font-semibold text-red-600 bg-red-50 border border-red-200 px-3 py-1.5 rounded-full ml-1 sm:ml-2 shadow-sm self-center sm:self-end sm:mb-1">
+      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      Ends In: <span className="font-bold min-w-[68px]">{d}d {h}h {m}m {s}s</span>
     </div>
   );
 }
@@ -564,15 +605,22 @@ export default function SingleProductPage({ product }: { product: Product }) {
 
           {/* ── PRICE ── */}
           <div className="mb-5 space-y-3">
-            <div className="flex items-end gap-2 sm:gap-3 flex-wrap">
+            <div className="flex items-center sm:items-end gap-2 sm:gap-3 flex-wrap">
               <span className="text-2xl sm:text-3xl font-semibold text-red-600">
                 ₹{format === "paperback" ? product.sell_price : product.ebook_sell_price}
               </span>
               {format === "paperback" && product.price > product.sell_price && (
-                <span className="text-base sm:text-lg line-through text-gray-400">₹{product.price}</span>
+                <span className="text-base sm:text-lg line-through text-gray-400">
+                  ₹{product.price}
+                </span>
               )}
               {format === "ebook" && product.ebook_price && product.ebook_sell_price && product.ebook_price > product.ebook_sell_price && (
-                <span className="text-base sm:text-lg line-through text-gray-400">₹{product.ebook_price}</span>
+                <span className="text-base sm:text-lg line-through text-gray-400">
+                  ₹{product.ebook_price}
+                </span>
+              )}
+              {product.active_sale && product.active_sale.end_date && (
+                <SaleCountdown endDate={product.active_sale.end_date} />
               )}
             </div>
 

@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 type PageKey =
-  | "products" | "orders"   | "category" | "subject"
-  | "author"   | "users"    | "reviews"  | "shipping"
+  | "products" | "orders" | "category" | "subject"
+  | "author" | "users" | "reviews" | "shipping"
   | "subscriptions" | "payment" | "coupons" | "ads"
-  | "settings" | "analytics" | "ebook-analytics";
+  | "settings" | "analytics" | "ebook-analytics" | "sales";
 
 interface PermissionsResponse {
   pages: PageKey[];
