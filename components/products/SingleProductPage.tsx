@@ -54,6 +54,7 @@ type Product = {
     discount_type: string;
     discount_value: number;
     end_date: string;
+    timer_duration_hours?: number;
   };
   original_sell_price?: number;
   original_ebook_sell_price?: number;
@@ -169,34 +170,126 @@ function ShareButton({ title }: { title: string }) {
   );
 }
 
-/* ─── Countdown Timer ────────────────────────────────────────────────────── */
-function SaleCountdown({ endDate }: { endDate: string }) {
-  const [timeLeft, setTimeLeft] = useState(() => {
-    const diff = new Date(endDate).getTime() - new Date().getTime();
-    return Math.max(0, Math.floor(diff / 1000));
-  });
+/* ─── Flip digit tile ────────────────────────────────────────────────────── */
+function FlipUnit({ value, label }: { value: number; label: string }) {
+  const [current, setCurrent] = useState(value);
+  const [prev, setPrev] = useState(value);
+  const [flipping, setFlipping] = useState(false);
 
   useEffect(() => {
-    if (timeLeft <= 0) return;
-    const interval = setInterval(() => {
-      setTimeLeft((prev) => Math.max(0, prev - 1));
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [timeLeft]);
+    if (value !== current) {
+      setPrev(current);
+      setFlipping(true);
+      const t = setTimeout(() => {
+        setCurrent(value);
+        setFlipping(false);
+      }, 500);
+      return () => clearTimeout(t);
+    }
+  }, [value, current]);
 
-  if (timeLeft <= 0) return null;
+  return (
+    <div className="flex flex-col items-center gap-1.5">
+      <div className="relative w-14 h-14 sm:w-16 sm:h-16" style={{ perspective: "300px" }}>
+        {/* base tile — settled value */}
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-900 text-white rounded-lg shadow-md">
+          <span className="text-2xl sm:text-3xl font-bold font-mono tabular-nums">
+            {String(flipping ? prev : current).padStart(2, "0")}
+          </span>
+        </div>
+
+        {/* flipping face — drops in the new value */}
+        {flipping && (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-900 text-white rounded-lg shadow-md flip-face">
+            <span className="text-2xl sm:text-3xl font-bold font-mono tabular-nums">
+              {String(value).padStart(2, "0")}
+            </span>
+          </div>
+        )}
+
+        {/* mid divider */}
+      </div>
+      <span className="text-[10px] sm:text-xs text-gray-500 tracking-wide">{label}</span>
+    </div>
+  );
+}
+
+
+/* ─── Countdown Timer ────────────────────────────────────────────────────── */
+function SaleCountdown({ endDate, saleId, timerDurationHours, saleName }: { endDate: string; saleId?: number; timerDurationHours?: number; saleName?: string }) {
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
+
+  useEffect(() => {
+    let finalEndTime = new Date(endDate).getTime();
+
+    if (timerDurationHours && saleId) {
+      const storageKey = `sale_timer_${saleId}`;
+      const storedTime = localStorage.getItem(storageKey);
+      if (storedTime) {
+        finalEndTime = parseInt(storedTime, 10);
+      } else {
+        finalEndTime = new Date().getTime() + timerDurationHours * 60 * 60 * 1000;
+        localStorage.setItem(storageKey, finalEndTime.toString());
+      }
+
+      const globalEndTime = new Date(endDate).getTime();
+      if (finalEndTime > globalEndTime) {
+        finalEndTime = globalEndTime;
+      }
+    }
+
+    const calculateTimeLeft = () => {
+      const diff = finalEndTime - new Date().getTime();
+      return Math.max(0, Math.floor(diff / 1000));
+    };
+
+    setTimeLeft(calculateTimeLeft());
+
+    const interval = setInterval(() => {
+      const remaining = calculateTimeLeft();
+      setTimeLeft(remaining);
+      if (remaining <= 0) clearInterval(interval);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [endDate, saleId, timerDurationHours]);
+
+  if (timeLeft === null || timeLeft <= 0) return null;
 
   const d = Math.floor(timeLeft / (3600 * 24));
   const h = Math.floor((timeLeft % (3600 * 24)) / 3600);
   const m = Math.floor((timeLeft % 3600) / 60);
   const s = timeLeft % 60;
 
+  const units = [
+    { value: d, label: "days" },
+    { value: h, label: "hrs" },
+    { value: m, label: "mins" },
+    { value: s, label: "secs" },
+  ];
   return (
-    <div className="flex items-center gap-1.5 text-xs font-semibold text-red-600 bg-red-50 border border-red-200 px-3 py-1.5 rounded-full ml-1 sm:ml-2 shadow-sm self-center sm:self-end sm:mb-1">
-      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-      Ends In: <span className="font-bold min-w-[68px]">{d}d {h}h {m}m {s}s</span>
+    <div className="flex flex-col items-center gap-3 bg-white  py-4 px-1 w-full max-w-xs my-1">
+      <style jsx global>{`
+        @keyframes flipCardReveal {
+          0% { transform: rotateX(90deg); opacity: 0; }
+          100% { transform: rotateX(0deg); opacity: 1; }
+        }
+        .flip-face {
+          animation: flipCardReveal 0.5s ease-out;
+          transform-origin: top center;
+          backface-visibility: hidden;
+        }
+      `}</style>
+
+      <span className="text-sm sm:text-base font-bold text-red-600 uppercase tracking-wide text-center">
+        {saleName || "Limited Time Offer"}
+      </span>
+      <span className="text-xs sm:text-sm font-medium text-gray-500">Offer ends in</span>
+      <div className="flex items-center gap-2 sm:gap-3">
+        {units.map((u) => (
+          <FlipUnit key={u.label} value={u.value} label={u.label} />
+        ))}
+      </div>
     </div>
   );
 }
@@ -457,6 +550,23 @@ export default function SingleProductPage({ product }: { product: Product }) {
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
           >
+            {/* Sale / Discount Badge */}
+            {product.active_sale ? (
+              <div className="absolute top-4 left-4 sm:top-6 sm:left-6 z-20 flex flex-col items-center justify-center bg-red-600 text-white font-bold rounded-full w-[52px] h-[52px] shadow-md leading-none border-2 border-white">
+                <span className="text-[9px] uppercase tracking-wide mb-0.5">Sale</span>
+                <span className="text-[11px] font-extrabold whitespace-nowrap">
+                  {product.active_sale.discount_type === "percent"
+                    ? `${Number(product.active_sale.discount_value)}%`
+                    : `₹${Number(product.active_sale.discount_value)}`}
+                </span>
+              </div>
+            ) : (format === "paperback" ? paperbackDiscount : ebookDiscount) > 0 ? (
+              <div className="absolute top-4 left-4 sm:top-6 sm:left-6 z-20 flex flex-col items-center justify-center bg-[#00C853] text-white font-bold rounded-full w-[52px] h-[52px] shadow-sm leading-none border-2 border-white">
+                <span className="text-[13px] font-extrabold mb-0.5">{format === "paperback" ? paperbackDiscount : ebookDiscount}%</span>
+                <span className="text-[9px] uppercase tracking-wide">OFF</span>
+              </div>
+            ) : null}
+
             <Image
               src={`${API_URL}${activeImage}`}
               alt={product.title}
@@ -619,10 +729,16 @@ export default function SingleProductPage({ product }: { product: Product }) {
                   ₹{product.ebook_price}
                 </span>
               )}
-              {product.active_sale && product.active_sale.end_date && (
-                <SaleCountdown endDate={product.active_sale.end_date} />
-              )}
             </div>
+
+            {product.active_sale && product.active_sale.end_date && (
+              <SaleCountdown
+                endDate={product.active_sale.end_date}
+                saleId={product.active_sale.id}
+                timerDurationHours={product.active_sale.timer_duration_hours}
+                saleName={product.active_sale.name}
+              />
+            )}
 
             <p className="text-[11px] sm:text-xs text-gray-500">
               {format === "paperback"

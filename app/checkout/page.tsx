@@ -697,10 +697,22 @@ export default function CheckoutPage() {
         order_id: rpOrder.id,
 
         handler: async (response: any) => {
+          const getCookie = (name: string) => {
+            const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+            if (match) return match[2];
+            return undefined;
+          };
+
           const verifyRes = await fetch(`${API_URL}/api/payment/verify`, {
             method: "POST",
             headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ ...response, order_id: orderData.order_id, is_buy_now: isBuyNow }),
+            body: JSON.stringify({ 
+              ...response, 
+              order_id: orderData.order_id, 
+              is_buy_now: isBuyNow,
+              fbp: getCookie("_fbp"),
+              fbc: getCookie("_fbc")
+            }),
           });
           const verifyData = await verifyRes.json();
 
