@@ -239,7 +239,16 @@ function SaleCountdown({ endDate, saleId, timerDurationHours, saleName }: { endD
     }
 
     const calculateTimeLeft = () => {
-      const diff = finalEndTime - new Date().getTime();
+      let diff = finalEndTime - new Date().getTime();
+      if (diff <= 0) {
+        // Restart timer
+        const duration = timerDurationHours ? timerDurationHours * 60 * 60 * 1000 : 24 * 60 * 60 * 1000;
+        finalEndTime = new Date().getTime() + duration;
+        if (saleId) {
+          localStorage.setItem(`sale_timer_${saleId}`, finalEndTime.toString());
+        }
+        diff = finalEndTime - new Date().getTime();
+      }
       return Math.max(0, Math.floor(diff / 1000));
     };
 
@@ -553,12 +562,22 @@ export default function SingleProductPage({ product }: { product: Product }) {
             {/* Sale / Discount Badge */}
             {product.active_sale ? (
               <div className="absolute top-4 left-4 sm:top-6 sm:left-6 z-20 flex flex-col items-center justify-center bg-red-600 text-white font-bold rounded-full w-[52px] h-[52px] shadow-md leading-none border-2 border-white">
-                <span className="text-[9px] uppercase tracking-wide mb-0.5">Sale</span>
-                <span className="text-[11px] font-extrabold whitespace-nowrap">
-                  {product.active_sale.discount_type === "percent"
-                    ? `${Number(product.active_sale.discount_value)}%`
-                    : `₹${Number(product.active_sale.discount_value)}`}
-                </span>
+                {product.active_sale.discount_type === "percent" ? (
+                  <>
+                    <span className="text-[9px] uppercase tracking-wide mb-0.5">Sale</span>
+                    <span className="text-[11px] font-extrabold whitespace-nowrap">
+                      {Number(product.active_sale.discount_value)}%
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-xs uppercase tracking-wide">Flat</span>
+                    <span className="text-[10px] font-extrabold whitespace-nowrap my-0.5">
+                      ₹{Number(product.active_sale.discount_value)}
+                    </span>
+                    <span className="text-[7px] uppercase tracking-wide">Off</span>
+                  </>
+                )}
               </div>
             ) : (format === "paperback" ? paperbackDiscount : ebookDiscount) > 0 ? (
               <div className="absolute top-4 left-4 sm:top-6 sm:left-6 z-20 flex flex-col items-center justify-center bg-[#00C853] text-white font-bold rounded-full w-[52px] h-[52px] shadow-sm leading-none border-2 border-white">
@@ -746,16 +765,35 @@ export default function SingleProductPage({ product }: { product: Product }) {
                 : "Buy now and the eBook will be available instantly in My Books"}
             </p>
 
-            {format === "paperback" && paperbackDiscount > 0 && (
-              <div className="flex items-center gap-2 bg-red-50 text-red-700 text-xs sm:text-sm px-3 sm:px-4 py-2 rounded">
-                <span>Save up to {paperbackDiscount}% Off on this book</span>
-              </div>
-            )}
-            {format === "ebook" && ebookDiscount > 0 && (
-              <div className="flex items-center gap-2 bg-red-50 text-red-700 text-xs sm:text-sm px-3 sm:px-4 py-2 rounded">
-                <span>Save up to {ebookDiscount}% Off on this eBook</span>
-              </div>
-            )}
+            {(() => {
+              const itemType = format === "ebook" ? "eBook" : "book";
+
+              if (product.active_sale) {
+                if (product.active_sale.discount_type === "flat") {
+                  return (
+                    <div className="flex items-center gap-2 bg-red-50 text-red-700 text-xs sm:text-sm px-3 sm:px-4 py-2 rounded">
+                      <span>Save Flat ₹{Number(product.active_sale.discount_value)} Off on this {itemType}</span>
+                    </div>
+                  );
+                } else {
+                  return (
+                    <div className="flex items-center gap-2 bg-red-50 text-red-700 text-xs sm:text-sm px-3 sm:px-4 py-2 rounded">
+                      <span>Save up to {Number(product.active_sale.discount_value)}% Off on this {itemType}</span>
+                    </div>
+                  );
+                }
+              } else {
+                const discount = format === "ebook" ? ebookDiscount : paperbackDiscount;
+                if (discount > 0) {
+                  return (
+                    <div className="flex items-center gap-2 bg-red-50 text-red-700 text-xs sm:text-sm px-3 sm:px-4 py-2 rounded">
+                      <span>Save up to {discount}% Off on this {itemType}</span>
+                    </div>
+                  );
+                }
+              }
+              return null;
+            })()}
 
             <div className="flex gap-2 sm:gap-3 flex-wrap">
               {product.product_type !== "ebook" && (
