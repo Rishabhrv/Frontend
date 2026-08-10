@@ -97,7 +97,7 @@ export default function OrderConfirmedPage() {
         if (data.payment_status === "success") {
 
           if (typeof window !== "undefined" && (window as any).fbq && !pixelFired.current) {
-            const purchaseValue = parseFloat(String(data.total_amount));
+            const purchaseValue = parseFloat(Number(data.total_amount).toFixed(2));
             if (!isNaN(purchaseValue) && purchaseValue > 0) {
               (window as any).fbq("track", "Purchase", {
                 value: purchaseValue,

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import AlertPopup from "../Popups/AlertPopup";
 
 const API = process.env.NEXT_PUBLIC_API_URL!;
 
@@ -23,6 +24,7 @@ export default function SalesForm({
         usage_limit_per_user: sale?.usage_limit_per_user || "",
         product_ids: sale?.products ? sale.products.map((p: any) => p.id) : [],
         category_ids: sale?.categories ? sale.categories.map((c: any) => c.id) : [],
+        timer_duration_hours: sale?.timer_duration_hours || "",
     });
 
     const [loading, setLoading] = useState(false);
@@ -31,6 +33,12 @@ export default function SalesForm({
 
     const [productSearch, setProductSearch] = useState("");
     const [categorySearch, setCategorySearch] = useState("");
+
+    const [alertConfig, setAlertConfig] = useState<{ open: boolean; message: string; type: "success" | "error" }>({
+        open: false,
+        message: "",
+        type: "success",
+    });
 
     useEffect(() => {
         // Fetch products and categories for selection
@@ -66,6 +74,9 @@ export default function SalesForm({
                 usage_limit_per_user: formData.usage_limit_per_user
                     ? parseInt(formData.usage_limit_per_user.toString())
                     : null,
+                timer_duration_hours: formData.timer_duration_hours
+                    ? parseInt(formData.timer_duration_hours.toString())
+                    : null,
             };
 
             if (sale) {
@@ -92,11 +103,44 @@ export default function SalesForm({
             onSuccess();
         } catch (error) {
             console.error("Error saving sale", error);
-            alert("Failed to save sale");
+            setAlertConfig({ open: true, message: "Failed to save sale", type: "error" });
         } finally {
             setLoading(false);
         }
     };
+
+    const displayedProducts = React.useMemo(() => {
+        const searchLower = productSearch.toLowerCase();
+        const matching = products.filter(p => (p.name || p.title || "").toLowerCase().includes(searchLower));
+        
+        matching.sort((a, b) => {
+            const aSelected = formData.product_ids.includes(a.id);
+            const bSelected = formData.product_ids.includes(b.id);
+            if (aSelected && !bSelected) return -1;
+            if (!aSelected && bSelected) return 1;
+            return 0;
+        });
+
+        // Always show all selected items, otherwise cap at 10 to avoid long lists
+        const maxToDisplay = Math.max(10, formData.product_ids.length);
+        return matching.slice(0, maxToDisplay);
+    }, [products, productSearch, formData.product_ids]);
+
+    const displayedCategories = React.useMemo(() => {
+        const searchLower = categorySearch.toLowerCase();
+        const matching = categories.filter(c => (c.name || "").toLowerCase().includes(searchLower));
+        
+        matching.sort((a, b) => {
+            const aSelected = formData.category_ids.includes(a.id);
+            const bSelected = formData.category_ids.includes(b.id);
+            if (aSelected && !bSelected) return -1;
+            if (!aSelected && bSelected) return 1;
+            return 0;
+        });
+
+        const maxToDisplay = Math.max(10, formData.category_ids.length);
+        return matching.slice(0, maxToDisplay);
+    }, [categories, categorySearch, formData.category_ids]);
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-gray-900/60 backdrop-blur-sm transition-opacity">
@@ -209,6 +253,18 @@ export default function SalesForm({
                                 />
                             </div>
 
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Flash Timer (Hours)</label>
+                                <input
+                                    type="number"
+                                    name="timer_duration_hours"
+                                    value={formData.timer_duration_hours}
+                                    onChange={handleChange}
+                                    placeholder="Optional (e.g. 2 for 2 hours)"
+                                    className="w-full border border-gray-300 px-4 py-2.5 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none transition-all placeholder-gray-400"
+                                />
+                            </div>
+
                             {formData.applicable_on === "product" && (
                                 <div className="col-span-1 sm:col-span-2">
                                     <label className="block text-sm font-semibold text-gray-700 mb-1.5">Select Products</label>
@@ -249,12 +305,11 @@ export default function SalesForm({
                                         </div>
                                         {/* Product List */}
                                         <div className="max-h-52 overflow-y-auto p-2 custom-scrollbar">
-                                            {products.filter((p) => (p.name || p.title || "").toLowerCase().includes(productSearch.toLowerCase())).length === 0 ? (
+                                            {displayedProducts.length === 0 ? (
                                                 <div className="text-sm text-gray-400 text-center py-8">No products found</div>
                                             ) : (
-                                                products
-                                                    .filter((p) => (p.name || p.title || "").toLowerCase().includes(productSearch.toLowerCase()))
-                                                    .map((p) => (
+                                                <>
+                                                    {displayedProducts.map((p) => (
                                                         <label
                                                             key={p.id}
                                                             className="flex items-center gap-3 p-2.5 hover:bg-gray-50 rounded-lg cursor-pointer text-sm text-gray-700 transition-colors"
@@ -276,7 +331,13 @@ export default function SalesForm({
                                                             />
                                                             <span className="truncate">{p.name || p.title}</span>
                                                         </label>
-                                                    ))
+                                                    ))}
+                                                    {products.filter(p => (p.name || p.title || "").toLowerCase().includes(productSearch.toLowerCase())).length > displayedProducts.length && (
+                                                        <div className="text-xs text-center text-gray-400 py-2">
+                                                            Use search to find more products...
+                                                        </div>
+                                                    )}
+                                                </>
                                             )}
                                         </div>
                                     </div>
@@ -323,12 +384,11 @@ export default function SalesForm({
                                         </div>
                                         {/* Category List */}
                                         <div className="max-h-52 overflow-y-auto p-2 custom-scrollbar">
-                                            {categories.filter((c) => (c.name || "").toLowerCase().includes(categorySearch.toLowerCase())).length === 0 ? (
+                                            {displayedCategories.length === 0 ? (
                                                 <div className="text-sm text-gray-400 text-center py-8">No categories found</div>
                                             ) : (
-                                                categories
-                                                    .filter((c) => (c.name || "").toLowerCase().includes(categorySearch.toLowerCase()))
-                                                    .map((c) => (
+                                                <>
+                                                    {displayedCategories.map((c) => (
                                                         <label
                                                             key={c.id}
                                                             className="flex items-center gap-3 p-2.5 hover:bg-gray-50 rounded-lg cursor-pointer text-sm text-gray-700 transition-colors"
@@ -350,7 +410,13 @@ export default function SalesForm({
                                                             />
                                                             <span className="truncate">{c.name}</span>
                                                         </label>
-                                                    ))
+                                                    ))}
+                                                    {categories.filter(c => (c.name || "").toLowerCase().includes(categorySearch.toLowerCase())).length > displayedCategories.length && (
+                                                        <div className="text-xs text-center text-gray-400 py-2">
+                                                            Use search to find more categories...
+                                                        </div>
+                                                    )}
+                                                </>
                                             )}
                                         </div>
                                     </div>
@@ -385,6 +451,13 @@ export default function SalesForm({
                     </div>
                 </form>
             </div>
+
+            <AlertPopup
+                open={alertConfig.open}
+                message={alertConfig.message}
+                type={alertConfig.type}
+                onClose={() => setAlertConfig({ ...alertConfig, open: false })}
+            />
         </div>
     );
 }
