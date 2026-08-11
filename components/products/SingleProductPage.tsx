@@ -2,14 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { Heart, ShoppingCart, Star, CircleCheck, Share2, Copy, Check, X } from "lucide-react";
+import { Heart, ShoppingCart, Star, CircleCheck, Share2, Copy, Check, X, Quote } from "lucide-react";
 import ReviewSection from "@/components/reviews/ReviewSection";
 import CategoryBookSection from "@/components/books/CategoryBookSection";
 import Link from "next/link";
 import NotifyMeButton from "../notification/NotifyMeButton";
 import BottomBannerAd from "../ads/BottomBannerAd";
 import PopupAd from "../ads/PopupAd";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import {
   addToGuestCart,
   isInGuestWishlist,
@@ -59,6 +59,41 @@ type Product = {
   original_sell_price?: number;
   original_ebook_sell_price?: number;
 };
+
+/* ─── Independence Day flourishes — only rendered on /even-after-you ───────
+   NOTE: relies on the .animate-flagWave and .animate-chakraSpin keyframes
+   already added to globals.css for the site Header. If those aren't in
+   globals.css yet, add them (see bottom of this message). ────────────────── */
+function IndianFlagWaving({ className = "h-9 w-14" }: { className?: string }) {
+  return (
+    <div className={`relative shrink-0 ${className}`}>
+      <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-gray-500/70 rounded-full" />
+      <div className="absolute -left-[2px] -top-[2px] h-[6px] w-[6px] rounded-full bg-gray-500/70" />
+      <svg
+        viewBox="0 0 30 20"
+        className="absolute left-[3px] top-0 h-full w-[calc(100%-3px)] animate-flagWave drop-shadow-sm"
+        style={{ transformOrigin: "left center" }}
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <rect width="30" height="20" fill="#F5F5F5" />
+        <rect width="30" height="6.67" fill="#FF9933" />
+        <rect y="13.33" width="30" height="6.67" fill="#138808" />
+        <circle cx="15" cy="10" r="2.6" fill="none" stroke="#000080" strokeWidth="0.3" />
+        <circle cx="15" cy="10" r="0.4" fill="#000080" />
+        {Array.from({ length: 24 }).map((_, i) => (
+          <line
+            key={i}
+            x1="15" y1="10"
+            x2={15 + 2.6 * Math.cos((i * 15 * Math.PI) / 180)}
+            y2={10 + 2.6 * Math.sin((i * 15 * Math.PI) / 180)}
+            stroke="#000080"
+            strokeWidth="0.15"
+          />
+        ))}
+      </svg>
+    </div>
+  );
+}
 
 /* ─── Share dropdown ─────────────────────────────────────────────────────── */
 function ShareButton({ title }: { title: string }) {
@@ -165,8 +200,9 @@ function ShareButton({ title }: { title: string }) {
             </button>
           </div>
         </div>
-      )}
-    </div>
+      )
+      }
+    </div >
   );
 }
 
@@ -319,6 +355,10 @@ export default function SingleProductPage({ product }: { product: Product }) {
   const [avgRating, setAvgRating] = useState<number>(0);
   const [reviewCount, setReviewCount] = useState<number>(0);
   const router = useRouter();
+  const pathname = usePathname();
+
+  // Independence Day props are scoped to this one campaign product only
+  const isIndependenceSalePage = pathname?.includes("/even-after-you") ?? false;
 
   const touchStartX = useRef<number>(0);
   const touchEndX = useRef<number>(0);
@@ -554,6 +594,7 @@ export default function SingleProductPage({ product }: { product: Product }) {
 
         {/* ── LEFT: Images ── */}
         <div>
+
           <div
             className="relative flex justify-center bg-white rounded-xl p-4 sm:p-6 border border-gray-100 select-none"
             onTouchStart={handleTouchStart}
@@ -735,7 +776,7 @@ export default function SingleProductPage({ product }: { product: Product }) {
           {/* ── PRICE ── */}
           <div className="mb-5 space-y-3">
             <div className="flex items-center sm:items-end gap-2 sm:gap-3 flex-wrap">
-              <span className="text-2xl sm:text-3xl font-semibold text-red-600">
+              <span className="text-2xl sm:text-3xl font-semibold text-green-600">
                 ₹{format === "paperback" ? product.sell_price : product.ebook_sell_price}
               </span>
               {format === "paperback" && product.price > product.sell_price && (
@@ -748,7 +789,22 @@ export default function SingleProductPage({ product }: { product: Product }) {
                   ₹{product.ebook_price}
                 </span>
               )}
+              {format === "paperback" && (
+                <span className="text-xs font-medium text-gray-500 self-end mb-1">
+                  + Delivery Charge
+                </span>
+              )}
             </div>
+
+            {/* Independence Day special-price callout */}
+            {isIndependenceSalePage && (
+              <div className="flex justify-center items-center gap-2.5 bg-gradient-to-r from-orange-50 via-white to-green-50 border border-orange-200 rounded-lg px-3 py-2">
+                <IndianFlagWaving className="h-6 w-9 shrink-0" />
+                <span className="text-xs sm:text-sm font-semibold text-[#0a1a4d]">
+                  Independence Day Special
+                </span>
+              </div>
+            )}
 
             {product.active_sale && product.active_sale.end_date && (
               <SaleCountdown
@@ -1025,7 +1081,141 @@ export default function SingleProductPage({ product }: { product: Product }) {
       )}
 
       {/* ── REVIEWS ── */}
-      {product && <ReviewSection productId={product.id} />}
+      {isIndependenceSalePage ? (
+        <div className="mt-10 px-5 xl:px-1 border-t border-gray-200 pt-8">
+          {/* Section header + aggregate rating */}
+          <div className="flex items-center gap-2 mb-8">
+            <h2 className="text-2xl font-bold font-serif text-gray-900 tracking-tight">Customer Reviews</h2>
+            <span className="text-sm text-gray-400 mt-0.5">(4)</span>
+          </div>
+
+          {/* Summary + breakdown */}
+          <div className="flex flex-col sm:flex-row gap-8 mb-10">
+            {/* Big avg */}
+            <div className="flex flex-col items-center justify-center sm:border-r-2 sm:border-yellow-400 sm:pr-8 shrink-0">
+              <span className="text-[3.5rem] font-black text-slate-900 leading-none">4.8</span>
+              <div className="mt-3 flex gap-0.5">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <Star key={i} size={16} className="fill-yellow-400 text-yellow-400" />
+                ))}
+              </div>
+              <span className="text-[13px] text-gray-500 mt-2">4 reviews</span>
+            </div>
+
+            {/* Bars */}
+            <div className="flex-1 flex flex-col justify-center gap-3">
+              {[
+                { star: 5, count: 1 },
+                { star: 4, count: 3 },
+                { star: 3, count: 0 },
+                { star: 2, count: 0 },
+                { star: 1, count: 0 },
+              ].map(({ star, count }) => {
+                const pct = Math.round((count / 4) * 100);
+                return (
+                  <div key={star} className="flex items-center gap-3 text-xs text-gray-500">
+                    <div className="flex items-center gap-1 w-6 shrink-0 justify-end">
+                      <span>{star}</span>
+                      <Star size={10} className="fill-yellow-400 text-yellow-400" />
+                    </div>
+                    <div className="flex-1 bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                      <div
+                        className="h-full bg-yellow-400 rounded-full transition-all duration-500"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    <span className="w-4 text-right shrink-0 text-gray-400">{count}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Review cards */}
+          <div className="grid sm:grid-cols-2 gap-5">
+            {[
+              {
+                name: "Priya Sharma",
+                rating: "4.8",
+                quote: "I honestly didn't expect this book to affect me this much. The emotions felt very real, especially the parts about love, loss and moving on.",
+                fullStars: 4,
+                lastStarOpacity: "opacity-80",
+                date: "15 Jun 2024",
+                image: "/images/reviewusers/portrait-pretty-indian-woman-wearing-260nw-2804152407.webp",
+              },
+              {
+                name: "Smita Tiwari",
+                rating: "4.7",
+                quote: "A beautiful and emotional read. There were a few moments where I had to put the book down and just take it in. Definitely stayed with me.",
+                fullStars: 4,
+                lastStarOpacity: "opacity-80",
+                date: "02 Jul 2024",
+                image: "/images/reviewusers/istockphoto-854681422-170667a.jpg",
+              },
+              {
+                name: "Meera Prakash",
+                rating: "5",
+                quote: "What I loved most was how the story talks about grief without making it feel heavy all the time. It left me with a sense of hope by the end.",
+                fullStars: 5,
+                lastStarOpacity: null,
+                date: "28 Aug 2024",
+                image: "/images/reviewusers/images (48).jpg",
+              },
+              {
+                name: "Arjun Verma",
+                rating: "4.6",
+                quote: "A simple but touching story. It made me think about how much we take our loved ones and their presence for granted. Worth reading.",
+                fullStars: 4,
+                lastStarOpacity: "opacity-50",
+                date: "12 Sep 2024",
+                image: "/images/reviewusers/images (49).jpg",
+              },
+            ].map((review) => {
+              return (
+                <div
+                  key={review.name}
+                  className="bg-white border border-gray-100 hover:border-gray-300 hover:shadow-sm transition-all rounded-2xl p-5"
+                >
+                  {/* Header row */}
+                  <div className="flex items-start gap-3 mb-3">
+                    <div className="w-9 h-9 rounded-full overflow-hidden shrink-0 border border-gray-100 bg-gray-50">
+                      <img src={review.image} alt={review.name} className="w-full h-full object-cover" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <span className="font-semibold text-gray-900 text-sm">{review.name}</span>
+                        <time className="text-xs text-gray-400 shrink-0">
+                          {review.date}
+                        </time>
+                      </div>
+                      <div className="mt-0.5 flex gap-0.5">
+                        {[1, 2, 3, 4, 5].map((i) => (
+                          <Star
+                            key={i}
+                            size={13}
+                            className={
+                              i <= review.fullStars
+                                ? "fill-amber-400 text-amber-400"
+                                : review.lastStarOpacity && i === review.fullStars + 1
+                                  ? `fill-amber-400 text-amber-400 ${review.lastStarOpacity}`
+                                  : "fill-gray-200 text-gray-200"
+                            }
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Comment */}
+                  <p className="text-sm text-gray-600 leading-relaxed pl-12">{review.quote}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : (
+        product && <ReviewSection productId={product.id} />
+      )}
 
       <BottomBannerAd pageType="product" />
       <PopupAd pageType="product" />
