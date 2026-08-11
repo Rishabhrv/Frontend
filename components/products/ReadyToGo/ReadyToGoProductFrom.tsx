@@ -1442,7 +1442,6 @@ const ReadyToGoProductForm = () => {
                     }}
                   >
                     <option value="published">Published</option>
-                    <option value="draft">Draft</option>
                   </select>
                 </div>
                 {status === "draft" && (

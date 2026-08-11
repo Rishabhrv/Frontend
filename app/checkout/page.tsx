@@ -706,9 +706,9 @@ export default function CheckoutPage() {
           const verifyRes = await fetch(`${API_URL}/api/payment/verify`, {
             method: "POST",
             headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ 
-              ...response, 
-              order_id: orderData.order_id, 
+            body: JSON.stringify({
+              ...response,
+              order_id: orderData.order_id,
               is_buy_now: isBuyNow,
               fbp: getCookie("_fbp"),
               fbc: getCookie("_fbc")
@@ -722,7 +722,8 @@ export default function CheckoutPage() {
             return;
           }
 
-          router.push(`/order-confirmed?order_id=${verifyData.order_id}`);
+          const productIds = cart.map(item => (item as any).product_id || item.id).filter(id => id !== 0 && id !== undefined).join(",");
+          router.push(`/order-confirmed?order_id=${verifyData.order_id}&book_id=${productIds}`);
         },
 
         modal: {

@@ -119,11 +119,11 @@ export default function ReviewSection({ productId }: Props) {
       )}
 
       {/* ── Review cards ── */}
-      <div className="space-y-4">
+      <div className="grid sm:grid-cols-2 gap-5">
         {reviews.map((r) => (
           <div
             key={r.id}
-            className="bg-white  rounded-2xl p-5"
+            className="bg-white border border-gray-100 hover:border-gray-300 hover:shadow-sm transition-all rounded-2xl p-5"
           >
             {/* Header row */}
             <div className="flex items-start gap-3 mb-3">
