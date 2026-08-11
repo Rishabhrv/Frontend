@@ -1140,7 +1140,7 @@ export default function SingleProductPage({ product }: { product: Product }) {
                 quote: "I honestly didn't expect this book to affect me this much. The emotions felt very real, especially the parts about love, loss and moving on.",
                 fullStars: 4,
                 lastStarOpacity: "opacity-80",
-                date: "15 Jun 2024",
+                date: "15 Jun 2026",
                 image: "/images/reviewusers/portrait-pretty-indian-woman-wearing-260nw-2804152407.webp",
               },
               {
@@ -1149,7 +1149,7 @@ export default function SingleProductPage({ product }: { product: Product }) {
                 quote: "A beautiful and emotional read. There were a few moments where I had to put the book down and just take it in. Definitely stayed with me.",
                 fullStars: 4,
                 lastStarOpacity: "opacity-80",
-                date: "02 Jul 2024",
+                date: "02 Jul 2026",
                 image: "/images/reviewusers/istockphoto-854681422-170667a.jpg",
               },
               {
@@ -1158,7 +1158,7 @@ export default function SingleProductPage({ product }: { product: Product }) {
                 quote: "What I loved most was how the story talks about grief without making it feel heavy all the time. It left me with a sense of hope by the end.",
                 fullStars: 5,
                 lastStarOpacity: null,
-                date: "28 Aug 2024",
+                date: "08 Aug 2026",
                 image: "/images/reviewusers/images (48).jpg",
               },
               {
@@ -1167,7 +1167,7 @@ export default function SingleProductPage({ product }: { product: Product }) {
                 quote: "A simple but touching story. It made me think about how much we take our loved ones and their presence for granted. Worth reading.",
                 fullStars: 4,
                 lastStarOpacity: "opacity-50",
-                date: "12 Sep 2024",
+                date: "11 Aug 2026",
                 image: "/images/reviewusers/images (49).jpg",
               },
             ].map((review) => {
