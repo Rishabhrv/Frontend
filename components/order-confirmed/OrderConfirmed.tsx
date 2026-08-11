@@ -99,9 +99,15 @@ export default function OrderConfirmedPage() {
           if (typeof window !== "undefined" && (window as any).fbq && !pixelFired.current) {
             const purchaseValue = parseFloat(Number(data.total_amount).toFixed(2));
             if (!isNaN(purchaseValue) && purchaseValue > 0) {
+              const productIds = data.items ? data.items.map(item => String(item.product_id)) : [];
+              const numItems = data.items ? data.items.reduce((sum, item) => sum + item.quantity, 0) : 1;
+              
               (window as any).fbq("track", "Purchase", {
+                content_ids: productIds,
+                content_type: 'product',
                 value: purchaseValue,
-                currency: "INR"
+                currency: "INR",
+                num_items: numItems
               }, { eventID: String(orderId) });
             }
             pixelFired.current = true;

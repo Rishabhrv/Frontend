@@ -242,12 +242,22 @@ const BookCard = ({ book, visibleCount, forceFormat }: BookCardProps) => {
             {/* Sale / Discount Badge */}
             {activeSale ? (
               <div className="absolute top-0 left-2 z-20 flex flex-col items-center justify-center bg-red-600 text-white font-bold rounded-full w-[52px] h-[52px] shadow-md leading-none border-2 border-white">
-                <span className="text-[9px] uppercase tracking-wide mb-0.5">Sale</span>
-                <span className="text-[11px] font-extrabold whitespace-nowrap">
-                  {activeSale.discount_type === "percent"
-                    ? `${Number(activeSale.discount_value)}%`
-                    : `₹${Number(activeSale.discount_value)}`}
-                </span>
+                {activeSale.discount_type === "percent" ? (
+                  <>
+                    <span className="text-[9px] uppercase tracking-wide mb-0.5">Sale</span>
+                    <span className="text-[11px] font-extrabold whitespace-nowrap">
+                      {Number(activeSale.discount_value)}%
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-xs uppercase tracking-wide">Flat</span>
+                    <span className="text-[10px] font-extrabold whitespace-nowrap my-0.5">
+                      ₹{Number(activeSale.discount_value)}
+                    </span>
+                    <span className="text-[7px] uppercase tracking-wide">Off</span>
+                  </>
+                )}
               </div>
             ) : discountPercent > 0 ? (
               <div className="absolute top-3 left-3 z-20 flex flex-col items-center justify-center bg-[#00C853] text-white font-bold rounded-full w-[50px] h-[50px] shadow-sm leading-none border-2 border-white">
@@ -358,7 +368,16 @@ function SaleCountdown({ endDate, saleId, timerDurationHours }: { endDate: strin
     }
 
     const calculateTimeLeft = () => {
-      const diff = finalEndTime - new Date().getTime();
+      let diff = finalEndTime - new Date().getTime();
+      if (diff <= 0) {
+        // Restart timer
+        const duration = timerDurationHours ? timerDurationHours * 60 * 60 * 1000 : 24 * 60 * 60 * 1000;
+        finalEndTime = new Date().getTime() + duration;
+        if (saleId) {
+          localStorage.setItem(`sale_timer_${saleId}`, finalEndTime.toString());
+        }
+        diff = finalEndTime - new Date().getTime();
+      }
       return Math.max(0, Math.floor(diff / 1000));
     };
 
