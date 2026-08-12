@@ -250,8 +250,8 @@ const Header = () => {
             <div className="mx-auto max-w-7xl flex items-center justify-center gap-3">
               <IndianFlagWaving className="h-8 w-12 sm:h-9 sm:w-14" />
               <p className="text-sm sm:text-base font-bold text-[#0a1a4d] text-center leading-tight">
-                Happy Independence Day! Celebrating 79 Years of Freedom
-                <span className="hidden sm:inline"> special offers on select titles</span>
+                Happy Independence Day! 🇮🇳 Celebrating 80 Years of Freedom
+                <span className="hidden sm:inline"> with Special Offers on Select Titles.</span>
               </p>
               <IndianFlagWaving className="hidden sm:block h-9 w-14 scale-x-[-1]" />
             </div>
