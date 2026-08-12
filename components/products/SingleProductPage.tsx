@@ -745,33 +745,40 @@ export default function SingleProductPage({ product }: { product: Product }) {
           )}
 
           {/* Stars */}
-          <div className="flex items-center gap-1 mb-4">
-            <div className="flex items-center gap-0.5">
-              {[1, 2, 3, 4, 5].map((i) => {
-                const filled = avgRating >= i;
-                const partial = !filled && avgRating > i - 1;
-                const fillPercent = partial ? Math.round((avgRating - (i - 1)) * 100) : 0;
-                return (
-                  <span key={i} className="relative inline-block w-3.5 h-3.5">
-                    <Star size={14} className="text-gray-300 absolute inset-0" fill="currentColor" />
-                    <span
-                      className="absolute inset-0 overflow-hidden"
-                      style={{ width: filled ? "100%" : `${fillPercent}%` }}
-                    >
-                      <Star size={14} className="text-yellow-500" fill="currentColor" />
-                    </span>
+          {(() => {
+            const displayAvgRating = isIndependenceSalePage ? 4.8 : avgRating;
+            const displayReviewCount = isIndependenceSalePage ? 4 : reviewCount;
+
+            return (
+              <div className="flex items-center gap-1 mb-4">
+                <div className="flex items-center gap-0.5">
+                  {[1, 2, 3, 4, 5].map((i) => {
+                    const filled = displayAvgRating >= i;
+                    const partial = !filled && displayAvgRating > i - 1;
+                    const fillPercent = partial ? Math.round((displayAvgRating - (i - 1)) * 100) : 0;
+                    return (
+                      <span key={i} className="relative inline-block w-3.5 h-3.5">
+                        <Star size={14} className="text-gray-300 absolute inset-0" fill="currentColor" />
+                        <span
+                          className="absolute inset-0 overflow-hidden"
+                          style={{ width: filled ? "100%" : `${fillPercent}%` }}
+                        >
+                          <Star size={14} className="text-yellow-500" fill="currentColor" />
+                        </span>
+                      </span>
+                    );
+                  })}
+                </div>
+                {displayReviewCount > 0 ? (
+                  <span className="text-xs text-gray-500 ml-1">
+                    {displayAvgRating.toFixed(1)} ({displayReviewCount} {displayReviewCount === 1 ? "review" : "reviews"})
                   </span>
-                );
-              })}
-            </div>
-            {reviewCount > 0 ? (
-              <span className="text-xs text-gray-500 ml-1">
-                {avgRating.toFixed(1)} ({reviewCount} {reviewCount === 1 ? "review" : "reviews"})
-              </span>
-            ) : (
-              <span className="text-xs text-gray-400 ml-1">No reviews yet</span>
-            )}
-          </div>
+                ) : (
+                  <span className="text-xs text-gray-400 ml-1">No reviews yet</span>
+                )}
+              </div>
+            );
+          })()}
 
           {/* ── PRICE ── */}
           <div className="mb-5 space-y-3">
