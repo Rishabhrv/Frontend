@@ -25,59 +25,6 @@ const NAV_LINKS = [
   { href: "https://agphbooks.com/contact-us/", label: "Contact Us", external: true },
 ];
 
-/* ── Waving Indian Flag (CSS-animated, on a pole) ── */
-const IndianFlagWaving = ({ className = "h-9 w-14" }: { className?: string }) => (
-  <div className={`relative shrink-0 ${className}`}>
-    {/* pole */}
-    <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-gray-500/70 rounded-full" />
-    <div className="absolute -left-[2px] -top-[2px] h-[6px] w-[6px] rounded-full bg-gray-500/70" />
-    {/* waving flag */}
-    <svg
-      viewBox="0 0 30 20"
-      className="absolute left-[3px] top-0 h-full w-[calc(100%-3px)] animate-flagWave drop-shadow-sm"
-      style={{ transformOrigin: "left center" }}
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <rect width="30" height="20" fill="#F5F5F5" />
-      <rect width="30" height="6.67" fill="#FF9933" />
-      <rect y="13.33" width="30" height="6.67" fill="#138808" />
-      <circle cx="15" cy="10" r="2.6" fill="none" stroke="#000080" strokeWidth="0.3" />
-      <circle cx="15" cy="10" r="0.4" fill="#000080" />
-      {Array.from({ length: 24 }).map((_, i) => (
-        <line
-          key={i}
-          x1="15" y1="10"
-          x2={15 + 2.6 * Math.cos((i * 15 * Math.PI) / 180)}
-          y2={10 + 2.6 * Math.sin((i * 15 * Math.PI) / 180)}
-          stroke="#000080"
-          strokeWidth="0.15"
-        />
-      ))}
-    </svg>
-  </div>
-);
-
-/* ── Small tricolor bunting strip ── */
-const BuntingStrip = () => {
-  const colors = ["#FF9933", "#FFFFFF", "#138808"];
-  return (
-    <div className="flex justify-center gap-[6px] overflow-hidden bg-[#fffaf3] py-1">
-      {Array.from({ length: 48 }).map((_, i) => (
-        <span
-          key={i}
-          className="inline-block w-0 h-0 opacity-90"
-          style={{
-            borderLeft: "5px solid transparent",
-            borderRight: "5px solid transparent",
-            borderTop: `7px solid ${colors[i % 3]}`,
-            filter: colors[i % 3] === "#FFFFFF" ? "drop-shadow(0 0 0.5px #ccc)" : undefined,
-          }}
-        />
-      ))}
-    </div>
-  );
-};
-
 const Header = () => {
   const [user, setUser] = useState<UserType | null>(null);
   const [sliderOpen, setSliderOpen] = useState(false);
@@ -90,16 +37,6 @@ const Header = () => {
   const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname() ?? "";
   const headerRef = useRef<HTMLElement>(null);
-
-  /* ── Independence Day theme ── */
-  const [isIndependenceSeason, setIsIndependenceSeason] = useState(false);
-
-  useEffect(() => {
-    const now = new Date();
-    // Active Aug 1 – Aug 20 every year; remove this window check if you want it always on
-    const inSeason = now.getMonth() === 7 && now.getDate() <= 20;
-    setIsIndependenceSeason(inSeason);
-  }, []);
 
   /* ── scroll detection ── */
   useEffect(() => {
@@ -236,28 +173,6 @@ const Header = () => {
       ═══════════════════════════════════════ */}
       <header ref={headerRef} className="w-full bg-white border-b border-gray-200 relative">
 
-        {/* INDEPENDENCE DAY — thin tricolor strip */}
-        {isIndependenceSeason && (
-          <div className="h-[3px] w-full bg-gradient-to-r from-[#FF9933] via-white to-[#138808]" />
-        )}
-
-        {/* INDEPENDENCE DAY — bunting strip */}
-        {isIndependenceSeason && <BuntingStrip />}
-
-        {/* INDEPENDENCE DAY — banner with waving flags */}
-        {isIndependenceSeason && (
-          <div className="bg-gradient-to-r from-[#FF9933] via-white to-[#138808] px-4 py-3">
-            <div className="mx-auto max-w-7xl flex items-center justify-center gap-3">
-              <IndianFlagWaving className="h-8 w-12 sm:h-9 sm:w-14" />
-              <p className="text-sm sm:text-base font-bold text-[#0a1a4d] text-center leading-tight">
-                Happy Independence Day! 🇮🇳 Celebrating 80 Years of Freedom
-                <span className="hidden sm:inline"> with Special Offers on Select Titles.</span>
-              </p>
-              <IndianFlagWaving className="hidden sm:block h-9 w-14 scale-x-[-1]" />
-            </div>
-          </div>
-        )}
-
         {/* TOP BAR */}
         <div className="bg-gray-100 text-xs">
           <div className="mx-auto max-w-7xl px-4 py-2 flex items-center justify-between gap-3 text-gray-700 flex-wrap">
@@ -341,7 +256,7 @@ const Header = () => {
                 key={href} href={href}
                 target={external ? "_blank" : undefined}
                 rel={external ? "noopener noreferrer" : undefined}
-                className={`nav-link whitespace-nowrap ${isIndependenceSeason ? "nav-link--tricolor" : ""} ${!external ? isActive(href) : "hover:text-green-600"}`}
+                className={`nav-link whitespace-nowrap ${!external ? isActive(href) : "hover:text-green-600"}`}
               >
                 {label}
               </Link>
@@ -389,9 +304,6 @@ const Header = () => {
           ${scrolled ? "translate-y-0 opacity-100 pointer-events-auto" : "-translate-y-full opacity-0 pointer-events-none"}
         `}
       >
-        {isIndependenceSeason && (
-          <div className="h-[2px] w-full bg-gradient-to-r from-[#FF9933] via-white to-[#138808]" />
-        )}
         <div className="mx-auto max-w-7xl px-4 py-2.5 flex items-center gap-3">
           <Link href="/" className="hidden md:flex shrink-0 items-center mr-2">
             <Image
@@ -401,10 +313,6 @@ const Header = () => {
               className="w-[110px] h-auto"
             />
           </Link>
-
-          {isIndependenceSeason && (
-            <IndianFlagWaving className="hidden lg:block h-7 w-11 shrink-0" />
-          )}
 
           <div className="flex-1 relative">
             <SearchBox {...sharedSearchProps} />

@@ -358,7 +358,7 @@ export default function SingleProductPage({ product }: { product: Product }) {
   const pathname = usePathname();
 
   // Independence Day props are scoped to this one campaign product only
-  const isIndependenceSalePage = pathname?.includes("/even-after-you") ?? false;
+  const EvenAfterYou = pathname?.includes("/even-after-you") ?? false;
 
   const touchStartX = useRef<number>(0);
   const touchEndX = useRef<number>(0);
@@ -746,8 +746,8 @@ export default function SingleProductPage({ product }: { product: Product }) {
 
           {/* Stars */}
           {(() => {
-            const displayAvgRating = isIndependenceSalePage ? 4.8 : avgRating;
-            const displayReviewCount = isIndependenceSalePage ? 4 : reviewCount;
+            const displayAvgRating = EvenAfterYou ? 4.8 : avgRating;
+            const displayReviewCount = EvenAfterYou ? 4 : reviewCount;
 
             return (
               <div className="flex items-center gap-1 mb-4">
@@ -803,15 +803,6 @@ export default function SingleProductPage({ product }: { product: Product }) {
               )}
             </div>
 
-            {/* Independence Day special-price callout */}
-            {isIndependenceSalePage && (
-              <div className="flex justify-center items-center gap-2.5 bg-gradient-to-r from-orange-50 via-white to-green-50 border border-orange-200 rounded-lg px-3 py-2">
-                <IndianFlagWaving className="h-6 w-9 shrink-0" />
-                <span className="text-xs sm:text-sm font-semibold text-[#0a1a4d]">
-                  Independence Day Special
-                </span>
-              </div>
-            )}
 
             {product.active_sale && product.active_sale.end_date && (
               <SaleCountdown
@@ -1088,7 +1079,7 @@ export default function SingleProductPage({ product }: { product: Product }) {
       )}
 
       {/* ── REVIEWS ── */}
-      {isIndependenceSalePage ? (
+      {EvenAfterYou ? (
         <div className="mt-10 px-5 xl:px-1 border-t border-gray-200 pt-8">
           {/* Section header + aggregate rating */}
           <div className="flex items-center gap-2 mb-8">
