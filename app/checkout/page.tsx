@@ -25,6 +25,7 @@ type CartItem = {
   quantity: number;
   price: number;
   category_imprints?: string;
+  product_id?: number;
 };
 
 const INDIAN_STATES = [
@@ -268,6 +269,7 @@ export default function CheckoutPage() {
       )
       .map((i: GuestCartItem, idx: number) => ({
         id: idx,
+        product_id: i.product_id,
         title: i.title,
         slug: i.slug,
         main_image: i.image,

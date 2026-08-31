@@ -18,8 +18,8 @@ export default function SalesForm({
         name: sale?.name || "",
         discount_type: sale?.discount_type || "percent",
         discount_value: sale?.discount_value || "",
-        start_date: sale?.start_date ? sale.start_date.split("T")[0] : "",
-        end_date: sale?.end_date ? sale.end_date.split("T")[0] : "",
+        start_date: sale?.start_date ? sale.start_date.substring(0, 10) : "",
+        end_date: sale?.end_date ? sale.end_date.substring(0, 10) : "",
         applicable_on: sale?.applicable_on || "all",
         usage_limit_per_user: sale?.usage_limit_per_user || "",
         product_ids: sale?.products ? sale.products.map((p: any) => p.id) : [],
@@ -71,6 +71,8 @@ export default function SalesForm({
 
             const payload = {
                 ...formData,
+                start_date: `${formData.start_date}T00:00:00`,
+                end_date: `${formData.end_date}T23:59:59`,
                 usage_limit_per_user: formData.usage_limit_per_user
                     ? parseInt(formData.usage_limit_per_user.toString())
                     : null,

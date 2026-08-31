@@ -180,7 +180,7 @@ const ReadyToGoProductForm = () => {
   const [selectedUserId, setSelectedUserId] = useState("");
   const [ebookCoverFile, setEbookCoverFile] = useState<File | null>(null);
   const [importedAttributes, setImportedAttributes] = useState<{ name: string, value: string }[]>([]);
-  const [importedAuthors, setImportedAuthors] = useState<{ id: number, name: string }[]>([]);
+  const [importedAuthors, setImportedAuthors] = useState<{ id: number, name: string, description?: string, about_author?: string }[]>([]);
   const [importedGallery, setImportedGallery] = useState<string[]>([]);
   const [driveImages, setDriveImages] = useState<string[]>([]);
 

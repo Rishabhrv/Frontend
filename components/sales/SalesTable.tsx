@@ -89,7 +89,7 @@ export default function SalesTable() {
 
     const getSaleStatus = (sale: any) => {
         const now = new Date();
-        const endDate = new Date(sale.end_date);
+        const endDate = new Date(sale.end_date.substring(0, 10) + "T23:59:59");
 
         if (now > endDate) {
             return { label: "Expired", color: "text-red-700 bg-red-50", canToggle: false };
@@ -104,8 +104,8 @@ export default function SalesTable() {
 
     const getDaysInfo = (sale: any) => {
         const now = new Date();
-        const start = new Date(sale.start_date);
-        const end = new Date(sale.end_date);
+        const start = new Date(sale.start_date.substring(0, 10) + "T00:00:00");
+        const end = new Date(sale.end_date.substring(0, 10) + "T23:59:59");
         const total = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
 
         if (now > end) {

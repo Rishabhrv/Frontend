@@ -13,7 +13,7 @@ type Author = {
 };
 
 type ReadyToGoProductAuthorProps = {
-  initialAuthors?: { id: number; name: string }[];
+  initialAuthors?: { id: number; name: string; description?: string; about_author?: string }[];
   error?: string;
   onValidChange?: () => void;
 };
@@ -93,30 +93,45 @@ const ReadyToGoProductAuthor = forwardRef<any, ReadyToGoProductAuthorProps>(
             let expressAuthor = authors.find((a) => normalizeName(a.name) === importedClean);
 
             if (expressAuthor) {
-              expressAuthor = { ...expressAuthor, python_id: imported.id };
+              const importedBio = imported.description || imported.about_author;
+              expressAuthor = { ...expressAuthor, python_id: imported.id, bio: expressAuthor.bio || importedBio || "" };
 
-              if (!expressAuthor.profile_image && !imageErrors[imported.id]) {
+              const needsImageUpdate = !expressAuthor.profile_image && !imageErrors[imported.id];
+              const needsBioUpdate = !expressAuthor.bio && importedBio;
+
+              if (needsImageUpdate || needsBioUpdate) {
                 try {
-                  const imgRes = await fetch(`${CRMSERVER_API_URL}/api/authors/${imported.id}/photo`);
-                  if (imgRes.ok) {
-                    const blob = await imgRes.blob();
-                    if (blob.type.startsWith("image/")) {
-                      const ext = blob.type.split('/')[1] || 'jpg';
-                      const file = new File([blob], `drive-author-${imported.id}.${ext}`, { type: blob.type });
+                  const updateData = new FormData();
+                  updateData.append("name", expressAuthor.name);
+                  if (needsBioUpdate && importedBio) {
+                    updateData.append("bio", importedBio);
+                  }
 
-                      const updateData = new FormData();
-                      updateData.append("name", expressAuthor.name);
-                      updateData.append("profile_image", file);
-
-                      const updateRes = await fetch(`${API_URL}/api/authors/${expressAuthor.id}`, {
-                        method: "PUT",
-                        body: updateData
-                      });
-                      if (updateRes.ok) didCreateOrUpdate = true;
+                  if (needsImageUpdate) {
+                    const imgRes = await fetch(`${CRMSERVER_API_URL}/api/authors/${imported.id}/photo`);
+                    if (imgRes.ok) {
+                      const blob = await imgRes.blob();
+                      if (blob.type.startsWith("image/")) {
+                        const ext = blob.type.split('/')[1] || 'jpg';
+                        const file = new File([blob], `drive-author-${imported.id}.${ext}`, { type: blob.type });
+                        updateData.append("profile_image", file);
+                      }
+                    } else {
+                      setImageErrors((prev) => ({ ...prev, [imported.id]: true }));
                     }
                   }
+
+                  // Only PUT if there's actually something to update (image was found or bio needs update)
+                  if (updateData.has("profile_image") || updateData.has("bio")) {
+                    const updateRes = await fetch(`${API_URL}/api/authors/${expressAuthor.id}`, {
+                      method: "PUT",
+                      body: updateData
+                    });
+                    if (updateRes.ok) didCreateOrUpdate = true;
+                  }
                 } catch (e) {
-                  setImageErrors((prev) => ({ ...prev, [imported.id]: true }));
+                  console.error("Failed to update author", e);
+                  if (needsImageUpdate) setImageErrors((prev) => ({ ...prev, [imported.id]: true }));
                 }
               }
 
@@ -137,6 +152,8 @@ const ReadyToGoProductAuthor = forwardRef<any, ReadyToGoProductAuthorProps>(
 
               const formData = new FormData();
               formData.append("name", imported.name);
+              const importedBio = imported.description || imported.about_author;
+              if (importedBio) formData.append("bio", importedBio);
               if (fileToUpload) {
                 formData.append("profile_image", fileToUpload);
               }

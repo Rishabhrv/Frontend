@@ -33,9 +33,11 @@ const selectCls =
 const CouponForm = ({ coupon, onClose, onSaved }: any) => {
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
 
   const [productSearch, setProductSearch] = useState("");
   const [categorySearch, setCategorySearch] = useState("");
+  const [userSearch, setUserSearch] = useState("");
 
   const [form, setForm] = useState(
     coupon || {
@@ -50,9 +52,12 @@ const CouponForm = ({ coupon, onClose, onSaved }: any) => {
       usage_per_user: 1,
       selected_products: [],
       selected_categories: [],
+      selected_users: [],
+      target_users: "all",
       start_date: "",
       expiry_date: "",
       status: "active",
+      is_hidden: 0,
     }
   );
 
@@ -64,6 +69,12 @@ const CouponForm = ({ coupon, onClose, onSaved }: any) => {
     fetch(`${API}/api/categories`)
       .then((r) => r.json())
       .then(setCategories);
+
+    fetch(`${API}/api/admin/users`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem("admin_token")}` }
+    })
+      .then((r) => r.json())
+      .then(setUsers);
   }, []);
 
 useEffect(() => {
@@ -72,6 +83,8 @@ useEffect(() => {
       ...coupon,
       selected_products: coupon.selected_products || [],
       selected_categories: coupon.selected_categories || [],
+      selected_users: coupon.selected_users || [],
+      target_users: coupon.selected_users?.length ? "specific" : "all",
       usage_limit: coupon.usage_limit ?? "",
       max_discount: coupon.max_discount ?? "",
       min_cart_value: coupon.min_cart_value ?? "",
@@ -83,6 +96,8 @@ useEffect(() => {
       expiry_date: coupon.expiry_date
         ? coupon.expiry_date.split("T")[0]
         : "",
+      
+      is_hidden: coupon.is_hidden ?? 0,
     });
   }
 }, [coupon]);
@@ -166,6 +181,18 @@ useEffect(() => {
                 <ChevronIcon />
               </div>
             </Field>
+
+            <div className="col-span-2 pt-1 flex items-center">
+              <label className="flex items-center gap-2 cursor-pointer text-sm font-medium text-gray-700">
+                <input
+                  type="checkbox"
+                  className="w-4 h-4 rounded text-gray-900 focus:ring-gray-900 border-gray-300"
+                  checked={form.is_hidden === 1 || form.is_hidden === true}
+                  onChange={(e) => setForm({ ...form, is_hidden: e.target.checked ? 1 : 0 })}
+                />
+                Hide coupon on checkout page (users must manually type code)
+              </label>
+            </div>
 
             {/* ── SECTION: DISCOUNT ── */}
             <div className="col-span-2 pt-1">
@@ -393,6 +420,97 @@ useEffect(() => {
                             }}
                           />
                           <span className="truncate">{c.name}</span>
+                        </label>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </Field>
+            )}
+
+            {/* ── SECTION: TARGET AUDIENCE ── */}
+            <div className="col-span-2 pt-1">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-xs font-bold tracking-widest text-gray-300 uppercase">Target Audience</span>
+                <div className="flex-1 h-px bg-gray-100" />
+              </div>
+            </div>
+
+            <Field label="Target Users" span>
+              <div className="relative">
+                <select
+                  className={selectCls}
+                  value={form.target_users}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      target_users: e.target.value,
+                      selected_users: [],
+                    })
+                  }
+                >
+                  <option value="all">All Users</option>
+                  <option value="specific">Specific Users</option>
+                </select>
+                <ChevronIcon />
+              </div>
+            </Field>
+
+            {form.target_users === "specific" && (
+              <Field label="Select Users" span hint="Search by name or email">
+                <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
+                  {/* Search Bar */}
+                  <div className="p-2 border-b border-gray-100 flex items-center gap-2">
+                    <svg className="w-4 h-4 text-gray-400 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <input 
+                      type="text" 
+                      placeholder="Search users..." 
+                      className="w-full text-sm px-1 py-1 focus:outline-none text-gray-700 placeholder-gray-400"
+                      value={userSearch}
+                      onChange={e => setUserSearch(e.target.value)}
+                    />
+                  </div>
+                  {/* Select All */}
+                  <div className="p-2.5 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+                     <label className="flex items-center gap-2.5 text-sm cursor-pointer select-none text-gray-700">
+                       <input 
+                         type="checkbox" 
+                         className="rounded text-gray-900 focus:ring-gray-900"
+                         checked={form.selected_users.length === users.length && users.length > 0}
+                         onChange={(e) => {
+                           if (e.target.checked) {
+                             setForm({ ...form, selected_users: users.map(u => u.id) });
+                           } else {
+                             setForm({ ...form, selected_users: [] });
+                           }
+                         }}
+                       />
+                       <span className="font-medium">Select All</span>
+                     </label>
+                     <span className="text-xs text-gray-500 bg-gray-200 px-2 py-0.5 rounded-full">{form.selected_users.length} selected</span>
+                  </div>
+                  {/* User List */}
+                  <div className="max-h-48 overflow-y-auto p-2">
+                    {users.filter(u => (u.name || "").toLowerCase().includes(userSearch.toLowerCase()) || (u.email || "").toLowerCase().includes(userSearch.toLowerCase())).length === 0 ? (
+                      <div className="text-xs text-gray-400 text-center py-6">No users found</div>
+                    ) : (
+                      users.filter(u => (u.name || "").toLowerCase().includes(userSearch.toLowerCase()) || (u.email || "").toLowerCase().includes(userSearch.toLowerCase())).map(u => (
+                        <label key={u.id} className="flex items-center gap-2.5 p-1.5 hover:bg-gray-50 rounded-md cursor-pointer text-sm text-gray-700 transition-colors">
+                          <input 
+                            type="checkbox"
+                            className="rounded text-gray-900 focus:ring-gray-900"
+                            checked={form.selected_users.includes(u.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setForm({ ...form, selected_users: [...form.selected_users, u.id] });
+                              } else {
+                                setForm({ ...form, selected_users: form.selected_users.filter((id: any) => id !== u.id) });
+                              }
+                            }}
+                          />
+                          <span className="truncate">{u.name} ({u.email})</span>
                         </label>
                       ))
                     )}

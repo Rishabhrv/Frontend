@@ -150,7 +150,7 @@ export default function HomeReviewSection() {
     if (Math.abs(dx) > 44) dx > 0 ? next() : prev();
   };
 
-  if (reviews.length === 0) return null;
+  if (reviews.length < 3) return null;
 
   const gap = 24; // px — matches gap-6
 
