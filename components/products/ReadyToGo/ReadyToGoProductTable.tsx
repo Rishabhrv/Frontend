@@ -58,6 +58,24 @@ export default function ReadyToGoProductTable() {
   const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
 
+  // Restore state from sessionStorage on mount
+  useEffect(() => {
+    const savedPage = sessionStorage.getItem("rtg_page");
+    const savedSearchInput = sessionStorage.getItem("rtg_searchInput");
+    const savedSearchQuery = sessionStorage.getItem("rtg_searchQuery");
+
+    if (savedPage) setPage(parseInt(savedPage, 10));
+    if (savedSearchInput) setSearchInput(savedSearchInput);
+    if (savedSearchQuery) setSearchQuery(savedSearchQuery);
+  }, []);
+
+  // Save state to sessionStorage whenever it changes
+  useEffect(() => {
+    sessionStorage.setItem("rtg_page", page.toString());
+    sessionStorage.setItem("rtg_searchInput", searchInput);
+    sessionStorage.setItem("rtg_searchQuery", searchQuery);
+  }, [page, searchInput, searchQuery]);
+
   // ── 1. FETCH NEW PENDING BOOKS API ──
   const fetchPendingBooks = useCallback(async () => {
     setLoading(true);
@@ -110,7 +128,8 @@ export default function ReadyToGoProductTable() {
     if (!searchQuery) return true;
     const titleMatch = book.title?.toLowerCase().includes(searchQuery);
     const isbnMatch = book.isbn?.toLowerCase().includes(searchQuery);
-    return titleMatch || isbnMatch;
+    const idMatch = book.book_id?.toString().includes(searchQuery);
+    return titleMatch || isbnMatch || idMatch;
   });
 
   const total = filteredBooks.length;

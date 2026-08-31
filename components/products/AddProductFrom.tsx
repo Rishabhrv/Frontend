@@ -128,6 +128,7 @@ function parseJwt(token: string) {
 // ─────────────────────────────────────────────────────────────────
 const AddProductFrom = ({ mode = "add", productId }: Props) => {
   const [productType, setProductType] = useState<"ebook" | "physical" | "both">("physical");
+  const [isFreeShipping, setIsFreeShipping] = useState(false);
   const [productImage, setProductImage] = useState<File | null>(null);
   const [ebookFile, setEbookFile] = useState<File | null>(null);
   const [ebookPrice, setEbookPrice] = useState("");
@@ -327,6 +328,7 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
         setSku(data.sku || "");
         setStatus(data.status);
         setProductType(data.product_type);
+        setIsFreeShipping(!!data.is_free_shipping);
         setWeight(data.weight || "");
         setLength(data.length || "");
         setWidth(data.width || "");
@@ -459,6 +461,7 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
     formData.append("stock", stock);
     formData.append("sku", sku);
     formData.append("product_type", productType);
+    formData.append("is_free_shipping", isFreeShipping ? "true" : "false");
     formData.append("status", status);
     formData.append("weight", weight);
     formData.append("length", length);
@@ -524,6 +527,7 @@ const AddProductFrom = ({ mode = "add", productId }: Props) => {
     formData.append("sku", sku);
     if (slug.trim()) formData.append("slug", slug);
     formData.append("product_type", productType);
+    formData.append("is_free_shipping", isFreeShipping ? "true" : "false");
     formData.append("status", status);
     formData.append("weight", weight);
     formData.append("length", length);
@@ -1152,7 +1156,7 @@ useEffect(() => {
               <div className="flex items-center justify-between">
                 <span>Status</span>
                 <select
-                  className="rounded border px-2 py-1 text-sm"
+                  className="rounded border px-2 py-1 text-sm bg-gray-50 outline-none"
                   value={status}
                   onChange={(e) => {
                     setStatus(e.target.value);
@@ -1163,6 +1167,7 @@ useEffect(() => {
                   <option value="draft">Draft</option>
                 </select>
               </div>
+              
               {status === "draft" && (
                 <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded px-2 py-1.5">
                   Draft mode: only Product Title is required.
@@ -1249,6 +1254,21 @@ useEffect(() => {
             selectedSubjects={selectedSubjects}
             onChange={setSelectedSubjects}
           />
+          
+          {/* FREE SHIPPING */}
+          {(productType === "physical" || productType === "both") && (
+            <div className="bg-white rounded-xl border border-gray-300 p-4">
+              <h2 className="mb-3 font-medium text-gray-700">Free Shipping</h2>
+              <select
+                className="w-full rounded border px-3 py-2 text-sm bg-gray-50 outline-none"
+                value={isFreeShipping ? "yes" : "no"}
+                onChange={(e) => setIsFreeShipping(e.target.value === "yes")}
+              >
+                <option value="no">No</option>
+                <option value="yes">Yes</option>
+              </select>
+            </div>
+          )}
         </div>
       </div>
 

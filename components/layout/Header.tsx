@@ -130,7 +130,8 @@ const Header = () => {
 
   const highlightMatch = (text: string, query: string) => {
     if (!query) return text;
-    const regex = new RegExp(`(${query})`, "gi");
+    const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`(${escapedQuery})`, "gi");
     return text.split(regex).map((part, i) =>
       part.toLowerCase() === query.toLowerCase()
         ? <span key={i} className="text-blue-500 rounded">{part}</span>

@@ -138,7 +138,7 @@ const BookRow = ({ book, onSyncComplete }: { book: any, onSyncComplete: () => vo
         setFormData(prev => ({
           ...prev,
           title: json.data.title || prev.title,
-          description: json.data.description ? json.data.description.replace(/(<([^>]+)>)/gi, "") : prev.description,
+          description: json.data.description ? json.data.description.replace(/(<([^>]+)>)/gi, "").split("About The Publisher:")[0].trim() : prev.description,
           sell_price: json.data.sell_price || prev.sell_price, // <-- Catch and set the sell_price here
           image_url: json.data.image_url ? `${API_URL}${json.data.image_url}` : prev.image_url,
           other_image_1: json.data.other_image_1 ? `${API_URL}${json.data.other_image_1}` : prev.other_image_1,
@@ -192,7 +192,7 @@ const BookRow = ({ book, onSyncComplete }: { book: any, onSyncComplete: () => vo
     other_image_2: "",
     other_image_3: "",
     keywords: book.amazon_defaults?.keywords || book.tags || "",
-    description: (book.amazon_defaults?.description || book.about_book || "").replace(/(<([^>]+)>)/gi, ""),
+    description: (book.amazon_defaults?.description || book.about_book || "").replace(/(<([^>]+)>)/gi, "").split("About The Publisher:")[0].trim(),
   });
 
   useEffect(() => {
@@ -786,6 +786,30 @@ export default function AmazonProductTable() {
   const [limit] = useState(20);
   const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeTab, setActiveTab] = useState<'ready' | 'pending'>('ready');
+
+  // Restore state from sessionStorage on mount
+  useEffect(() => {
+    const savedPage = sessionStorage.getItem("amazon_page");
+    const savedSearchInput = sessionStorage.getItem("amazon_searchInput");
+    const savedSearchQuery = sessionStorage.getItem("amazon_searchQuery");
+    const savedActiveTab = sessionStorage.getItem("amazon_activeTab");
+
+    if (savedPage) setPage(parseInt(savedPage, 10));
+    if (savedSearchInput) setSearchInput(savedSearchInput);
+    if (savedSearchQuery) setSearchQuery(savedSearchQuery);
+    if (savedActiveTab === 'ready' || savedActiveTab === 'pending') {
+      setActiveTab(savedActiveTab as 'ready' | 'pending');
+    }
+  }, []);
+
+  // Save state to sessionStorage whenever it changes
+  useEffect(() => {
+    sessionStorage.setItem("amazon_page", page.toString());
+    sessionStorage.setItem("amazon_searchInput", searchInput);
+    sessionStorage.setItem("amazon_searchQuery", searchQuery);
+    sessionStorage.setItem("amazon_activeTab", activeTab);
+  }, [page, searchInput, searchQuery, activeTab]);
 
   const fetchPendingBooks = useCallback(async () => {
     setLoading(true);
@@ -814,10 +838,13 @@ export default function AmazonProductTable() {
     setSearchQuery(searchInput.trim().toLowerCase());
   };
 
-  const filteredBooks = books.filter(b => (!searchQuery || b.title?.toLowerCase().includes(searchQuery)));
-  const total = filteredBooks.length;
+  useEffect(() => { setPage(1); }, [activeTab, searchQuery]);
+
+  const filteredBooks = books.filter(b => (!searchQuery || b.title?.toLowerCase().includes(searchQuery) || b.book_id?.toString().includes(searchQuery)));
+  const tabBooks = filteredBooks.filter(b => activeTab === 'ready' ? b.amazon_pending != 1 : b.amazon_pending == 1);
+  const total = tabBooks.length;
   const totalPages = Math.ceil(total / limit) || 1;
-  const visibleBooks = filteredBooks.slice((page - 1) * limit, page * limit);
+  const visibleBooks = tabBooks.slice((page - 1) * limit, page * limit);
 
   return (
     <div className="p-6 sm:p-8 w-full mx-auto min-h-screen">
@@ -845,6 +872,21 @@ export default function AmazonProductTable() {
         </form>
       </div>
 
+      <div className="flex space-x-1 border-b border-slate-200 mb-6">
+        <button
+          onClick={() => setActiveTab('ready')}
+          className={`py-2 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'ready' ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
+        >
+          Ready to Push ({filteredBooks.filter(b => b.amazon_pending != 1).length})
+        </button>
+        <button
+          onClick={() => setActiveTab('pending')}
+          className={`py-2 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'pending' ? 'border-amber-500 text-amber-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
+        >
+          Awaiting Amazon Link ({filteredBooks.filter(b => b.amazon_pending == 1).length})
+        </button>
+      </div>
+
       <div className="flex flex-col">
         {loading ? (
           <div className="py-20 flex flex-col items-center justify-center text-slate-400 bg-white border border-slate-200 rounded-lg">
@@ -860,38 +902,10 @@ export default function AmazonProductTable() {
             <p className="text-sm mt-1">No pending books found matching your criteria.</p>
           </div>
         ) : (
-          <div className="space-y-6">
-
-            {/* ── 👇 SECTION 1: NORMAL / AVAILABLE BOOKS ── */}
-            {visibleBooks.filter(b => b.amazon_pending != 1).length > 0 && (
-              <div>
-                <h2 className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-                  Ready to Push ({visibleBooks.filter(b => b.amazon_pending != 1).length})
-                </h2>
-                {visibleBooks
-                  .filter(b => b.amazon_pending != 1)
-                  .map((book) => (
-                    <BookRow key={book.book_id} book={book} onSyncComplete={fetchPendingBooks} />
-                  ))}
-              </div>
-            )}
-            {/* ── 👇 SECTION 2: PENDING BOOKS ── */}
-            {visibleBooks.filter(b => b.amazon_pending == 1).length > 0 && (
-              <div>
-                <h2 className="text-[11px] font-bold text-amber-600 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
-                  Awaiting Amazon Link ({visibleBooks.filter(b => b.amazon_pending == 1).length})
-                </h2>
-                {visibleBooks
-                  .filter(b => b.amazon_pending == 1)
-                  .map((book) => (
-                    <BookRow key={book.book_id} book={book} onSyncComplete={fetchPendingBooks} />
-                  ))}
-              </div>
-            )}
-
-
+          <div className="space-y-4">
+            {visibleBooks.map((book) => (
+              <BookRow key={book.book_id} book={book} onSyncComplete={fetchPendingBooks} />
+            ))}
           </div>
         )}
       </div>

@@ -438,6 +438,7 @@ export default function OrderDetailPage() {
   const [saving, setSaving] = useState(false);
   const [toastOpen, setToastOpen] = useState(false);
   const [toastMsg, setToastMsg] = useState("");
+  const [toastType, setToastType] = useState<"success" | "error">("success");
 
   // Address Edit State Fields (Restricted to 5 fields)
   const [isEditingAddress, setIsEditingAddress] = useState(false);
@@ -494,9 +495,13 @@ export default function OrderDetailPage() {
     });
     setSaving(false);
     const json = await res.json();
-    setToastMsg(res.ok
-      ? (selectedMeta.emailSent ? "Status updated & email sent to customer." : "Status updated.")
-      : (json.msg || "Update failed."));
+    if (res.ok) {
+      setToastType("success");
+      setToastMsg(selectedMeta.emailSent ? "Status updated & email sent to customer." : "Status updated.");
+    } else {
+      setToastType("error");
+      setToastMsg(json.msg || "Update failed.");
+    }
     setToastOpen(true);
 
     if (res.ok) {
@@ -527,6 +532,7 @@ export default function OrderDetailPage() {
       setAddressSaving(false);
 
       if (res.ok) {
+        setToastType("success");
         setToastMsg("Shipping address details updated.");
         setToastOpen(true);
         setIsEditingAddress(false);
@@ -538,11 +544,13 @@ export default function OrderDetailPage() {
           }
         }));
       } else {
+        setToastType("error");
         setToastMsg(json.msg || "Failed to update details.");
         setToastOpen(true);
       }
     } catch (err) {
       setAddressSaving(false);
+      setToastType("error");
       setToastMsg("An error occurred during changes.");
       setToastOpen(true);
     }
@@ -706,7 +714,8 @@ export default function OrderDetailPage() {
                               <img src={`${API_URL}${item.main_image}`} alt={item.title}
                                 className="w-10 h-14 object-cover rounded border border-gray-200 shrink-0" />
                               <div>
-                                <p className="text-sm font-medium text-gray-800 leading-snug">{item.title}</p>
+                                <a href={`/product/${item.slug}`} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-blue-600 hover:underline leading-snug">{item.title}</a>
+                                <p className="text-[11px] text-gray-500 mt-0.5">Book ID: {item.book_id}</p>
                                 <span className="inline-block mt-1 bg-purple-100 text-purple-700 text-xs font-medium px-2 py-0.5 rounded-full">ebook</span>
                               </div>
                             </div>
@@ -743,7 +752,8 @@ export default function OrderDetailPage() {
                               <img src={`${API_URL}${item.main_image}`} alt={item.title}
                                 className="w-10 h-14 object-cover rounded border border-gray-200 shrink-0" />
                               <div>
-                                <p className="text-sm font-medium text-gray-800 leading-snug">{item.title}</p>
+                                <a href={`/product/${item.slug}`} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-blue-600 hover:underline leading-snug">{item.title}</a>
+                                <p className="text-[11px] text-gray-500 mt-0.5">Book ID: {item.book_id}</p>
                                 <span className="inline-block mt-1 bg-green-100 text-green-700 text-xs font-medium px-2 py-0.5 rounded-full">paperback</span>
                               </div>
                             </div>
@@ -899,7 +909,7 @@ export default function OrderDetailPage() {
         </div>
       </div>
 
-      <AlertPopup open={toastOpen} message={toastMsg} onClose={() => setToastOpen(false)} />
+      <AlertPopup open={toastOpen} message={toastMsg} type={toastType} onClose={() => setToastOpen(false)} />
     </div>
     </AdminGuard>
   );
