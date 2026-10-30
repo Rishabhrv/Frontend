@@ -10,6 +10,7 @@ type Author = {
   bio?: string;
   profile_image?: string;
   status?: "active" | "inactive";
+  is_featured?: number | boolean;
 };
 
 type Props = {
@@ -23,6 +24,7 @@ const AuthorForm = ({ editAuthor, clearEdit }: Props) => {
   const [name, setName] = useState("");
   const [bio, setBio] = useState("");
   const [status, setStatus] = useState<"active" | "inactive">("active");
+  const [isFeatured, setIsFeatured] = useState(false);
   const [image, setImage] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -42,11 +44,21 @@ const AuthorForm = ({ editAuthor, clearEdit }: Props) => {
 
   /* 🔁 Fill data on Edit */
   useEffect(() => {
-    if (!editAuthor) return;
+    if (!editAuthor) {
+      setName("");
+      setBio("");
+      setStatus("active");
+      setIsFeatured(false);
+      setSlug("");
+      setImage(null);
+      setPreview(null);
+      return;
+    }
 
     setName(editAuthor.name);
     setBio(editAuthor.bio || "");
     setStatus(editAuthor.status || "active");
+    setIsFeatured(Boolean(editAuthor.is_featured === 1 || editAuthor.is_featured === true));
     setSlug(editAuthor.slug || "");
 
     if (editAuthor.profile_image) {
@@ -69,6 +81,7 @@ const AuthorForm = ({ editAuthor, clearEdit }: Props) => {
     formData.append("bio", bio);
     formData.append("slug", slug);
     formData.append("status", status);
+    formData.append("is_featured", isFeatured ? "1" : "0");
 
     if (image) {
       formData.append("profile_image", image);
@@ -96,6 +109,7 @@ const AuthorForm = ({ editAuthor, clearEdit }: Props) => {
       setName("");
       setBio("");
       setStatus("active");
+      setIsFeatured(false);
       setImage(null);
       setPreview(null);
       clearEdit();
@@ -217,6 +231,26 @@ const AuthorForm = ({ editAuthor, clearEdit }: Props) => {
             <option value="active">Active</option>
             <option value="inactive">Inactive</option>
           </select>
+        </div>
+
+        {/* SHOW ON HOME CAROUSEL */}
+        <div className="border border-amber-200 bg-amber-50/70 rounded-lg p-3">
+          <label className="flex items-start justify-between gap-3 cursor-pointer select-none">
+            <div>
+              <span className="font-semibold text-gray-900 flex items-center gap-1.5 text-xs">
+                ⭐ Feature on Homepage Carousel
+              </span>
+              <p className="text-[11px] text-gray-600 mt-0.5 leading-snug">
+                When enabled, this author appears in the "Featured Authors" carousel on the home page.
+              </p>
+            </div>
+            <input
+              type="checkbox"
+              checked={isFeatured}
+              onChange={(e) => setIsFeatured(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500 cursor-pointer mt-0.5"
+            />
+          </label>
         </div>
 
         {/* ACTIONS */}
