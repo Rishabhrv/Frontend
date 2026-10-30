@@ -36,7 +36,7 @@ interface ScrollEdge {
 ════════════════════════════════════════ */
 const SCROLL_PX      = 420;
 const SKELETON_N     = 6;
-const MAX_AUTHORS    = 10;
+const MAX_AUTHORS    = 50;
 const AUTO_SLIDE_MS  = 3200;
 
 const AVATAR_PALETTES: [string, string][] = [

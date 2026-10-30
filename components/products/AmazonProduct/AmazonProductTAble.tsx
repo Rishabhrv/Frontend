@@ -173,7 +173,7 @@ const BookRow = ({ book, onSyncComplete }: { book: any, onSyncComplete: () => vo
     edition: book.amazon_defaults?.edition || "First Edition",
     language: "English",
     language_type: "original",
-    pages: book.amazon_defaults?.pages || book.no_of_pages || 1,
+    pages: book.no_of_pages || 1,
     weight: book.amazon_defaults?.weight || 0.40,
     package_weight: 0.40,
     length: book.amazon_defaults?.length || 22.86,
